@@ -11,13 +11,15 @@
 
 <android.support.v4.widget.NestedScrollView
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
+    android:layout_height="match_parent"
     app:layout_behavior="@string/bottom_sheet_behavior"
     app:behavior_hideable="false"
-    app:behavior_peekHeight="75dp">
+    app:behavior_peekHeight="60dp">
 
-
-    <include layout="@layout/activity_main"/>
+        <include
+            layout="@layout/activity_main"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
 
 </android.support.v4.widget.NestedScrollView>
 
