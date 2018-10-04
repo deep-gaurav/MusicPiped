@@ -69,8 +69,8 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.home);
-
+    }
+    protected void ready(){
         self=this;
         urlText=findViewById(R.id.urlText);
         Button submitButton = findViewById(R.id.submitButton);
