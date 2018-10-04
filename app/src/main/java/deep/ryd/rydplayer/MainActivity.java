@@ -90,7 +90,8 @@ public class MainActivity extends AppCompatActivity {
                 (ImageButton)findViewById(R.id.prevButton),
                 (ProgressBar)findViewById(R.id.loadingCircle2),
                 (EditText)findViewById(R.id.urlText),
-                (Button)findViewById(R.id.submitButton)
+                (Button)findViewById(R.id.submitButton),
+                (ImageButton)findViewById(R.id.playButton2)
         );
 
         submitButton.setOnClickListener(new View.OnClickListener() {
@@ -100,14 +101,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        ImageButton searchButton=findViewById(R.id.searchButton);
-        searchButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent i = new Intent(self,SearchActivity.class);
-                startActivityForResult(i,MYCHILD);
-            }
-        });
 
     }
 
@@ -160,6 +153,7 @@ class core{
     public ProgressBar circleLoader2;
     public EditText urlEditText;
     public Button submitButton;
+    public ImageButton playButton2;
 
     public void play() throws IOException {
         new setThumb().execute(this);
@@ -173,8 +167,7 @@ class core{
             public void onPrepared(MediaPlayer mp) {
                 isumpReady=true;
 
-                uMP.start();
-                playButton.setImageResource(android.R.drawable.ic_media_pause);
+                toggle();
                 context.runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
@@ -255,7 +248,8 @@ class core{
          ImageButton prevButton,
          ProgressBar circleLoader2,
          EditText urlEditText,
-         Button submitButton) {
+         Button submitButton,
+         ImageButton playButton2) {
 
         //INIT
         this.context = context;
@@ -273,6 +267,7 @@ class core{
         this.circleLoader2 = circleLoader2;
         this.urlEditText = urlEditText;
         this.submitButton = submitButton;
+        this.playButton2 = playButton2;
 
         uMP = new MediaPlayer();
         ready();
@@ -317,16 +312,13 @@ class core{
             @Override
             public void onClick(View v) {
                 ImageButton self = (ImageButton) v;
-                if(isumpReady){
-                    if(uMP.isPlaying()){
-                        uMP.pause();
-                        self.setImageResource(android.R.drawable.ic_media_play);
-                    }
-                    else{
-                        uMP.start();
-                        self.setImageResource(android.R.drawable.ic_media_pause);
-                    }
-                }
+                toggle();
+            }
+        });
+        playButton2.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                toggle();
             }
         });
 
@@ -355,6 +347,21 @@ class core{
         circleLoader.setVisibility(View.VISIBLE);
         submitButton.setEnabled(false);
         new testPipe().execute(this);
+    }
+
+    public void toggle(){
+        if(isumpReady){
+            if(uMP.isPlaying()){
+                uMP.pause();
+                playButton.setImageResource(android.R.drawable.ic_media_play);
+                playButton2.setImageResource(android.R.drawable.ic_media_play);
+            }
+            else{
+                uMP.start();
+                playButton.setImageResource(android.R.drawable.ic_media_pause);
+                playButton2.setImageResource(android.R.drawable.ic_media_pause);
+            }
+        }
     }
 
 }
