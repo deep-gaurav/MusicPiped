@@ -7,17 +7,24 @@ import android.app.FragmentTransaction;
 
 import android.app.Fragment;
 import android.app.FragmentManager;
+import android.app.SearchManager;
+import android.content.Intent;
 import android.support.v13.app.FragmentPagerAdapter;
+import android.support.v4.content.ContextCompat;
+import android.support.v4.view.MenuItemCompat;
 import android.support.v4.view.ViewPager;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.SearchView;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 
+import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 public class Main2Activity extends MainActivity implements android.support.v7.app.ActionBar.TabListener {
 
@@ -76,7 +83,7 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
 
         }
 
-        super.ready();
+        ready();
     }
 
 
@@ -84,7 +91,54 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.new_main, menu);
-        return true;
+
+        final MenuItem searchItem = menu.findItem(R.id.action_search);
+
+        final SearchView searchView;
+        if (searchItem != null) {
+            searchView = (SearchView) MenuItemCompat.getActionView(searchItem);
+            searchView.setOnCloseListener(new SearchView.OnCloseListener() {
+                @Override
+                public boolean onClose() {
+                    //some operation
+                    return true;
+                }
+            });
+            searchView.setOnSearchClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    //some operation
+                }
+            });
+            EditText searchPlate = (EditText) searchView.findViewById(android.support.v7.appcompat.R.id.search_src_text);
+            searchPlate.setHint("Search");
+            View searchPlateView = searchView.findViewById(android.support.v7.appcompat.R.id.search_plate);
+            searchPlateView.setBackgroundColor(ContextCompat.getColor(this, android.R.color.transparent));
+            // use this method for search process
+            searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+                @Override
+                public boolean onQueryTextSubmit(String query) {
+                    // use this method when query submitted
+                    Toast.makeText(self, query, Toast.LENGTH_SHORT).show();
+                    searchItem.collapseActionView();
+                    Intent intent=new Intent(self,SearchActivity.class);
+                    intent.putExtra("SearchText",query);
+                    startActivityForResult(intent,MYCHILD);
+                    return true;
+                }
+
+                @Override
+                public boolean onQueryTextChange(String newText) {
+                    // use this method for auto complete search process
+                    return false;
+                }
+            });
+            SearchManager searchManager = (SearchManager) getSystemService(SEARCH_SERVICE);
+            searchView.setSearchableInfo(searchManager.getSearchableInfo(getComponentName()));
+
+        }
+        return super.onCreateOptionsMenu(menu);
+
     }
 
     @Override

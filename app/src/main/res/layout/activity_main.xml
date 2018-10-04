@@ -68,15 +68,14 @@
         android:id="@+id/header"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginEnd="25dp"
+        android:layout_marginEnd="8dp"
         android:layout_marginStart="8dp"
         android:layout_marginTop="8dp"
         android:ellipsize="marquee"
         android:singleLine="true"
         android:text="RydPlayer"
         android:textSize="18sp"
-        app:layout_constraintEnd_toStartOf="@+id/searchButton"
-        app:layout_constraintHorizontal_bias="0.11"
+        app:layout_constraintEnd_toStartOf="@+id/playButton2"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -201,19 +200,6 @@
         app:layout_constraintVertical_bias="0.933"
         app:srcCompat="@android:drawable/ic_media_previous" />
 
-    <ImageButton
-        android:id="@+id/searchButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        android:layout_marginEnd="35dp"
-        android:background="@null"
-        app:layout_constraintBottom_toBottomOf="@+id/header"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/header"
-        app:layout_constraintTop_toTopOf="@+id/header"
-        app:srcCompat="@android:drawable/ic_menu_search" />
-
     <View
         android:id="@+id/divider"
         android:layout_width="0dp"
@@ -224,5 +210,18 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
+
+    <ImageButton
+        android:id="@+id/playButton2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="20dp"
+        android:layout_marginTop="8dp"
+        android:background="@null"
+        app:layout_constraintBottom_toBottomOf="@+id/author"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/header"
+        app:layout_constraintVertical_bias="0.0"
+        app:srcCompat="@android:drawable/ic_media_play" />
 
 </android.support.constraint.ConstraintLayout>

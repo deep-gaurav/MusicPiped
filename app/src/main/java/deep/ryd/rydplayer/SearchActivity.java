@@ -1,6 +1,7 @@
 package deep.ryd.rydplayer;
 
 import android.app.Activity;
+import android.app.SearchManager;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -9,13 +10,19 @@ import android.graphics.Rect;
 import android.os.AsyncTask;
 import android.support.annotation.NonNull;
 import android.support.constraint.ConstraintLayout;
+import android.support.v4.content.ContextCompat;
+import android.support.v4.view.MenuItemCompat;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.SearchView;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -25,6 +32,7 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 
 import org.schabi.newpipe.extractor.Info;
@@ -58,10 +66,10 @@ import java.util.List;
 public class SearchActivity extends AppCompatActivity {
 
     Activity self;
-    EditText searchText;
     RecyclerView resultRecycler;
     RecyclerView.Adapter mAdapter;
     RecyclerView.LayoutManager mLayoutManager;
+    ActionBar actionBar;
     List<InfoItem> searchItems = new ArrayList<>();
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,8 +78,6 @@ public class SearchActivity extends AppCompatActivity {
 
         self=this;
 
-        searchText=findViewById(R.id.searchBar);
-        ImageButton searchSubmit=findViewById(R.id.searchSubmit);
         resultRecycler = findViewById(R.id.resultRecycler);
 
         resultRecycler.setHasFixedSize(true);
@@ -82,15 +88,20 @@ public class SearchActivity extends AppCompatActivity {
         mAdapter=new MyAdapter(searchItems,this);
         resultRecycler.setAdapter(mAdapter);
 
-        searchSubmit.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String st=searchText.getText().toString();
-                new Extractor(resultRecycler,searchItems,self,(ProgressBar)findViewById(R.id.loadingCircle)).execute(st);
-            }
-        });
+        actionBar = getSupportActionBar();
+
+        Intent intent = getIntent();
+        if(intent.hasExtra("SearchText")){
+            String st=intent.getStringExtra("SearchText");
+
+            Search(st);
+        }
     }
 
+    public void Search(String st){
+        actionBar.setTitle(st);
+        new Extractor(resultRecycler,searchItems,self,(ProgressBar)findViewById(R.id.loadingCircle)).execute(st);
+    }
     public boolean dispatchTouchEvent(MotionEvent event) {
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
             View v = getCurrentFocus();
@@ -107,6 +118,56 @@ public class SearchActivity extends AppCompatActivity {
         return super.dispatchTouchEvent( event );
     }
 
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.new_main, menu);
+
+        final MenuItem searchItem = menu.findItem(R.id.action_search);
+
+        final SearchView searchView;
+        if (searchItem != null) {
+            searchView = (SearchView) MenuItemCompat.getActionView(searchItem);
+            searchView.setOnCloseListener(new SearchView.OnCloseListener() {
+                @Override
+                public boolean onClose() {
+                    //some operation
+                    return true;
+                }
+            });
+            searchView.setOnSearchClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    //some operation
+                }
+            });
+            EditText searchPlate = (EditText) searchView.findViewById(android.support.v7.appcompat.R.id.search_src_text);
+            searchPlate.setHint("Search");
+            View searchPlateView = searchView.findViewById(android.support.v7.appcompat.R.id.search_plate);
+            searchPlateView.setBackgroundColor(ContextCompat.getColor(this, android.R.color.transparent));
+            // use this method for search process
+            searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+                @Override
+                public boolean onQueryTextSubmit(String query) {
+                    // use this method when query submitted
+                    Toast.makeText(self, query, Toast.LENGTH_SHORT).show();
+                    searchItem.collapseActionView();
+                    Search(query);
+                    return true;
+                }
+
+                @Override
+                public boolean onQueryTextChange(String newText) {
+                    // use this method for auto complete search process
+                    return false;
+                }
+            });
+            SearchManager searchManager = (SearchManager) getSystemService(SEARCH_SERVICE);
+            searchView.setSearchableInfo(searchManager.getSearchableInfo(getComponentName()));
+
+        }
+        return super.onCreateOptionsMenu(menu);
+
+    }
 
 }
 class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder>{
