@@ -85,7 +85,8 @@ public class SearchActivity extends AppCompatActivity {
         mLayoutManager=new LinearLayoutManager(this);
         resultRecycler.setLayoutManager(mLayoutManager);
 
-        mAdapter=new MyAdapter(searchItems,this);
+        mAdapter=new MyAdapter(searchItems,this,true);
+
         resultRecycler.setAdapter(mAdapter);
 
         actionBar = getSupportActionBar();
@@ -172,13 +173,15 @@ public class SearchActivity extends AppCompatActivity {
 }
 class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder>{
 
+    public static boolean returner=false;
     String searchq;
     List<InfoItem> infoItems;
     Activity activity;
 
-    public MyAdapter(List<InfoItem> infoItems,Activity activity){
+    public MyAdapter(List<InfoItem> infoItems,Activity activity,boolean returner){
         this.infoItems = infoItems;
         this.activity=activity;
+        this.returner=returner;
     }
 
     @NonNull
@@ -225,17 +228,18 @@ class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder>{
         public  MyViewHolder(CardView cardView){
             super(cardView);
             this.cardView=cardView;
-            cardView.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    Intent result = new Intent();
-                    result.putExtra("newurl",streamInfoItem.getUrl());
-                    Activity activity=(Activity)v.getContext();
-                    activity.setResult(Activity.RESULT_OK,result);
-                    activity.finish();
-                }
-            });
-
+            if(returner) {
+                cardView.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        Intent result = new Intent();
+                        result.putExtra("newurl", streamInfoItem.getUrl());
+                        Activity activity = (Activity) v.getContext();
+                        activity.setResult(Activity.RESULT_OK, result);
+                        activity.finish();
+                    }
+                });
+            }
         }
     }
 }
@@ -272,10 +276,13 @@ class Extractor extends AsyncTask<String,Integer,Integer>{
             contentFilter.add("videos");
             YoutubeService ys =(YoutubeService)NewPipe.getService(serviceID);
             YoutubeSearchExtractor ySE=(YoutubeSearchExtractor)ys.getSearchExtractor(st,contentFilter,null,"IN");
+
+
             ySE.onFetchPage(Downloader.getInstance());
             ListExtractor.InfoItemsPage<InfoItem> ife= ySE.getInitialPage();
             List<InfoItem> infoItemsList = ife.getItems();
             Log.i("ryd",infoItemsList.toString());
+            Log.i("ryd","SEARCH SUGGESTIONS "+ySE.getSearchSuggestion());
 
             infoItems.clear();
             for(int i=0;i<infoItemsList.size();i++){

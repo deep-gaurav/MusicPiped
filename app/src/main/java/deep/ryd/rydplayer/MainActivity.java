@@ -63,6 +63,7 @@ public class MainActivity extends AppCompatActivity {
     TextView urlText;
     Activity self;
     core coremain;
+    public static DBManager dbManager;
 
     int MYCHILD=6200;
 
@@ -74,6 +75,8 @@ public class MainActivity extends AppCompatActivity {
         self=this;
         urlText=findViewById(R.id.urlText);
         Button submitButton = findViewById(R.id.submitButton);
+
+        dbManager= new DBManager(this);
 
         coremain=new core(
                 this,
@@ -91,7 +94,8 @@ public class MainActivity extends AppCompatActivity {
                 (ProgressBar)findViewById(R.id.loadingCircle2),
                 (EditText)findViewById(R.id.urlText),
                 (Button)findViewById(R.id.submitButton),
-                (ImageButton)findViewById(R.id.playButton2)
+                (ImageButton)findViewById(R.id.playButton2),
+                dbManager
         );
 
         submitButton.setOnClickListener(new View.OnClickListener() {
@@ -109,11 +113,16 @@ public class MainActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
         Log.i("ryd","CHILD ACTIVITY RESULT "+requestCode+" ");
         if(requestCode==MYCHILD && resultCode==Activity.RESULT_OK){
-            urlText.setText(data.getStringExtra("newurl"));
-            coremain.changeSong();
+            changeSong(data.getStringExtra("newurl"));
         }
 
     }
+
+    public void changeSong(String url){
+        urlText.setText(url);
+        coremain.changeSong();
+    }
+
     @Override
     public boolean dispatchTouchEvent(MotionEvent event) {
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
@@ -154,6 +163,7 @@ class core{
     public EditText urlEditText;
     public Button submitButton;
     public ImageButton playButton2;
+    DBManager dbManager;
 
     public void play() throws IOException {
         new setThumb().execute(this);
@@ -166,7 +176,14 @@ class core{
             @Override
             public void onPrepared(MediaPlayer mp) {
                 isumpReady=true;
-
+                dbManager=dbManager.open();
+                dbManager.addSong(streamInfo.getName(),
+                        streamInfo.getUrl(),
+                        streamInfo.getUploaderName(),
+                        streamInfo.getThumbnailUrl(),
+                        streamInfo.getUploaderAvatarUrl(),
+                        streamInfo.getUploaderUrl());
+                dbManager.close();
                 toggle();
                 context.runOnUiThread(new Runnable() {
                     @Override
@@ -249,7 +266,8 @@ class core{
          ProgressBar circleLoader2,
          EditText urlEditText,
          Button submitButton,
-         ImageButton playButton2) {
+         ImageButton playButton2,
+         DBManager dbManager) {
 
         //INIT
         this.context = context;
@@ -268,6 +286,7 @@ class core{
         this.urlEditText = urlEditText;
         this.submitButton = submitButton;
         this.playButton2 = playButton2;
+        this.dbManager=dbManager;
 
         uMP = new MediaPlayer();
         ready();
