@@ -12,7 +12,7 @@ MusicPiped is an copylefted libre music player that plays streams from various p
 - [ ] Stream from SoundCloud
 - [ ] Stream from SongsPK
 - [ ] Local playlist
-- [ ] Support for artists, tracks
+- [x] Support for artists, tracks
 
 ## Credits
 
