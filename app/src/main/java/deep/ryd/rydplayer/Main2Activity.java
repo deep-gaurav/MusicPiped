@@ -38,6 +38,8 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.squareup.picasso.Picasso;
+
 import org.schabi.newpipe.extractor.InfoItem;
 import org.schabi.newpipe.extractor.NewPipe;
 import org.schabi.newpipe.extractor.services.youtube.YoutubeService;
@@ -253,7 +255,7 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
                     RecyclerView recyclerView=(RecyclerView)rootView.findViewById(R.id.artistRecycler);
                     recyclerView.setHasFixedSize(true);
                     RecyclerView.LayoutManager mLayoutManager=new LinearLayoutManager(rootView.getContext(),LinearLayoutManager.HORIZONTAL,false);
-
+                    recyclerView.setOverScrollMode(View.OVER_SCROLL_ALWAYS);
                     recyclerView.setLayoutManager(mLayoutManager);
 
 
@@ -275,6 +277,7 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
                 RecyclerView.LayoutManager mLayoutManager=new LinearLayoutManager(rootView.getContext());
                 recyclerView.setLayoutManager(mLayoutManager);
 
+                recyclerView.setOverScrollMode(View.OVER_SCROLL_ALWAYS);
 
                 List<StreamInfo> songs = loadInfofromDB(false,false);
 
@@ -419,17 +422,24 @@ class SongsListAdaptor extends RecyclerView.Adapter<SongsListAdaptor.MyViewHolde
         ImageView img=(ImageView)constraintLayout.findViewById(R.id.thumbHolder);
         TextView title=(TextView)constraintLayout.findViewById(R.id.cardTitle);
 
-        if(artist_thumb)
+        //CachedImageDownloader cachedImageDownloader;
+        if(artist_thumb) {
+            //cachedImageDownloader = new CachedImageDownloader(infoItems.get(i).getUploaderAvatarUrl(), img);
             title.setText(infoItems.get(i).getUploaderName());
-        else
+            Picasso.get()
+                    .load(infoItems.get(i).getUploaderAvatarUrl())
+                    .into(img);
+        }
+        else {
+            //cachedImageDownloader = new CachedImageDownloader(infoItems.get(i).getThumbnailUrl(), img);
             title.setText(infoItems.get(i).getName());
+            Picasso.get()
+                    .load(infoItems.get(i).getThumbnailUrl())
+                    .into(img);
+        }
         //title.setText("TEST CARD "+new Integer(i).toString());
         //t.setText(new Integer(i).toString());
-        ListThumbDownloader listThumbDownloader=new ListThumbDownloader();
-        if (artist_thumb)
-            listThumbDownloader.artist_thumb=true;
-
-        listThumbDownloader.execute(myViewHolder);
+        //cachedImageDownloader.execute();
 
         cardView.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -458,7 +468,7 @@ class SongsListAdaptor extends RecyclerView.Adapter<SongsListAdaptor.MyViewHolde
     }
 }
 
-class ListThumbDownloader extends AsyncTask<SongsListAdaptor.MyViewHolder,Integer,Integer>{
+class ListThumbDownloaderold extends AsyncTask<SongsListAdaptor.MyViewHolder,Integer,Integer>{
 
     boolean artist_thumb=false;
     @Override
