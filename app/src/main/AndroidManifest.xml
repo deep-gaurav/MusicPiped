@@ -3,6 +3,9 @@
     package="deep.ryd.rydplayer">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <permission android:name="android.permission.MEDIA_CONTENT_CONTROL" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+
 
     <application
         android:allowBackup="true"
@@ -24,6 +27,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <service android:name=".PlayerService" android:stopWithTask="false">
+
+        </service>
+        <receiver android:name=".PlayerService$ButtonReceiver"></receiver>
     </application>
 
 </manifest>

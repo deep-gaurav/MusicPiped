@@ -1,13 +1,17 @@
 package deep.ryd.rydplayer;
 
 import android.app.Activity;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Rect;
+import android.graphics.drawable.Drawable;
 import android.media.MediaPlayer;
 import android.os.AsyncTask;
+import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -54,6 +58,9 @@ import java.util.TimerTask;
 import android.support.design.widget.Snackbar;
 
 
+import com.squareup.picasso.Picasso;
+import com.squareup.picasso.Target;
+
 import javax.net.ssl.HttpsURLConnection;
 
 public class MainActivity extends AppCompatActivity {
@@ -64,19 +71,61 @@ public class MainActivity extends AppCompatActivity {
     Activity self;
     core coremain;
     public static DBManager dbManager;
+    PlayerService playerService;
+    boolean isBound =false;
 
     int MYCHILD=6200;
+
+
+    private ServiceConnection serviceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+
+            PlayerService.MusicServiceBinder binder = (PlayerService.MusicServiceBinder)service;
+            playerService = binder.getPlayerService();
+            Log.i("ryd","Service Bound ");
+            isBound=true;
+            withService();
+
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            playerService = null;
+            Log.i("ryg","Service Not BOUND");
+            isBound=false;
+        }
+
+    };
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+
     }
-    protected void ready(){
-        self=this;
+
+    protected void ready() {
+        self = this;
+
+        if (playerService == null) {
+            Log.i("ryd", "CREATE SERVICE ");
+            Intent i = new Intent(this, PlayerService.class);
+
+            startService(i);
+
+            bindService(i, serviceConnection, BIND_AUTO_CREATE);
+        }
+        dbManager= new DBManager(this);
+
+    }
+    protected void withService(){
+
         urlText=findViewById(R.id.urlText);
         Button submitButton = findViewById(R.id.submitButton);
 
-        dbManager= new DBManager(this);
 
         coremain=new core(
                 this,
@@ -104,6 +153,7 @@ public class MainActivity extends AppCompatActivity {
                 coremain.changeSong();
             }
         });
+
 
 
     }
@@ -139,12 +189,34 @@ public class MainActivity extends AppCompatActivity {
         }
         return super.dispatchTouchEvent( event );
     }
+
+
+    @Override
+    public void onSaveInstanceState(Bundle savedInstanceState) {
+        super.onSaveInstanceState(savedInstanceState);
+        // Save UI state changes to the savedInstanceState.
+        // This bundle will be passed to onCreate if the process is
+        // killed and restarted.
+        //savedInstanceState.putByteArray("streamInfo",coremain.);
+        // etc.
+    }
+    @Override
+    public void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        // Restore UI state from the savedInstanceState.
+        // This bundle has also been passed to onCreate.
+        //boolean myBoolean = savedInstanceState.getBoolean("MyBoolean");
+        //double myDouble = savedInstanceState.getDouble("myDouble");
+        //int myInt = savedInstanceState.getInt("MyInt");
+        //String myString = savedInstanceState.getString("MyString");
+    }
+
+
 }
 
 class core{
-    public MediaPlayer uMP;
     public String playurl="";
-    public Activity context;
+    public MainActivity context;
     public View baselay;
     public ImageView thumbView;
     public TextView header;
@@ -155,7 +227,6 @@ class core{
     public TextView totalTime;
     public SeekBar seekBar;
     public ImageButton playButton;
-    public boolean isumpReady=false;
     public ProgressBar circleLoader;
     public ImageButton nextButton,prevButton;
     public core self=this;
@@ -166,16 +237,23 @@ class core{
     DBManager dbManager;
 
     public void play() throws IOException {
-        new setThumb().execute(this);
-        uMP.reset();
+        //new setThumb().execute(this);
+
+        //CachedImageDownloader cachedImageDownloader = new CachedImageDownloader(streamInfo.getThumbnailUrl(),thumbView);
+        //cachedImageDownloader.execute();
+
+        context.playerService.streamInfo=streamInfo;
+        context.playerService.control_MP(PlayerService.ACTION_PLAY);
+
+        context.playerService.umP.reset();
         //Toast.makeText(context, "", Toast.LENGTH_SHORT).show();
-        uMP.setDataSource(audioStreams.get(0).getUrl());
-        uMP.prepareAsync();
-        isumpReady=false;
-        uMP.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+        context.playerService.umP.setDataSource(audioStreams.get(0).getUrl());
+        context.playerService.umP.prepareAsync();
+        context.playerService.isuMPready=false;
+        context.playerService.umP.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
             @Override
             public void onPrepared(MediaPlayer mp) {
-                isumpReady=true;
+                context.playerService.isuMPready=true;
                 dbManager=dbManager.open();
                 dbManager.addSong(streamInfo.getName(),
                         streamInfo.getUrl(),
@@ -185,14 +263,16 @@ class core{
                         streamInfo.getUploaderUrl());
                 dbManager.close();
                 toggle();
-                context.runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        circleLoader2.setVisibility(View.INVISIBLE);
-                    }
-                });
             }
         });
+
+
+        start();
+
+
+    }
+
+    public void start(){
 
         context.runOnUiThread(new Runnable() {
             @Override
@@ -207,11 +287,35 @@ class core{
                 //Log.i("rydp", "Mediaplayer duration "+(new Integer(uMP.getDuration())).toString());
             }
         });
+        //toggle();
+        context.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Picasso.get()
+                        .load(streamInfo.getThumbnailUrl())
+                        .into(new Target() {
+                            @Override
+                            public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
+                                context.playerService.thumbnail=bitmap;
+                                thumbView.setImageBitmap(bitmap);
+                                context.playerService.buildNotification(context.playerService.ID);
+                            }
 
+                            @Override
+                            public void onBitmapFailed(Exception e, Drawable errorDrawable) {
 
+                            }
 
+                            @Override
+                            public void onPrepareLoad(Drawable placeHolderDrawable) {
+
+                            }
+                        });
+                circleLoader2.setVisibility(View.INVISIBLE);
+                context.playerService.start();
+            }
+        });
     }
-
     public void showError(final String error){
 
         context.runOnUiThread(new Runnable() {
@@ -270,7 +374,7 @@ class core{
          DBManager dbManager) {
 
         //INIT
-        this.context = context;
+        this.context = (MainActivity) context;
         this.baselay = baselay;
         this.thumbView = thumbView;
         this.header = header;
@@ -288,10 +392,16 @@ class core{
         this.playButton2 = playButton2;
         this.dbManager=dbManager;
 
-        uMP = new MediaPlayer();
+        //uMP = new MediaPlayer();
+        //uMP=((MainActivity) context).playerService.umP;
         ready();
     }
     public void ready(){
+        if(context.playerService.isuMPready){
+            streamInfo=context.playerService.streamInfo;
+            //uMP=context.playerService.umP;
+            start();
+        }
         Timer timer = new Timer(false);
         timer.scheduleAtFixedRate(new TimerTask() {
             @Override
@@ -299,9 +409,9 @@ class core{
                 context.runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        if(uMP.isPlaying()) {
-                            currentTime.setText(sectotime(uMP.getCurrentPosition(), true));
-                            seekBar.setProgress(uMP.getCurrentPosition()/1000);
+                        if(context.playerService.umP.isPlaying()) {
+                            currentTime.setText(sectotime(context.playerService.umP.getCurrentPosition(), true));
+                            seekBar.setProgress(context.playerService.umP.getCurrentPosition()/1000);
                         }
                     }
                 });
@@ -312,7 +422,7 @@ class core{
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 if(fromUser){
-                    uMP.seekTo(progress*1000);
+                    context.playerService.umP.seekTo(progress*1000);
                 }
             }
 
@@ -359,6 +469,12 @@ class core{
 
         circleLoader.setVisibility(View.INVISIBLE);
         circleLoader2.setVisibility(View.INVISIBLE);
+
+        if(context.playerService.umP.isPlaying()){
+            playButton.setImageResource(android.R.drawable.ic_media_pause);
+            playButton2.setImageResource(android.R.drawable.ic_media_pause);
+        }
+
     }
 
     public void changeSong(){
@@ -369,19 +485,23 @@ class core{
     }
 
     public void toggle(){
-        if(isumpReady){
-            if(uMP.isPlaying()){
-                uMP.pause();
+        if(context.playerService.isuMPready){
+            if(context.playerService.umP.isPlaying()){
+                context.playerService.umP.pause();
                 playButton.setImageResource(android.R.drawable.ic_media_play);
                 playButton2.setImageResource(android.R.drawable.ic_media_play);
+                context.playerService.buildNotification(context.playerService.ID);
             }
             else{
-                uMP.start();
+                context.playerService.umP.start();
                 playButton.setImageResource(android.R.drawable.ic_media_pause);
                 playButton2.setImageResource(android.R.drawable.ic_media_pause);
+                context.playerService.buildNotification(context.playerService.ID);
             }
         }
     }
+
+
 
 }
 
@@ -427,32 +547,5 @@ class testPipe extends AsyncTask<core,Integer,Integer> {
         }
 
         return 0;
-    }
-}
-
-class setThumb extends AsyncTask<core,Integer,Integer>{
-
-    @Override
-    protected Integer doInBackground(core... cores) {
-        try {
-            URL urlConnection = new URL(cores[0].streamInfo.getThumbnailUrl());
-            Log.i("rypd","Thumbnail URL downloading "+urlConnection.toString());
-            HttpURLConnection connection = (HttpURLConnection) urlConnection
-                    .openConnection();
-            connection.setDoInput(true);
-            connection.connect();
-            InputStream input = connection.getInputStream();
-            final Bitmap myBitmap = BitmapFactory.decodeStream(input);
-            final core mcore =cores[0];
-            cores[0].context.runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    mcore.thumbView.setImageBitmap(myBitmap);
-                }
-            });
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return null;
     }
 }

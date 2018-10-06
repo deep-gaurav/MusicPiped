@@ -35,6 +35,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 
+import com.squareup.picasso.Picasso;
+
 import org.schabi.newpipe.extractor.Info;
 import org.schabi.newpipe.extractor.InfoItem;
 import org.schabi.newpipe.extractor.InfoItemsCollector;
@@ -214,7 +216,10 @@ class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder>{
         title.setText(infoItems.get(i).getName());
         //title.setText("TEST CARD "+new Integer(i).toString());
         //t.setText(new Integer(i).toString());
-        new setThumbCard().execute(myViewHolder);
+        //new setThumbCard().execute(myViewHolder);
+        Picasso.get()
+                .load(infoItems.get(i).getThumbnailUrl())
+                .into(img);
     }
 
     @Override
@@ -304,7 +309,7 @@ class Extractor extends AsyncTask<String,Integer,Integer>{
         return 0;
     }
 }
-class setThumbCard extends AsyncTask<MyAdapter.MyViewHolder,Integer,Integer>{
+class setThumbCardold extends AsyncTask<MyAdapter.MyViewHolder,Integer,Integer>{
 
     @Override
     protected Integer doInBackground(MyAdapter.MyViewHolder... viewHolders) {
