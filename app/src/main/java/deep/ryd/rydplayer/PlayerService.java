@@ -42,6 +42,7 @@ import org.schabi.newpipe.extractor.stream.StreamInfo;
 
 import java.io.FileDescriptor;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.Timer;
@@ -73,6 +74,13 @@ public class PlayerService extends Service {
     public boolean isuMPready=false;
     PendingIntent launchIntent;
 
+    public List<StreamInfo> queue;
+    public int currentIndex;
+
+    public MainActivity mainActivity=null;
+
+    public boolean started=false;
+
     public void control_MP( String action ) {
 
         if( action.equalsIgnoreCase( ACTION_PLAY ) ) {
@@ -102,6 +110,7 @@ public class PlayerService extends Service {
 
         Random generator = new Random();
 
+        queue=new ArrayList<>();
         launchIntent=PendingIntent.getActivity(this, generator.nextInt(), intent,PendingIntent.FLAG_UPDATE_CURRENT);
     }
 
@@ -115,23 +124,60 @@ public class PlayerService extends Service {
                         buildNotification(ID);
                         if(isLooping)
                             umP.start();
+                        else {
+                            nextSong();
+                        }
                     }
                 }
 
         );
-        Timer t = new Timer();
-        t.scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
-                if(umP.isPlaying()) {
-                    NotificationCompat.Builder builder = notifbuilder();
+        if(!started) {
+            started=true;
+            Timer t = new Timer();
+            t.scheduleAtFixedRate(new TimerTask() {
+                @Override
+                public void run() {
+                    if (umP.isPlaying()) {
+                        NotificationCompat.Builder builder = notifbuilder();
 
-                    NotificationManagerCompat.from(PlayerService.this).notify(ID, builder.build());
+                        NotificationManagerCompat.from(PlayerService.this).notify(ID, builder.build());
+                    }
                 }
-            }
-        },500,500);
+            }, 500, 500);
+        }
     }
 
+    public void nextSong(){
+        Log.i("ryd","Old Index "+currentIndex);
+        Log.i("ryd","Old streamurl "+streamInfo.getAudioStreams().get(0).getUrl());
+        if(currentIndex!=queue.size()-1) {
+            if (mainActivity != null) {
+
+                currentIndex++;
+                streamInfo=queue.get(currentIndex);
+                umP.reset();
+                isuMPready=false;
+                try {
+                    umP.setDataSource(streamInfo.getAudioStreams().get(0).getUrl());
+
+                    umP.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+                        @Override
+                        public void onPrepared(MediaPlayer mp) {
+                            umP.start();
+                            isuMPready=true;
+                        }
+                    });
+                    umP.prepareAsync();
+                    mainActivity.coremain.start();
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+
+            }
+        }
+    }
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
@@ -187,6 +233,7 @@ public class PlayerService extends Service {
 
     @Override
     public boolean onUnbind(Intent intent) {
+        mainActivity=null;
         return false;
     }
 
@@ -251,7 +298,7 @@ public class PlayerService extends Service {
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID);
 
         builder
-                .setSmallIcon(android.R.drawable.ic_media_play)
+                .setSmallIcon(R.drawable.ic_music_note_white_24dp)
                 // Add the metadata for the currently playing track
                 //.setContentTitle(streamInfo.getName())
                 //.setContentText(streamInfo.getUploaderName())

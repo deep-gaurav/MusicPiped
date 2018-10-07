@@ -3,7 +3,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="wrap_content"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    android:maxHeight="120dp">
 
     <ImageView
         android:id="@+id/thumbHolder"
@@ -21,13 +22,30 @@
 
     <TextView
         android:id="@+id/queueContent"
-        android:layout_width="0dp"
+        android:layout_width="120dp"
         android:layout_height="wrap_content"
         android:layout_marginBottom="8dp"
         android:layout_marginEnd="8dp"
+        android:layout_marginStart="8dp"
         android:singleLine="true"
         android:text="TextView"
+        android:textAlignment="center"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="@+id/thumbHolder"
         app:layout_constraintStart_toStartOf="@+id/thumbHolder" />
+
+    <TextView
+        android:id="@+id/queuenumber"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:text="SNO"
+        android:textSize="24sp"
+        app:layout_constraintBottom_toBottomOf="@+id/thumbHolder"
+        app:layout_constraintEnd_toEndOf="@+id/thumbHolder"
+        app:layout_constraintStart_toStartOf="@+id/thumbHolder"
+        app:layout_constraintTop_toTopOf="@+id/thumbHolder" />
 </android.support.constraint.ConstraintLayout>

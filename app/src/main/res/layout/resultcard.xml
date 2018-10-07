@@ -29,7 +29,7 @@
         app:layout_constraintGuide_percent="0.76" />
 
     <TextView
-        android:id="@+id/cardTitle"
+        android:id="@+id/queueContent"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginEnd="8dp"
