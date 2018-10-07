@@ -7,12 +7,15 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.media.MediaPlayer;
 import android.os.AsyncTask;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
+import android.support.v4.content.ContextCompat;
+import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -29,6 +32,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 //import org.schabi.newpipe.extractor.Downloader;
+import org.schabi.newpipe.extractor.MediaFormat;
 import org.schabi.newpipe.extractor.NewPipe;
 import org.schabi.newpipe.extractor.StreamingService;
 import org.schabi.newpipe.extractor.exceptions.ReCaptchaException;
@@ -173,6 +177,17 @@ public class MainActivity extends AppCompatActivity {
         coremain.changeSong();
     }
 
+    public void playStream(StreamInfo streamInfo){
+        coremain.streamInfo=streamInfo;
+        coremain.playurl=streamInfo.getUploaderUrl();
+        coremain.audioStreams=streamInfo.getAudioStreams();
+        try {
+            coremain.play();
+        } catch (IOException e) {
+            e.printStackTrace();
+            coremain.showError(e.getMessage());
+        }
+    }
     @Override
     public boolean dispatchTouchEvent(MotionEvent event) {
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
@@ -254,15 +269,34 @@ class core{
             @Override
             public void onPrepared(MediaPlayer mp) {
                 context.playerService.isuMPready=true;
+
                 dbManager=dbManager.open();
                 dbManager.addSong(streamInfo.getName(),
                         streamInfo.getUrl(),
                         streamInfo.getUploaderName(),
                         streamInfo.getThumbnailUrl(),
                         streamInfo.getUploaderAvatarUrl(),
-                        streamInfo.getUploaderUrl());
+                        streamInfo.getUploaderUrl(),
+                        audiostreamtoString(streamInfo.getAudioStreams().get(0)));
                 dbManager.close();
                 toggle();
+                setLoadingCircle2(false);
+            }
+        });
+        context.playerService.umP.setOnInfoListener(new MediaPlayer.OnInfoListener() {
+            @Override
+            public boolean onInfo(MediaPlayer mp, int what, int extra) {
+                switch (what){
+                    case MediaPlayer.MEDIA_INFO_BUFFERING_START:
+                        setLoadingCircle2(true);
+                        break;
+                    case MediaPlayer.MEDIA_INFO_BUFFERING_END:
+                        setLoadingCircle2(false);
+                        break;
+
+                };
+
+                return false;
             }
         });
 
@@ -272,6 +306,37 @@ class core{
 
     }
 
+    public void setLoadingCircle2(final boolean state){
+        context.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (state)
+                    circleLoader2.setVisibility(View.VISIBLE);
+                else
+                    circleLoader2.setVisibility(View.INVISIBLE);
+            }
+        });
+    }
+
+    public static String audiostreamtoString(AudioStream audioStream){
+        String url=audioStream.url;
+        String averageBitrate = String.valueOf(audioStream.average_bitrate);
+        String mediaFormatId= String.valueOf(audioStream.getFormat().id);
+
+        String finalStr=url+" "+averageBitrate+" "+mediaFormatId;
+        return finalStr;
+    }
+
+    public static AudioStream StringtoAudioStream(String str){
+        String array[]= str.split(" ");
+        String url=array[0];
+        Integer averageBitrate = Integer.parseInt(array[1]);
+        MediaFormat mediaFormat = MediaFormat.getFormatById(Integer.parseInt(array[2]));
+
+        AudioStream audioStream = new AudioStream(url,mediaFormat,averageBitrate);
+
+        return audioStream;
+    }
     public void start(){
 
         context.runOnUiThread(new Runnable() {
@@ -311,7 +376,7 @@ class core{
 
                             }
                         });
-                circleLoader2.setVisibility(View.INVISIBLE);
+                //circleLoader2.setVisibility(View.INVISIBLE);
                 context.playerService.start();
             }
         });
@@ -341,7 +406,7 @@ class core{
 
     }
 
-    public String sectotime(long sec,boolean isMili){
+    public static String sectotime(long sec,boolean isMili){
         if(isMili)
             sec=sec/1000;
         Integer minutes=(int)sec / 60;
@@ -402,6 +467,10 @@ class core{
             //uMP=context.playerService.umP;
             start();
         }
+        final ImageButton repeat=context.findViewById(R.id.repeatButton);
+        if(context.playerService.isLooping){
+            DrawableCompat.setTint(repeat.getDrawable(), ContextCompat.getColor(context, R.color.colorAccent));
+        }
         Timer timer = new Timer(false);
         timer.scheduleAtFixedRate(new TimerTask() {
             @Override
@@ -413,10 +482,29 @@ class core{
                             currentTime.setText(sectotime(context.playerService.umP.getCurrentPosition(), true));
                             seekBar.setProgress(context.playerService.umP.getCurrentPosition()/1000);
                         }
+
                     }
+
                 });
             }
         },500,500);
+
+        repeat.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ImageButton b= (ImageButton)v;
+                if(context.playerService.isLooping) {
+                    b.setImageResource(R.drawable.ic_repeat_one_white_24dp);
+                    b.setColorFilter(null);
+                    context.playerService.isLooping=false;
+                }
+                else {
+                    context.playerService.isLooping=true;
+                    b.setColorFilter(ContextCompat.getColor(b.getContext(),R.color.colorAccent));
+                    //DrawableCompat.setTint(b.getDrawable(), ContextCompat.getColor(context, R.color.colorAccent));
+                }
+            }
+        });
 
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override

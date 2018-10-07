@@ -175,8 +175,8 @@
         android:background="@null"
         android:foreground="?android:attr/selectableItemBackgroundBorderless"
         app:layout_constraintBottom_toBottomOf="@+id/playButton"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.283"
+        app:layout_constraintEnd_toStartOf="@+id/repeatButton"
+        app:layout_constraintHorizontal_bias="0.18"
         app:layout_constraintStart_toEndOf="@+id/loadingCircle"
         app:layout_constraintTop_toTopOf="@+id/loadingCircle"
         app:layout_constraintVertical_bias="0.933"
@@ -195,7 +195,7 @@
         app:layout_constraintBottom_toBottomOf="@+id/playButton"
         app:layout_constraintEnd_toStartOf="@+id/loadingCircle"
         app:layout_constraintHorizontal_bias="0.727"
-        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/shuffleButton"
         app:layout_constraintTop_toTopOf="@+id/loadingCircle"
         app:layout_constraintVertical_bias="0.933"
         app:srcCompat="@android:drawable/ic_media_previous" />
@@ -223,5 +223,35 @@
         app:layout_constraintTop_toTopOf="@+id/header"
         app:layout_constraintVertical_bias="0.0"
         app:srcCompat="@android:drawable/ic_media_play" />
+
+    <ImageButton
+        android:id="@+id/repeatButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:background="@null"
+        app:layout_constraintBottom_toBottomOf="@+id/nextButton"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.62"
+        app:layout_constraintStart_toEndOf="@+id/loadingCircle2"
+        app:layout_constraintTop_toTopOf="@+id/nextButton"
+        app:srcCompat="@drawable/ic_repeat_one_white_24dp" />
+
+    <ImageButton
+        android:id="@+id/shuffleButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        android:layout_marginStart="8dp"
+        android:background="@null"
+        app:layout_constraintBottom_toBottomOf="@+id/prevButton"
+        app:layout_constraintEnd_toStartOf="@+id/loadingCircle2"
+        app:layout_constraintHorizontal_bias="0.37"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/prevButton"
+        app:srcCompat="@drawable/ic_shuffle_white_24dp" />
 
 </android.support.constraint.ConstraintLayout>
