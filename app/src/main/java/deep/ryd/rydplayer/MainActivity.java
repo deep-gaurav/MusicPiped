@@ -256,6 +256,7 @@ class core{
 
         //CachedImageDownloader cachedImageDownloader = new CachedImageDownloader(streamInfo.getThumbnailUrl(),thumbView);
         //cachedImageDownloader.execute();
+        setLoadingCircle2(true);
 
         context.playerService.streamInfo=streamInfo;
         context.playerService.control_MP(PlayerService.ACTION_PLAY);
@@ -281,6 +282,7 @@ class core{
                 dbManager.close();
                 toggle();
                 setLoadingCircle2(false);
+
             }
         });
         context.playerService.umP.setOnInfoListener(new MediaPlayer.OnInfoListener() {
@@ -312,8 +314,9 @@ class core{
             public void run() {
                 if (state)
                     circleLoader2.setVisibility(View.VISIBLE);
-                else
+                else {
                     circleLoader2.setVisibility(View.INVISIBLE);
+                }
             }
         });
     }
@@ -347,8 +350,6 @@ class core{
                 circleLoader2.setVisibility(View.VISIBLE);
                 header.setText(streamInfo.getName());
                 author.setText(streamInfo.getUploaderName());
-                totalTime.setText(sectotime(streamInfo.getDuration(),false));
-                seekBar.setMax((int)streamInfo.getDuration());
                 //Log.i("rydp", "Mediaplayer duration "+(new Integer(uMP.getDuration())).toString());
             }
         });
@@ -481,6 +482,10 @@ class core{
                         if(context.playerService.umP.isPlaying()) {
                             currentTime.setText(sectotime(context.playerService.umP.getCurrentPosition(), true));
                             seekBar.setProgress(context.playerService.umP.getCurrentPosition()/1000);
+
+
+                            totalTime.setText(sectotime(context.playerService.umP.getDuration(),true));
+                            seekBar.setMax((int)context.playerService.umP.getDuration()/1000);
                         }
 
                     }

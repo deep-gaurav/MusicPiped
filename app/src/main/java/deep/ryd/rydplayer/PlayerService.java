@@ -227,15 +227,27 @@ public class PlayerService extends Service {
         contentView.setImageViewBitmap(R.id.notifThumb,thumbnail);
         contentView.setImageViewResource(R.id.prevButton,android.R.drawable.ic_media_previous);
         contentView.setImageViewResource(R.id.nextButton,android.R.drawable.ic_media_next);
-        contentView.setTextViewText(R.id.notifTimer,core.sectotime(umP.getCurrentPosition(),true)+"/"+core.sectotime(streamInfo.getDuration(),false));
         contentView.setTextColor(R.id.notifTimer,Color.LTGRAY);
 
         contentView.setOnClickPendingIntent(R.id.play_pause_notif,pauseIntent);
-        contentView.setProgressBar(R.id.notifProgress, (int) streamInfo.getDuration(),umP.getCurrentPosition()/1000,false);
-        if(umP.isPlaying())
-            contentView.setImageViewResource(R.id.play_pause_notif,android.R.drawable.ic_media_pause);
-        else
-            contentView.setImageViewResource(R.id.play_pause_notif,android.R.drawable.ic_media_play);
+
+        if(isuMPready){
+            contentView.setTextViewText(R.id.notifTimer,core.sectotime(umP.getCurrentPosition(),true)+"/"+core.sectotime(umP.getDuration(),true));
+
+            contentView.setProgressBar(R.id.notifProgress, (int) umP.getDuration(), umP.getCurrentPosition(), false);
+        }
+        else {
+            contentView.setTextViewText(R.id.notifTimer,"0:00"+"/"+"0:00");
+
+            contentView.setProgressBar(R.id.notifProgress, 0, 0, true);
+        }
+
+        if(umP.isPlaying()) {
+            contentView.setImageViewResource(R.id.play_pause_notif, android.R.drawable.ic_media_pause);
+        }
+        else {
+            contentView.setImageViewResource(R.id.play_pause_notif, android.R.drawable.ic_media_play);
+        }
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID);
 
         builder
