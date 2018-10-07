@@ -44,6 +44,7 @@ import org.schabi.newpipe.extractor.InfoItem;
 import org.schabi.newpipe.extractor.NewPipe;
 import org.schabi.newpipe.extractor.services.youtube.YoutubeService;
 import org.schabi.newpipe.extractor.services.youtube.extractors.YoutubeStreamInfoItemExtractor;
+import org.schabi.newpipe.extractor.stream.AudioStream;
 import org.schabi.newpipe.extractor.stream.StreamInfo;
 import org.schabi.newpipe.extractor.stream.StreamInfoItem;
 import org.schabi.newpipe.extractor.stream.StreamInfoItemExtractor;
@@ -316,6 +317,10 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
             streamInfo.setUploaderName(cursor.getString(cursor.getColumnIndex(DatabasHelper.ARTIST)));
             streamInfo.setUploaderUrl(cursor.getString(cursor.getColumnIndex(DatabasHelper.ARTIST_URL)));
             streamInfo.setUploaderAvatarUrl(cursor.getString(cursor.getColumnIndex(DatabasHelper.ARTIST_THUMBNAIL_URL)));
+            List<AudioStream> audioStreams = new ArrayList<>();
+            audioStreams.add(core.StringtoAudioStream(cursor.getString(cursor.getColumnIndex(DatabasHelper.STREAM_URL_1))));
+            Log.i("ryd","AUDIO STREAM LOADED "+audioStreams.get(0).getUrl());
+            streamInfo.setAudioStreams(audioStreams);
 
             songs.add(streamInfo);
             cursor.moveToNext();
@@ -445,7 +450,7 @@ class SongsListAdaptor extends RecyclerView.Adapter<SongsListAdaptor.MyViewHolde
             @Override
             public void onClick(View v) {
                 MainActivity ma=(MainActivity)activity;
-                ma.changeSong(infoItems.get(i).getUrl());
+                ma.playStream(infoItems.get(i));
             }
         });
 

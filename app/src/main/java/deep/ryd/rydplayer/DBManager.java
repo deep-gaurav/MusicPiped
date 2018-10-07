@@ -28,7 +28,7 @@ public class DBManager {
         databasHelper.close();
     }
 
-    public void insert(String title, String url, String artist, String artist_url,String thumburl,String artist_thumb, String played_times){
+    public void insert(String title, String url, String artist, String artist_url,String thumburl,String artist_thumb, String played_times,String audio_stream_ulr_1){
         ContentValues contentValues = new ContentValues();
 
         contentValues.put(DatabasHelper.TITLE, title);
@@ -38,6 +38,7 @@ public class DBManager {
         contentValues.put(DatabasHelper.THUMBNAIL_URL,thumburl);
         contentValues.put(DatabasHelper.ARTIST_THUMBNAIL_URL,artist_thumb);
         contentValues.put(DatabasHelper.PLAYED_TIMES,played_times);
+        contentValues.put(DatabasHelper.STREAM_URL_1,audio_stream_ulr_1);
         database.insert(DatabasHelper.TABLE_NAME, null, contentValues);
     }
 
@@ -50,7 +51,8 @@ public class DBManager {
                 DatabasHelper.ARTIST,
                 DatabasHelper.THUMBNAIL_URL,
                 DatabasHelper.ARTIST_THUMBNAIL_URL,
-                DatabasHelper.PLAYED_TIMES
+                DatabasHelper.PLAYED_TIMES,
+                DatabasHelper.STREAM_URL_1
         };
         Cursor cursor = database.query(DatabasHelper.TABLE_NAME,colums,null,null,null,null,null);
         if (cursor!= null){
@@ -67,7 +69,8 @@ public class DBManager {
                 DatabasHelper.ARTIST,
                 DatabasHelper.THUMBNAIL_URL,
                 DatabasHelper.ARTIST_THUMBNAIL_URL,
-                DatabasHelper.PLAYED_TIMES
+                DatabasHelper.PLAYED_TIMES,
+                DatabasHelper.STREAM_URL_1
         };
         Cursor cursor = database.query(DatabasHelper.TABLE_NAME,colums,null,null,null,null,DatabasHelper.PLAYED_TIMES+" DESC");
         if (cursor!= null){
@@ -84,7 +87,8 @@ public class DBManager {
                 DatabasHelper.ARTIST,
                 DatabasHelper.THUMBNAIL_URL,
                 DatabasHelper.ARTIST_THUMBNAIL_URL,
-                DatabasHelper.PLAYED_TIMES
+                DatabasHelper.PLAYED_TIMES,
+                DatabasHelper.STREAM_URL_1
         };
         Cursor cursor = database.query(DatabasHelper.TABLE_NAME,colums,null,null,DatabasHelper.ARTIST,null,"Count("+DatabasHelper.ARTIST_THUMBNAIL_URL+") "+" DESC");
         if (cursor!= null){
@@ -94,7 +98,7 @@ public class DBManager {
     }
 
 
-    public void addSong(String title, String url, String artist,String thumburl,String artist_thumb, String artist_url){
+    public void addSong(String title, String url, String artist,String thumburl,String artist_thumb, String artist_url, String stream_url_1){
         String played_times = "1";
 
         String[] colums=new String[]{
@@ -105,7 +109,8 @@ public class DBManager {
                 DatabasHelper.ARTIST,
                 DatabasHelper.THUMBNAIL_URL,
                 DatabasHelper.ARTIST_THUMBNAIL_URL,
-                DatabasHelper.PLAYED_TIMES
+                DatabasHelper.PLAYED_TIMES,
+                DatabasHelper.STREAM_URL_1
         };
         Cursor cursor = database.query(DatabasHelper.TABLE_NAME,colums,DatabasHelper.URL+"=?",new String[]{url},null,null,null);
         if (cursor!= null && cursor.getCount()>0){
@@ -114,16 +119,16 @@ public class DBManager {
             String id = cursor.getString(cursor.getColumnIndex(DatabasHelper._ID));
             played_times = String.valueOf((new Integer(cursor.getString(cursor.getColumnIndex(DatabasHelper.PLAYED_TIMES)))+1));
             Log.i("ryd","INCREASED NUMBER TO "+played_times);
-            update(Long.parseLong(id),title,url,artist,artist_url,thumburl,artist_thumb,played_times);
+            update(Long.parseLong(id),title,url,artist,artist_url,thumburl,artist_thumb,played_times,stream_url_1);
         }
         else {
             Log.i("ryd","SONG NOT FOUND ADDING ");
-            insert(title,url,artist,artist_url,thumburl,artist_thumb,played_times);
+            insert(title,url,artist,artist_url,thumburl,artist_thumb,played_times,stream_url_1);
         }
     }
 
 
-    public int update(long _id, String title, String url, String artist, String artist_url,String thumb,String artist_thumb, String played_times) {
+    public int update(long _id, String title, String url, String artist, String artist_url,String thumb,String artist_thumb, String played_times, String stream_url_1) {
         ContentValues contentValues = new ContentValues();
 
         contentValues.put(DatabasHelper.TITLE, title);
@@ -133,6 +138,7 @@ public class DBManager {
         contentValues.put(DatabasHelper.PLAYED_TIMES,played_times);
         contentValues.put(DatabasHelper.THUMBNAIL_URL,thumb);
         contentValues.put(DatabasHelper.ARTIST_THUMBNAIL_URL,artist_thumb);
+        contentValues.put(DatabasHelper.STREAM_URL_1,stream_url_1);
         int i = database.update(DatabasHelper.TABLE_NAME, contentValues, DatabasHelper._ID + " = " + _id, null);
         return i;
     }

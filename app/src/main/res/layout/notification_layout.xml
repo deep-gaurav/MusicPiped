@@ -66,13 +66,27 @@
             </LinearLayout>
         </LinearLayout>
 
-        <ImageView
-            android:id="@+id/notifThumb"
+        <RelativeLayout
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_weight="0.3"
-            android:scaleType="fitCenter"
-            app:srcCompat="@android:drawable/ic_menu_report_image" />
+            android:layout_weight="0.3">
+
+            <ImageView
+                android:id="@+id/notifThumb"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="fitCenter"
+                android:layout_above="@id/notifTimer"/>
+
+            <TextView
+                android:id="@+id/notifTimer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_alignParentBottom="true"
+                android:layout_marginBottom="10dp"
+                android:text="TextView"
+                android:textAlignment="center" />
+        </RelativeLayout>
 
     </LinearLayout>
 
@@ -80,7 +94,7 @@
         android:id="@+id/notifProgress"
         style="?android:attr/progressBarStyleHorizontal"
         android:layout_width="match_parent"
-        android:layout_height="5dp"
+        android:layout_height="2dp"
         android:indeterminate="false" />
 
 

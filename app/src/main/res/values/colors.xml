@@ -5,4 +5,10 @@
     <color name="colorAccent">#FF4081</color>
     <color name="background">#FFFFFF</color>
     <color name="DarkText">#000000</color>
+    <color name="LigthGray">#888888</color>
+    <color name="ate_control_normal_light" >#DDDDDD</color>
+    <color name="ate_control_normal_dark" />
+    <color name="twenty_percent_black_overlay" />
+    <color name="fifty_percent_black_overlay" />
+    <color name="white">#FFFFFFFF</color>
 </resources>

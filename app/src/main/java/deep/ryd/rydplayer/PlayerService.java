@@ -56,6 +56,7 @@ public class PlayerService extends Service {
 
     static PlayerService mainobj;
 
+    public boolean isLooping=false;
 
     public  int ID=1;
     private String CHANNEL_ID = "player";
@@ -112,8 +113,11 @@ public class PlayerService extends Service {
                     @Override
                     public void onCompletion(MediaPlayer mp) {
                         buildNotification(ID);
+                        if(isLooping)
+                            umP.start();
                     }
                 }
+
         );
         Timer t = new Timer();
         t.scheduleAtFixedRate(new TimerTask() {
@@ -174,7 +178,7 @@ public class PlayerService extends Service {
 
         if(umP==null)
             umP=new MediaPlayer();
-        Toast.makeText(this, "Service Created", Toast.LENGTH_SHORT).show();
+        //Toast.makeText(this, "Service Created", Toast.LENGTH_SHORT).show();
         Log.i("ryd","Service Started");
         return super.onStartCommand(intent, flags, startId);
 
@@ -223,6 +227,8 @@ public class PlayerService extends Service {
         contentView.setImageViewBitmap(R.id.notifThumb,thumbnail);
         contentView.setImageViewResource(R.id.prevButton,android.R.drawable.ic_media_previous);
         contentView.setImageViewResource(R.id.nextButton,android.R.drawable.ic_media_next);
+        contentView.setTextViewText(R.id.notifTimer,core.sectotime(umP.getCurrentPosition(),true)+"/"+core.sectotime(streamInfo.getDuration(),false));
+        contentView.setTextColor(R.id.notifTimer,Color.LTGRAY);
 
         contentView.setOnClickPendingIntent(R.id.play_pause_notif,pauseIntent);
         contentView.setProgressBar(R.id.notifProgress, (int) streamInfo.getDuration(),umP.getCurrentPosition()/1000,false);
