@@ -16,10 +16,28 @@
     app:behavior_hideable="false"
     app:behavior_peekHeight="60dp">
 
-        <include
-            layout="@layout/activity_main"
+        <android.support.v4.view.ViewPager
+            android:id="@+id/pagerswipe"
             android:layout_width="match_parent"
-            android:layout_height="match_parent" />
+            android:layout_height="match_parent">
+
+
+                <include
+                    layout="@layout/activity_main"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
+                <LinearLayout
+                    android:id="@+id/testpagerpage2"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:text="TEST"/>
+                </LinearLayout>
+
+        </android.support.v4.view.ViewPager>
+
 
 </android.support.v4.widget.NestedScrollView>
 

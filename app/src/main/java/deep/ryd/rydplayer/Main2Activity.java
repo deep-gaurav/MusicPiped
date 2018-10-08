@@ -106,6 +106,7 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
 
         }
 
+
         ready();
     }
 
