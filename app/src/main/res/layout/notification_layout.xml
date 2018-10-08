@@ -63,6 +63,14 @@
                     android:layout_weight="1"
                     android:background="@null"
                     app:srcCompat="@android:drawable/ic_media_next" />
+
+                <ImageButton
+                    android:id="@+id/closeButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="@null"
+                    app:srcCompat="@android:drawable/ic_menu_close_clear_cancel" />
             </LinearLayout>
         </LinearLayout>
 

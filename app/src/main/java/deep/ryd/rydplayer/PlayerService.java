@@ -7,41 +7,34 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.BroadcastReceiver;
-import android.content.ComponentCallbacks;
 import android.content.Context;
 import android.content.Intent;
-import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.media.MediaPlayer;
 import android.os.AsyncTask;
 import android.os.Binder;
 import android.os.Build;
 import android.os.IBinder;
-import android.os.IInterface;
-import android.os.Parcel;
-import android.os.RemoteException;
-import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
-import android.support.v4.content.ContextCompat;
-import android.support.v4.media.MediaDescriptionCompat;
-import android.support.v4.media.MediaMetadataCompat;
-import android.support.v4.media.session.MediaButtonReceiver;
-import android.support.v4.media.session.MediaControllerCompat;
-import android.support.v4.media.session.MediaSessionCompat;
-import android.support.v4.media.session.PlaybackStateCompat;
 import android.util.Log;
 import android.widget.RemoteViews;
 import android.widget.Toast;
 
 import com.squareup.picasso.Picasso;
+import com.squareup.picasso.Target;
 
+import org.schabi.newpipe.extractor.NewPipe;
+import org.schabi.newpipe.extractor.services.youtube.YoutubeService;
 import org.schabi.newpipe.extractor.stream.StreamInfo;
 
-import java.io.FileDescriptor;
 import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.Timer;
@@ -54,7 +47,7 @@ public class PlayerService extends Service {
     public MusicServiceBinder mBinder = new MusicServiceBinder();
     public Activity launch;
 
-    static PlayerService mainobj;
+    public static PlayerService mainobj;
 
     public boolean isLooping=false;
 
@@ -72,6 +65,16 @@ public class PlayerService extends Service {
     public Bitmap thumbnail;
     public boolean isuMPready=false;
     PendingIntent launchIntent;
+
+    public List<StreamInfo> queue;
+    public int currentIndex;
+
+    public DBManager dbManager;
+    public MainActivity mainActivity=null;
+
+    public boolean started=false;
+
+    private boolean quitServiceNotif=false;
 
     public void control_MP( String action ) {
 
@@ -98,9 +101,13 @@ public class PlayerService extends Service {
         mainobj=this;
         createNotificationChannel();
         Intent intent = new Intent(this, Main2Activity.class);
-        intent.putExtra("some data", "txt");  // for extra data if needed..
+        intent.putExtra("some data", "txt");
 
         Random generator = new Random();
+        dbManager = new DBManager(this);
+        //dbManager = dbManager.open();
+
+        Log.i("ryd"," SERVICE CREATE CALLED ");
 
         launchIntent=PendingIntent.getActivity(this, generator.nextInt(), intent,PendingIntent.FLAG_UPDATE_CURRENT);
     }
@@ -115,21 +122,90 @@ public class PlayerService extends Service {
                         buildNotification(ID);
                         if(isLooping)
                             umP.start();
+                        else {
+                            nextSong();
+                        }
                     }
                 }
 
         );
-        Timer t = new Timer();
-        t.scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
-                if(umP.isPlaying()) {
-                    NotificationCompat.Builder builder = notifbuilder();
-
-                    NotificationManagerCompat.from(PlayerService.this).notify(ID, builder.build());
+        if(!started) {
+            started=true;
+            Timer t = new Timer();
+            t.scheduleAtFixedRate(new TimerTask() {
+                @Override
+                public void run() {
+                    if (umP.isPlaying()) {
+                        NotificationCompat.Builder builder = notifbuilder();
+                        if(builder!=null)
+                        NotificationManagerCompat.from(PlayerService.this).notify(ID, builder.build());
+                    }
                 }
-            }
-        },500,500);
+            }, 500, 500);
+        }
+    }
+
+    public void nextSong(){
+        Log.i("ryd","Old Index "+currentIndex);
+        Log.i("ryd","Old streamurl "+streamInfo.getAudioStreams().get(0).getUrl());
+        if(currentIndex!=queue.size()-1) {
+
+                currentIndex++;
+                playfromQueue();
+        }
+    }
+    public void previousSong(){
+        if(currentIndex>0){
+            currentIndex--;
+            playfromQueue();
+        }
+    }
+
+    public  void playfromQueue(){
+        Log.i("ryd","QUEUE LENGTH "+queue.size());
+        streamInfo=queue.get(currentIndex);
+        umP.reset();
+        isuMPready=false;
+        try {
+            Picasso.get()
+                    .load(streamInfo.getThumbnailUrl())
+                    .into(new Target() {
+                        @Override
+                        public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
+                            thumbnail=bitmap;
+                        }
+
+                        @Override
+                        public void onBitmapFailed(Exception e, Drawable errorDrawable) {
+
+                        }
+
+                        @Override
+                        public void onPrepareLoad(Drawable placeHolderDrawable) {
+
+                        }
+                    });
+            start();
+            new PlayerService.UpdateSongStream().execute();
+
+            umP.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+                @Override
+                public void onPrepared(MediaPlayer mp) {
+                    umP.start();
+                    isuMPready=true;
+
+                    core.updateStreaminDB(streamInfo,dbManager);
+                    if(mainActivity!=null){
+                        mainActivity.coremain.setLoadingCircle2(false);
+                    }
+                }
+            });
+            if(mainActivity!=null)
+            mainActivity.coremain.start();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Nullable
@@ -166,6 +242,7 @@ public class PlayerService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
+        umP.stop();
         Log.i("ryd","SERVICE DESTROYED");
     }
 
@@ -176,8 +253,22 @@ public class PlayerService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
 
-        if(umP==null)
-            umP=new MediaPlayer();
+        if (queue==null ) {
+            queue = new ArrayList<>();
+            Log.i("ryd","NEW QUEUE CREATED");
+        }
+        else {
+            Log.i("ryd","USING OLD QUEUE");
+            Log.i("ryd","QUEUE LENGTH "+queue.size());
+        }
+        if(umP==null) {
+            umP = new MediaPlayer();
+            Log.i("ryd","NEW UMP CREATED");
+        }
+        else {
+            Log.i("ryd","USING OLD UMP");
+
+        }
         //Toast.makeText(this, "Service Created", Toast.LENGTH_SHORT).show();
         Log.i("ryd","Service Started");
         return super.onStartCommand(intent, flags, startId);
@@ -187,7 +278,9 @@ public class PlayerService extends Service {
 
     @Override
     public boolean onUnbind(Intent intent) {
-        return false;
+        mainActivity=null;
+        Log.i("ryd","Service Unbinded");
+        return true;
     }
 
     public void buildNotification( int id){
@@ -206,6 +299,9 @@ public class PlayerService extends Service {
     }
 
     public NotificationCompat.Builder notifbuilder(){
+
+        if(quitServiceNotif)
+            return null;
         Context context = this;
         Random generator = new Random();
 
@@ -218,6 +314,14 @@ public class PlayerService extends Service {
         intent.putExtra("action","Pause");
         PendingIntent pauseIntent = PendingIntent.getBroadcast(context,generator.nextInt(),intent,PendingIntent.FLAG_UPDATE_CURRENT);
 
+        Intent intent2= new Intent(context,ButtonReceiver.class);
+        intent.putExtra("action","Next");
+        PendingIntent nextIntent = PendingIntent.getBroadcast(context,generator.nextInt(),intent,PendingIntent.FLAG_UPDATE_CURRENT);
+
+        Intent intent3= new Intent(context,ButtonReceiver.class);
+        intent.putExtra("action","Previous");
+        PendingIntent previousIntent = PendingIntent.getBroadcast(context,generator.nextInt(),intent,PendingIntent.FLAG_UPDATE_CURRENT);
+
         RemoteViews contentView = new RemoteViews(getPackageName(), R.layout.notification_layout);
 
         contentView.setTextViewText(R.id.notifTitle,streamInfo.getName());
@@ -227,19 +331,35 @@ public class PlayerService extends Service {
         contentView.setImageViewBitmap(R.id.notifThumb,thumbnail);
         contentView.setImageViewResource(R.id.prevButton,android.R.drawable.ic_media_previous);
         contentView.setImageViewResource(R.id.nextButton,android.R.drawable.ic_media_next);
-        contentView.setTextViewText(R.id.notifTimer,core.sectotime(umP.getCurrentPosition(),true)+"/"+core.sectotime(streamInfo.getDuration(),false));
+        contentView.setImageViewResource(R.id.closeButton,android.R.drawable.ic_menu_close_clear_cancel);
         contentView.setTextColor(R.id.notifTimer,Color.LTGRAY);
 
         contentView.setOnClickPendingIntent(R.id.play_pause_notif,pauseIntent);
-        contentView.setProgressBar(R.id.notifProgress, (int) streamInfo.getDuration(),umP.getCurrentPosition()/1000,false);
-        if(umP.isPlaying())
-            contentView.setImageViewResource(R.id.play_pause_notif,android.R.drawable.ic_media_pause);
-        else
-            contentView.setImageViewResource(R.id.play_pause_notif,android.R.drawable.ic_media_play);
+        contentView.setOnClickPendingIntent(R.id.closeButton,closepIntent);
+        contentView.setOnClickPendingIntent(R.id.nextButton,nextIntent);
+        contentView.setOnClickPendingIntent(R.id.prevButton,previousIntent);
+
+        if(isuMPready){
+            contentView.setTextViewText(R.id.notifTimer,core.sectotime(umP.getCurrentPosition(),true)+"/"+core.sectotime(umP.getDuration(),true));
+
+            contentView.setProgressBar(R.id.notifProgress, (int) umP.getDuration(), umP.getCurrentPosition(), false);
+        }
+        else {
+            contentView.setTextViewText(R.id.notifTimer,"0:00"+"/"+"0:00");
+
+            contentView.setProgressBar(R.id.notifProgress, 0, 0, true);
+        }
+
+        if(umP.isPlaying()) {
+            contentView.setImageViewResource(R.id.play_pause_notif, android.R.drawable.ic_media_pause);
+        }
+        else {
+            contentView.setImageViewResource(R.id.play_pause_notif, android.R.drawable.ic_media_play);
+        }
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID);
 
         builder
-                .setSmallIcon(android.R.drawable.ic_media_play)
+                .setSmallIcon(R.drawable.ic_music_note_white_24dp)
                 // Add the metadata for the currently playing track
                 //.setContentTitle(streamInfo.getName())
                 //.setContentText(streamInfo.getUploaderName())
@@ -279,8 +399,13 @@ public class PlayerService extends Service {
             String action = intent.getStringExtra("action");
             Log.i("ryd","ACTION "+action);
             if(action.equals("Close")){
+                mainobj.quitServiceNotif=true;
+                if(mainobj.mainActivity!=null) {
+                    mainobj.mainActivity.finish();
+                }
                 mainobj.stopForeground(true);
-                mainobj.umP.pause();
+                mainobj.stopSelf();
+                mainobj.stopForeground(true);
             }
             else if (action.equals("Pause")) {
                 if(mainobj.umP.isPlaying()) {
@@ -293,7 +418,104 @@ public class PlayerService extends Service {
                     mainobj.buildNotification(mainobj.ID);
                 }
             }
+            else if(action.equals("Next")){
+                mainobj.nextSong();
+            }
+            else if(action.equals("Previous")){
+                mainobj.previousSong();
+            }
 
+        }
+    }
+
+
+
+    public static  class CrunchifyGetPingStatus {
+
+
+        public static String getStatus(String url) throws IOException {
+
+            String result = "";
+            int code = 200;
+            try {
+                URL siteURL = new URL(url);
+                HttpURLConnection connection = (HttpURLConnection) siteURL.openConnection();
+                connection.setRequestMethod("GET");
+                connection.setConnectTimeout(3000);
+                connection.connect();
+
+                code = connection.getResponseCode();
+                if (code == 200) {
+                    result = "-> Green <-\t" + "Code: " + code;
+                    ;
+                } else {
+                    result = "Error";
+                }
+            } catch (Exception e) {
+                //result = "-> Red <-\t" + "Wrong domain - Exception: " + e.getMessage();
+                result = "Error";
+
+            }
+            System.out.println(url + "\t\tStatus:" + result);
+
+            return result;
+        }
+
+    }
+
+    static class UpdateSongStream extends AsyncTask<String,String,String>{
+
+
+        @Override
+        protected String doInBackground(String... strings) {
+            StreamInfo streamInfo = PlayerService.mainobj.streamInfo;
+            String ping_status = null;
+            try {
+                ping_status = CrunchifyGetPingStatus.getStatus(streamInfo.getAudioStreams().get(0).getUrl());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            if(ping_status!="Error"){
+                Log.i("ryd","Using Old Stream");
+                return "Using Old stream";
+            }
+            Log.i("ryd","OldStream Outdated Updating ");
+            try{
+
+                if(PlayerService.mainobj.mainActivity!=null)
+                    PlayerService.mainobj.mainActivity.coremain.setLoadingCircle1(true);
+                Downloader.init(null);
+                NewPipe.init(Downloader.getInstance());
+                int sid = NewPipe.getIdOfService("YouTube");
+                YoutubeService ys= (YoutubeService)NewPipe.getService(sid);
+
+                streamInfo= StreamInfo.getInfo(ys,streamInfo.getUrl());
+                PlayerService.mainobj.streamInfo=streamInfo;
+
+                Log.i("ryd","New Stream link received "+streamInfo.getAudioStreams().get(0).getUrl());
+            }
+            catch (Exception e){
+                e.printStackTrace();
+            }
+
+            return "Done";
+        }
+
+        @Override
+        protected void onPostExecute(String string){
+            try {
+
+                if(PlayerService.mainobj.mainActivity!=null) {
+                    PlayerService.mainobj.mainActivity.coremain.setLoadingCircle1(false);
+                    PlayerService.mainobj.mainActivity.coremain.setLoadingCircle2(true);
+                }
+                PlayerService.mainobj.umP.reset();
+                PlayerService.mainobj.umP.setDataSource(PlayerService.mainobj.streamInfo.getAudioStreams().get(0).url);
+                PlayerService.mainobj.umP.prepareAsync();
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 }

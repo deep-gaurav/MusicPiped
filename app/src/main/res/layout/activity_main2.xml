@@ -28,10 +28,12 @@ android:layout_height="match_parent"
     app:behavior_hideable="false"
     app:behavior_peekHeight="70dp">
 
-    <include
-        layout="@layout/activity_main"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+
+
+        <include
+            layout="@layout/activity_main"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
 
 </android.support.v4.widget.NestedScrollView>
 

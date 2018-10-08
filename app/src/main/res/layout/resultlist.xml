@@ -27,7 +27,7 @@
         app:srcCompat="@android:drawable/ic_menu_report_image" />
 
     <TextView
-        android:id="@+id/cardTitle"
+        android:id="@+id/queueContent"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginBottom="8dp"

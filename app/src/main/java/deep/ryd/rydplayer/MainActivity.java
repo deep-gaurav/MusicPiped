@@ -13,19 +13,30 @@ import android.graphics.drawable.Drawable;
 import android.media.MediaPlayer;
 import android.os.AsyncTask;
 import android.os.IBinder;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.constraint.ConstraintLayout;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.graphics.drawable.DrawableCompat;
+import android.support.v4.view.PagerAdapter;
+import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.CardView;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.util.TypedValue;
+import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -53,9 +64,11 @@ import java.io.Writer;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -89,6 +102,8 @@ public class MainActivity extends AppCompatActivity {
             playerService = binder.getPlayerService();
             Log.i("ryd","Service Bound ");
             isBound=true;
+            playerService.mainActivity=MainActivity.this;
+
             withService();
 
         }
@@ -110,9 +125,38 @@ public class MainActivity extends AppCompatActivity {
 
 
     }
+    public class swipedpageadaptor extends PagerAdapter{
+        public Object instantiateItem(View collection, int position) {
+
+            int resId = 0;
+            switch (position) {
+                case 0:
+                    resId = R.id.cardView3;
+                    break;
+                case 1:
+                    resId = R.id.queuebase;
+                    break;
+            }
+            return findViewById(resId);
+        }
+
+        @Override
+        public int getCount() {
+            return 2;
+        }
+
+        @Override
+        public boolean isViewFromObject(View arg0, Object arg1) {
+            return arg0 == ((View) arg1);
+        }
+    }
 
     protected void ready() {
         self = this;
+
+        swipedpageadaptor swipedpageadaptor = new swipedpageadaptor();
+        ViewPager viewPager = findViewById(R.id.pagerswipe);
+        viewPager.setAdapter(swipedpageadaptor);
 
         if (playerService == null) {
             Log.i("ryd", "CREATE SERVICE ");
@@ -122,13 +166,27 @@ public class MainActivity extends AppCompatActivity {
 
             bindService(i, serviceConnection, BIND_AUTO_CREATE);
         }
+        else {
+            Log.i("ryd","Bound to existing service");
+            playerService.mainActivity=this;
+            isBound=true;
+            withService();
+        }
         dbManager= new DBManager(this);
+        View basequeueview=findViewById(R.id.queuebase);
+        basequeueview.bringToFront();
 
+    }
+    @Override
+    protected void onDestroy(){
+        super.onDestroy();
+
+        unbindService(serviceConnection);
     }
     protected void withService(){
 
-        urlText=findViewById(R.id.urlText);
-        Button submitButton = findViewById(R.id.submitButton);
+        //urlText=findViewById(R.id.urlText);
+        //Button submitButton = findViewById(R.id.submitButton);
 
 
         coremain=new core(
@@ -145,18 +203,11 @@ public class MainActivity extends AppCompatActivity {
                 (ImageButton)findViewById(R.id.nextButton),
                 (ImageButton)findViewById(R.id.prevButton),
                 (ProgressBar)findViewById(R.id.loadingCircle2),
-                (EditText)findViewById(R.id.urlText),
-                (Button)findViewById(R.id.submitButton),
+                null,
+                null,
                 (ImageButton)findViewById(R.id.playButton2),
                 dbManager
         );
-
-        submitButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                coremain.changeSong();
-            }
-        });
 
 
 
@@ -173,11 +224,22 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void changeSong(String url){
-        urlText.setText(url);
+
+        Log.i("ryd","EMPTYING QUEUE TO CHANGE SONG");
+        playerService.queue=new ArrayList<>();
+        playerService.currentIndex=0;
+        coremain.playurl=url;
+        //urlText.setText(url);
         coremain.changeSong();
     }
 
-    public void playStream(StreamInfo streamInfo){
+    public void playStream(List<StreamInfo> queue,int startIndex){
+
+        Log.i("ryd","SETTING NEW QUEUE TO PLAY STREAM");
+        playerService.queue=queue;
+        playerService.currentIndex=startIndex;
+
+        StreamInfo streamInfo=queue.get(startIndex);
         coremain.streamInfo=streamInfo;
         coremain.playurl=streamInfo.getUploaderUrl();
         coremain.audioStreams=streamInfo.getAudioStreams();
@@ -251,36 +313,46 @@ class core{
     public ImageButton playButton2;
     DBManager dbManager;
 
+    public QueueListAdaptor queueListAdaptor;
+
     public void play() throws IOException {
         //new setThumb().execute(this);
 
         //CachedImageDownloader cachedImageDownloader = new CachedImageDownloader(streamInfo.getThumbnailUrl(),thumbView);
         //cachedImageDownloader.execute();
+        //setLoadingCircle2(true);
+
+        if(context.playerService.queue.isEmpty()) {
+            context.playerService.queue.add(streamInfo);
+            context.playerService.currentIndex=0;
+        }
+        else
+            context.playerService.queue.set(context.playerService.currentIndex,streamInfo);
+
 
         context.playerService.streamInfo=streamInfo;
         context.playerService.control_MP(PlayerService.ACTION_PLAY);
 
         context.playerService.umP.reset();
         //Toast.makeText(context, "", Toast.LENGTH_SHORT).show();
-        context.playerService.umP.setDataSource(audioStreams.get(0).getUrl());
-        context.playerService.umP.prepareAsync();
+        //Log.i("ryd","Ping Status "+audioStreams.get(0).url+ " "+ping_status);
+
+
+        //context.playerService.umP.setDataSource(audioStreams.get(0).getUrl());
+        //context.playerService.umP.prepareAsync();
+        new PlayerService.UpdateSongStream().execute();
         context.playerService.isuMPready=false;
         context.playerService.umP.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
             @Override
             public void onPrepared(MediaPlayer mp) {
                 context.playerService.isuMPready=true;
 
-                dbManager=dbManager.open();
-                dbManager.addSong(streamInfo.getName(),
-                        streamInfo.getUrl(),
-                        streamInfo.getUploaderName(),
-                        streamInfo.getThumbnailUrl(),
-                        streamInfo.getUploaderAvatarUrl(),
-                        streamInfo.getUploaderUrl(),
-                        audiostreamtoString(streamInfo.getAudioStreams().get(0)));
-                dbManager.close();
+
+                updateStreaminDB(context.playerService.streamInfo,dbManager);
                 toggle();
+                setLoadingCircle1(false);
                 setLoadingCircle2(false);
+
             }
         });
         context.playerService.umP.setOnInfoListener(new MediaPlayer.OnInfoListener() {
@@ -306,14 +378,40 @@ class core{
 
     }
 
+    public  static void updateStreaminDB(StreamInfo streamInfo, DBManager dbManager){
+
+        Log.i("ryd","Updating Stream in DB ");
+        dbManager=dbManager.open();
+        dbManager.addSong(streamInfo.getName(),
+                streamInfo.getUrl(),
+                streamInfo.getUploaderName(),
+                streamInfo.getThumbnailUrl(),
+                streamInfo.getUploaderAvatarUrl(),
+                streamInfo.getUploaderUrl(),
+                audiostreamtoString(streamInfo.getAudioStreams().get(0)));
+        dbManager.close();
+    }
     public void setLoadingCircle2(final boolean state){
         context.runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 if (state)
                     circleLoader2.setVisibility(View.VISIBLE);
-                else
+                else {
                     circleLoader2.setVisibility(View.INVISIBLE);
+                }
+            }
+        });
+    }
+    public void setLoadingCircle1(final boolean state){
+        context.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (state)
+                    circleLoader.setVisibility(View.VISIBLE);
+                else {
+                    circleLoader.setVisibility(View.INVISIBLE);
+                }
             }
         });
     }
@@ -339,16 +437,18 @@ class core{
     }
     public void start(){
 
+        streamInfo = context.playerService.streamInfo;
+
         context.runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                submitButton.setEnabled(true);
-                circleLoader.setVisibility(View.INVISIBLE);
-                circleLoader2.setVisibility(View.VISIBLE);
+                queueListAdaptor.updateQueue(context.playerService.queue);
+                //submitButton.setEnabled(true);
+                //circleLoader.setVisibility(View.INVISIBLE);
+                setLoadingCircle1(false);
+                Log.i("ryd","Playing song "+streamInfo.getName());
                 header.setText(streamInfo.getName());
                 author.setText(streamInfo.getUploaderName());
-                totalTime.setText(sectotime(streamInfo.getDuration(),false));
-                seekBar.setMax((int)streamInfo.getDuration());
                 //Log.i("rydp", "Mediaplayer duration "+(new Integer(uMP.getDuration())).toString());
             }
         });
@@ -386,7 +486,7 @@ class core{
         context.runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                submitButton.setEnabled(true);
+                //submitButton.setEnabled(true);
                 Snackbar snackbar=Snackbar.make(baselay,error,Snackbar.LENGTH_LONG);
                 snackbar.setAction("Send Error", new View.OnClickListener() {
                     @Override
@@ -399,7 +499,8 @@ class core{
                     }
                 });
                 snackbar.show();
-                circleLoader.setVisibility(View.INVISIBLE);
+                //circleLoader.setVisibility(View.INVISIBLE);
+                setLoadingCircle1(false);
             }
         });
 
@@ -462,6 +563,16 @@ class core{
         ready();
     }
     public void ready(){
+        if(queueListAdaptor==null){
+
+            RecyclerView queueRecycler = context.findViewById(R.id.queueRecycler);
+            RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(context,LinearLayoutManager.VERTICAL,false);
+            queueRecycler.hasFixedSize();
+            queueRecycler.setLayoutManager(layoutManager);
+
+            queueListAdaptor = new QueueListAdaptor(context);
+            queueRecycler.setAdapter(queueListAdaptor);
+        }
         if(context.playerService.isuMPready){
             streamInfo=context.playerService.streamInfo;
             //uMP=context.playerService.umP;
@@ -481,6 +592,10 @@ class core{
                         if(context.playerService.umP.isPlaying()) {
                             currentTime.setText(sectotime(context.playerService.umP.getCurrentPosition(), true));
                             seekBar.setProgress(context.playerService.umP.getCurrentPosition()/1000);
+
+
+                            totalTime.setText(sectotime(context.playerService.umP.getDuration(),true));
+                            seekBar.setMax((int)context.playerService.umP.getDuration()/1000);
                         }
 
                     }
@@ -542,33 +657,36 @@ class core{
         nextButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                StreamInfoItem nextvid=streamInfo.getNextVideo();
-                playurl=nextvid.getUrl();
-                Log.i("rydt","NEXT VIDEO URL "+playurl);
-                self.changeSong();
+                context.playerService.nextSong();
             }
         });
 
         prevButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                context.playerService.previousSong();
             }
         });
 
-        circleLoader.setVisibility(View.INVISIBLE);
-        circleLoader2.setVisibility(View.INVISIBLE);
+        //circleLoader.setVisibility(View.INVISIBLE);
+        //circleLoader2.setVisibility(View.INVISIBLE);
+
+        setLoadingCircle1(false);
+        setLoadingCircle2(false);
 
         if(context.playerService.umP.isPlaying()){
             playButton.setImageResource(android.R.drawable.ic_media_pause);
             playButton2.setImageResource(android.R.drawable.ic_media_pause);
         }
 
+
     }
 
     public void changeSong(){
-        playurl=urlEditText.getText().toString();
-        circleLoader.setVisibility(View.VISIBLE);
-        submitButton.setEnabled(false);
+        //playurl=urlEditText.getText().toString();
+        //circleLoader.setVisibility(View.VISIBLE);
+        setLoadingCircle1(true);
+        //submitButton.setEnabled(false);
         new testPipe().execute(this);
     }
 
@@ -590,6 +708,87 @@ class core{
     }
 
 
+    public void make_Queue(){
+        
+    }
+
+    class QueueListAdaptor extends RecyclerView.Adapter<QueueListAdaptor.QueViewHolder>{
+
+        List<StreamInfo> queue=new ArrayList<>();
+        MainActivity activity;
+
+        public void updateQueue(List<StreamInfo> newqueue){
+            queue.clear();
+            for(int i=0;i<newqueue.size();i++){
+                queue.add(i,newqueue.get(i));
+            }
+            notifyDataSetChanged();
+        }
+
+        QueueListAdaptor(MainActivity mainActivity){
+            super();
+
+            activity=mainActivity;
+            Log.i("ryt","PlayerService Queue Size "+mainActivity.playerService.queue.size());
+            //this.playerService = playerService;
+            queue.clear();
+            for (int i=0;i<mainActivity.playerService.queue.size();i++)
+                queue.add(mainActivity.playerService.queue.get(i));
+            //this.queue=playerService.queue.subList(0,playerService.queue.size()-1);
+
+        }
+        @NonNull
+        @Override
+        public QueueListAdaptor.QueViewHolder onCreateViewHolder(@NonNull ViewGroup viewGroup, int i) {
+            ViewGroup.LayoutParams params;
+            params=new ViewGroup.MarginLayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            //viewGroup.setLayoutParams(params);
+
+            CardView cardView = new CardView(viewGroup.getContext());
+            cardView.setLayoutParams(params);
+
+            TypedValue outValue = new TypedValue();
+            cardView.getContext().getTheme().resolveAttribute(R.attr.selectableItemBackground, outValue, true);
+            cardView.setForeground(cardView.getContext().getDrawable(outValue.resourceId));
+
+
+            cardView.addView( LayoutInflater.from(viewGroup.getContext()).inflate(R.layout.queueelement,viewGroup,false));
+
+            QueViewHolder queViewHolder = new QueViewHolder(cardView);
+            return queViewHolder;
+        }
+
+        @Override
+        public void onBindViewHolder(@NonNull QueueListAdaptor.QueViewHolder queViewHolder, int i) {
+
+            TextView Sno= (TextView)queViewHolder.cardView.findViewById(R.id.queuenumber);
+            TextView SongName= (TextView)queViewHolder.cardView.findViewById(R.id.queueContent);
+
+
+            Sno.setText(String.valueOf(i-activity.playerService.currentIndex));
+            SongName.setText(queue.get(i).getName());
+        }
+
+
+        @Override
+        public int getItemCount() {
+            return queue.size();
+        }
+
+        class QueViewHolder extends RecyclerView.ViewHolder{
+
+            public CardView cardView;
+            public QueViewHolder(@NonNull View itemView) {
+                super(itemView);
+
+                cardView=(CardView)itemView;
+            }
+        }
+    }
+
+    public void updateUI(){
+
+    }
 
 }
 

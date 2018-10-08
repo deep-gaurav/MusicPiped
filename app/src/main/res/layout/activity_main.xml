@@ -8,6 +8,7 @@
     android:background="@android:color/background_light"
     tools:context=".MainActivity">
 
+
     <android.support.constraint.Guideline
         android:id="@+id/guideline2"
         android:layout_width="wrap_content"
@@ -15,26 +16,12 @@
         android:orientation="vertical"
         app:layout_constraintGuide_percent="0.78" />
 
-    <EditText
-        android:id="@+id/urlText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="8dp"
-        android:layout_marginTop="8dp"
-        android:ems="10"
-        android:hint="Enter Youtube URL"
-        android:inputType="text"
-        app:layout_constraintEnd_toStartOf="@+id/submitButton"
-        app:layout_constraintHorizontal_bias="0.502"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/author" />
-
     <ImageButton
         android:id="@+id/playButton"
         style="@style/Widget.AppCompat.ImageButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp"
+        android:layout_marginBottom="60dp"
         android:background="@drawable/circle"
         android:foreground="?android:attr/selectableItemBackgroundBorderless"
         android:padding="10dp"
@@ -43,26 +30,46 @@
         app:layout_constraintStart_toStartOf="parent"
         app:srcCompat="@android:drawable/ic_media_play" />
 
-    <android.support.v7.widget.CardView
-        android:id="@+id/cardView3"
+    <android.support.v4.view.ViewPager
+        android:id="@+id/pagerswipe"
         android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:layout_margin="20dp"
-        app:cardElevation="6dp"
-        app:layout_constraintBottom_toTopOf="@+id/guideline3"
-        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_height="300dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        app:layout_constraintBottom_toTopOf="@+id/seekBar"
+        app:layout_constraintEnd_toEndOf="@+id/queuecoordinator"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/urlText">
+        app:layout_constraintTop_toBottomOf="@+id/author">
 
-        <ImageView
-            android:id="@+id/thumbView"
-            android:layout_width="wrap_content"
+        <android.support.v7.widget.CardView
+            android:id="@+id/cardView3"
+            android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_gravity="center"
-            android:layout_margin="5dp"
-            android:adjustViewBounds="true"
-            app:srcCompat="@android:drawable/ic_dialog_info" />
-    </android.support.v7.widget.CardView>
+            android:layout_margin="20dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            app:cardElevation="0dp"
+            app:layout_constraintBottom_toTopOf="@+id/seekBar"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/author">
+
+            <ImageView
+                android:id="@+id/thumbView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_margin="5dp"
+                android:adjustViewBounds="true"
+                app:srcCompat="@android:drawable/ic_dialog_info" />
+
+        </android.support.v7.widget.CardView>
+        <include
+            layout="@layout/queue"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+    </android.support.v4.view.ViewPager>
 
     <TextView
         android:id="@+id/header"
@@ -90,13 +97,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/header" />
 
-    <android.support.constraint.Guideline
-        android:id="@+id/guideline3"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        app:layout_constraintGuide_percent="0.78" />
-
     <SeekBar
         android:id="@+id/seekBar"
         android:layout_width="0dp"
@@ -104,11 +104,9 @@
         android:layout_marginBottom="8dp"
         android:layout_marginEnd="8dp"
         android:layout_marginStart="8dp"
-        android:layout_marginTop="8dp"
         app:layout_constraintBottom_toTopOf="@+id/playButton"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/guideline3" />
+        app:layout_constraintStart_toStartOf="parent" />
 
     <TextView
         android:id="@+id/currentTime"
@@ -130,16 +128,6 @@
         android:theme="@style/AppTheme"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/seekBar" />
-
-    <Button
-        android:id="@+id/submitButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="8dp"
-        android:text="Submit"
-        app:layout_constraintBottom_toBottomOf="@+id/urlText"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/urlText" />
 
     <ProgressBar
         android:id="@+id/loadingCircle"

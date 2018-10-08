@@ -3,7 +3,6 @@ package deep.ryd.rydplayer;
 
 import android.app.Activity;
 import android.app.ActionBar;
-import android.app.FragmentTransaction;
 
 import android.app.Fragment;
 import android.app.FragmentManager;
@@ -20,7 +19,6 @@ import android.support.v4.content.ContextCompat;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v4.view.ViewPager;
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -40,14 +38,9 @@ import android.widget.Toast;
 
 import com.squareup.picasso.Picasso;
 
-import org.schabi.newpipe.extractor.InfoItem;
 import org.schabi.newpipe.extractor.NewPipe;
-import org.schabi.newpipe.extractor.services.youtube.YoutubeService;
-import org.schabi.newpipe.extractor.services.youtube.extractors.YoutubeStreamInfoItemExtractor;
 import org.schabi.newpipe.extractor.stream.AudioStream;
 import org.schabi.newpipe.extractor.stream.StreamInfo;
-import org.schabi.newpipe.extractor.stream.StreamInfoItem;
-import org.schabi.newpipe.extractor.stream.StreamInfoItemExtractor;
 import org.schabi.newpipe.extractor.stream.StreamType;
 
 import java.io.InputStream;
@@ -112,6 +105,7 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
                             .setTabListener(this));
 
         }
+
 
         ready();
     }
@@ -425,7 +419,7 @@ class SongsListAdaptor extends RecyclerView.Adapter<SongsListAdaptor.MyViewHolde
         CardView cardView=myViewHolder.cardView;
         ConstraintLayout constraintLayout=(ConstraintLayout)cardView.getChildAt(0);
         ImageView img=(ImageView)constraintLayout.findViewById(R.id.thumbHolder);
-        TextView title=(TextView)constraintLayout.findViewById(R.id.cardTitle);
+        TextView title=(TextView)constraintLayout.findViewById(R.id.queueContent);
 
         //CachedImageDownloader cachedImageDownloader;
         if(artist_thumb) {
@@ -450,7 +444,7 @@ class SongsListAdaptor extends RecyclerView.Adapter<SongsListAdaptor.MyViewHolde
             @Override
             public void onClick(View v) {
                 MainActivity ma=(MainActivity)activity;
-                ma.playStream(infoItems.get(i));
+                ma.playStream(infoItems,i);
             }
         });
 
