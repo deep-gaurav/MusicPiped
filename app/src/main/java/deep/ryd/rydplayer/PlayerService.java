@@ -12,6 +12,8 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
+import android.media.AudioFocusRequest;
+import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.AsyncTask;
 import android.os.Binder;
@@ -48,6 +50,7 @@ public class PlayerService extends Service {
     public Activity launch;
 
     public static PlayerService mainobj;
+    public AudioManager audioManager;
 
     public boolean isLooping=false;
 
@@ -75,6 +78,8 @@ public class PlayerService extends Service {
     public boolean started=false;
 
     private boolean quitServiceNotif=false;
+
+    public float VOLUME = 1.0f;
 
     public void control_MP( String action ) {
 
@@ -191,17 +196,26 @@ public class PlayerService extends Service {
             umP.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
                 @Override
                 public void onPrepared(MediaPlayer mp) {
-                    umP.start();
-                    isuMPready=true;
 
+                    isuMPready=true;
+                    umP.setVolume(VOLUME,VOLUME);
+                    umP.setAudioStreamType(AudioManager.STREAM_MUSIC);
                     core.updateStreaminDB(streamInfo,dbManager);
+
+
                     if(mainActivity!=null){
+                        mainActivity.coremain.toggle();
                         mainActivity.coremain.setLoadingCircle2(false);
                     }
+                    else {
+                        umP.start();
+                    }
+
                 }
             });
-            if(mainActivity!=null)
-            mainActivity.coremain.start();
+            if(mainActivity!=null) {
+                mainActivity.coremain.start();
+            }
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -267,6 +281,38 @@ public class PlayerService extends Service {
         }
         else {
             Log.i("ryd","USING OLD UMP");
+
+        }
+        if(audioManager==null) {
+            audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+            audioManager.requestAudioFocus(new AudioManager.OnAudioFocusChangeListener() {
+                @Override
+                public void onAudioFocusChange(int focusChange) {
+                    if(focusChange==AudioManager.AUDIOFOCUS_LOSS || focusChange==AudioManager.AUDIOFOCUS_LOSS_TRANSIENT){
+                        if(umP.isPlaying()){
+                            if(mainActivity!=null){
+                                mainActivity.coremain.toggle();
+                            }
+                            else{
+                                Intent i= new Intent(PlayerService.this,PlayerService.ButtonReceiver.class);
+                                i.putExtra("action","Pause");
+                                sendBroadcast(i);
+                            }
+
+                        }
+                    }
+                    else if(focusChange==AudioManager.AUDIOFOCUS_GAIN){
+                        if(isuMPready){
+                            if(mainActivity!=null){
+                                mainActivity.coremain.toggle();
+                            }
+                            else
+                                umP.start();
+                        }
+                    }
+                }
+            },AudioManager.STREAM_MUSIC,AudioManager.AUDIOFOCUS_GAIN);
+
 
         }
         //Toast.makeText(this, "Service Created", Toast.LENGTH_SHORT).show();
@@ -510,6 +556,7 @@ public class PlayerService extends Service {
                     PlayerService.mainobj.mainActivity.coremain.setLoadingCircle2(true);
                 }
                 PlayerService.mainobj.umP.reset();
+                PlayerService.mainobj.isuMPready=false;
                 PlayerService.mainobj.umP.setDataSource(PlayerService.mainobj.streamInfo.getAudioStreams().get(0).url);
                 PlayerService.mainobj.umP.prepareAsync();
 

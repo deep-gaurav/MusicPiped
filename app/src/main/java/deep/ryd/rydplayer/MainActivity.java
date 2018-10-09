@@ -239,16 +239,11 @@ public class MainActivity extends AppCompatActivity {
         playerService.queue=queue;
         playerService.currentIndex=startIndex;
 
-        StreamInfo streamInfo=queue.get(startIndex);
-        coremain.streamInfo=streamInfo;
-        coremain.playurl=streamInfo.getUploaderUrl();
-        coremain.audioStreams=streamInfo.getAudioStreams();
-        try {
-            coremain.play();
-        } catch (IOException e) {
-            e.printStackTrace();
-            coremain.showError(e.getMessage());
-        }
+
+        //playerService.queue=queue;
+        //playerService.currentIndex=startIndex;
+        playerService.playfromQueue();
+
     }
     @Override
     public boolean dispatchTouchEvent(MotionEvent event) {
@@ -315,6 +310,7 @@ class core{
 
     public QueueListAdaptor queueListAdaptor;
 
+    @Deprecated
     public void play() throws IOException {
         //new setThumb().execute(this);
 
@@ -795,11 +791,12 @@ class core{
 class testPipe extends AsyncTask<core,Integer,Integer> {
 
 
+    PlayerService playerService;
     @Override
     protected Integer doInBackground(core... cores) {
 
 
-        core mcore=cores[0];
+        final core mcore=cores[0];
         String url=mcore.playurl;
 
         Downloader.init(null);
@@ -822,7 +819,12 @@ class testPipe extends AsyncTask<core,Integer,Integer> {
             Log.i("rydp","GET NAME "+streamInfo.getAudioStreams().get(0).getUrl());
             //Log.i("rydp",streamInfo.getName());
             mcore.playurl=streamInfo.getAudioStreams().get(0).getUrl();
-            mcore.play();
+
+            mcore.context.playerService.queue.clear();
+            mcore.context.playerService.queue.add(streamInfo);
+            mcore.context.playerService.currentIndex=0;
+
+            playerService=mcore.context.playerService;
         }
         catch (Exception e){
             e.printStackTrace();
@@ -831,8 +833,14 @@ class testPipe extends AsyncTask<core,Integer,Integer> {
             mcore.showError("Cannot play given url ERROR \n"+writer.toString());
 
 
+
         }
 
         return 0;
+    }
+
+    @Override
+    protected void onPostExecute(Integer integer){
+        playerService.playfromQueue();
     }
 }
