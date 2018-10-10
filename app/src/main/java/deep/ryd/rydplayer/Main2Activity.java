@@ -14,6 +14,7 @@ import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
 import android.support.annotation.NonNull;
 import android.support.constraint.ConstraintLayout;
+import android.support.design.widget.BottomSheetBehavior;
 import android.support.v13.app.FragmentPagerAdapter;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.view.MenuItemCompat;
@@ -51,6 +52,7 @@ import java.util.List;
 
 public class Main2Activity extends MainActivity implements android.support.v7.app.ActionBar.TabListener {
 
+
     /**
      * The {@link android.support.v4.view.PagerAdapter} that will provide
      * fragments for each of the sections. We use a
@@ -69,6 +71,7 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
 
         setContentView(R.layout.activity_main2);
         // Create the adapter that will return a fragment for each of the three

@@ -11,6 +11,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.media.AudioFocusRequest;
 import android.media.AudioManager;
@@ -23,6 +24,7 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
 import android.util.Log;
+import android.widget.ImageView;
 import android.widget.RemoteViews;
 import android.widget.Toast;
 
@@ -65,6 +67,7 @@ public class PlayerService extends Service {
     public static final String ACTION_PREVIOUS = "action_previous";
     public static final String ACTION_STOP = "action_stop";
 
+    public ImageView thumbStore;
     public Bitmap thumbnail;
     public boolean isuMPready=false;
     PendingIntent launchIntent;
@@ -174,22 +177,7 @@ public class PlayerService extends Service {
         try {
             Picasso.get()
                     .load(streamInfo.getThumbnailUrl())
-                    .into(new Target() {
-                        @Override
-                        public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
-                            thumbnail=bitmap;
-                        }
-
-                        @Override
-                        public void onBitmapFailed(Exception e, Drawable errorDrawable) {
-
-                        }
-
-                        @Override
-                        public void onPrepareLoad(Drawable placeHolderDrawable) {
-
-                        }
-                    });
+                    .into(thumbStore);
             start();
             new PlayerService.UpdateSongStream().execute();
 
@@ -283,6 +271,8 @@ public class PlayerService extends Service {
             Log.i("ryd","USING OLD UMP");
 
         }
+        if(thumbStore==null)
+            thumbStore=new ImageView(this);
         if(audioManager==null) {
             audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
             audioManager.requestAudioFocus(new AudioManager.OnAudioFocusChangeListener() {
@@ -374,6 +364,10 @@ public class PlayerService extends Service {
         contentView.setTextColor(R.id.notifTitle,Color.DKGRAY);
         contentView.setTextViewText(R.id.notifText,streamInfo.getUploaderName());
         contentView.setTextColor(R.id.notifText,Color.LTGRAY);
+        if(thumbStore!=null && thumbStore.getDrawable()!=null){
+            BitmapDrawable bitmapDrawable = (BitmapDrawable) thumbStore.getDrawable();
+            thumbnail = bitmapDrawable.getBitmap();
+        }
         contentView.setImageViewBitmap(R.id.notifThumb,thumbnail);
         contentView.setImageViewResource(R.id.prevButton,android.R.drawable.ic_media_previous);
         contentView.setImageViewResource(R.id.nextButton,android.R.drawable.ic_media_next);
