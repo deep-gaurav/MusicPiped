@@ -11,6 +11,7 @@ import android.graphics.Color;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.media.MediaPlayer;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.IBinder;
 import android.support.annotation.NonNull;
@@ -18,6 +19,9 @@ import android.support.annotation.Nullable;
 import android.support.constraint.ConstraintLayout;
 import android.support.design.widget.BottomSheetBehavior;
 import android.support.design.widget.CoordinatorLayout;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v4.view.PagerAdapter;
@@ -27,6 +31,7 @@ import android.os.Bundle;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.helper.ItemTouchHelper;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.util.TypedValue;
@@ -68,6 +73,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -93,6 +99,10 @@ public class MainActivity extends AppCompatActivity {
     public static DBManager dbManager;
     PlayerService playerService;
     boolean isBound =false;
+    public swipedpageadaptor swipedpageadaptor;
+    public ViewPager thumbviewpager;
+
+    public FragmentManager fragmentManager;
 
     int MYCHILD=6200;
 
@@ -129,55 +139,46 @@ public class MainActivity extends AppCompatActivity {
 
 
     }
-    public class swipedpageadaptor extends PagerAdapter{
-        public Object instantiateItem(View collection, int position) {
+    public class swipedpageadaptor extends PagerAdapter {
 
-            int resId = 0;
-            switch (position) {
-                case 0:
-                    resId = R.id.cardView3;
-                    break;
-                case 1:
-                    resId = R.id.queuebase;
-                    break;
-            }
-            return findViewById(resId);
-        }
 
+        public ViewGroup container;
         @Override
         public int getCount() {
-            return 2;
+            return playerService.queue.size();
         }
 
         @Override
-        public boolean isViewFromObject(View arg0, Object arg1) {
-            return arg0 == ((View) arg1);
+        public int getItemPosition(Object object){
+            return  POSITION_NONE;
         }
+
+        @Override
+        public View instantiateItem(ViewGroup container, int position) {
+            this.container=container;
+            //View v=getLayoutInflater().inflate(R.layout.fragment_swipe_thumb,container);
+            View v =getLayoutInflater().inflate(R.layout.fragment_swipe_thumb,null);
+            ImageView imageView = v.findViewById(R.id.thumbView);
+            Picasso.get().load(playerService.queue.get(position).getThumbnailUrl()).into(imageView);
+            container.addView(v);
+            return  v;
+        }
+        @Override
+        public boolean isViewFromObject(@NonNull View view, @NonNull Object o) {
+            return view == (View) o;
+        }
+        @Override
+        public void  destroyItem(ViewGroup container, int position, Object object){
+           container.removeView((View)object);
+        }
+
     }
 
     protected void ready() {
         self = this;
 
-        swipedpageadaptor swipedpageadaptor = new swipedpageadaptor();
-        ViewPager viewPager = findViewById(R.id.pagerswipe);
-        viewPager.setAdapter(swipedpageadaptor);
-        viewPager.setOnPageChangeListener(new ViewPager.OnPageChangeListener() {
-            @Override
-            public void onPageScrolled(int i, float v, int i1) {
-
-            }
-
-            @Override
-            public void onPageSelected(int i) {
 
 
-            }
-
-            @Override
-            public void onPageScrollStateChanged(int i) {
-
-            }
-        });
 
         if (playerService == null) {
             Log.i("ryd", "CREATE SERVICE ");
@@ -208,7 +209,28 @@ public class MainActivity extends AppCompatActivity {
 
         //urlText=findViewById(R.id.urlText);
         //Button submitButton = findViewById(R.id.submitButton);
+        swipedpageadaptor = new swipedpageadaptor();
+        thumbviewpager = findViewById(R.id.pagerswipe);
+        thumbviewpager.setAdapter(swipedpageadaptor);
+        thumbviewpager.setOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+            @Override
+            public void onPageScrolled(int i, float v, int i1) {
 
+            }
+
+            @Override
+            public void onPageSelected(int i) {
+                if (playerService.currentIndex != i) {
+                    playerService.currentIndex = i;
+                    playerService.playfromQueue(true);
+                }
+            }
+
+            @Override
+            public void onPageScrollStateChanged(int i) {
+
+            }
+        });
 
         coremain=new core(
                 this,
@@ -238,8 +260,12 @@ public class MainActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         Log.i("ryd","CHILD ACTIVITY RESULT "+requestCode+" ");
-        if(requestCode==MYCHILD && resultCode==Activity.RESULT_OK){
-            changeSong(data.getStringExtra("newurl"));
+        if(requestCode==MYCHILD && resultCode==Activity.RESULT_OK) {
+            if (data.getBooleanExtra("addtoCurrent", false) && !playerService.queue.isEmpty()) {
+                playerService.addtoqueue(data.getStringExtra("newurl"));
+            } else {
+                changeSong(data.getStringExtra("newurl"));
+            }
         }
 
     }
@@ -256,13 +282,16 @@ public class MainActivity extends AppCompatActivity {
     public void playStream(List<StreamInfo> queue,int startIndex){
 
         Log.i("ryd","SETTING NEW QUEUE TO PLAY STREAM");
-        playerService.queue=queue;
+        playerService.queue.clear();
+        for(int i=0;i<queue.size();i++){
+            playerService.queue.add(queue.get(i));
+        }
         playerService.currentIndex=startIndex;
 
 
         //playerService.queue=queue;
         //playerService.currentIndex=startIndex;
-        playerService.playfromQueue();
+        playerService.playfromQueue(true);
 
     }
     @Override
@@ -330,6 +359,7 @@ class core{
     public RecyclerView queueRecycler;
 
     public QueueListAdaptor queueListAdaptor;
+    public LinearLayoutManager queuelayoutmanager;
 
     @Deprecated
     public void play() throws IOException {
@@ -461,7 +491,8 @@ class core{
             public void run() {
                 queueListAdaptor.updateQueue(context.playerService.queue);
 
-                queueRecycler.scrollToPosition(context.playerService.currentIndex);
+                //queueRecycler.scrollToPosition(context.playerService.currentIndex);
+                queuelayoutmanager.scrollToPositionWithOffset(context.playerService.currentIndex,0);
                 //submitButton.setEnabled(true);
                 //circleLoader.setVisibility(View.INVISIBLE);
                 setLoadingCircle1(false);
@@ -476,9 +507,7 @@ class core{
             @Override
             public void run() {
                 Log.i("ryd","GETTING THUMBNAIL URL");
-                Picasso.get()
-                        .load(streamInfo.getThumbnailUrl())
-                        .into(thumbView);
+                context.thumbviewpager.setCurrentItem(context.playerService.currentIndex,true);
                 //circleLoader2.setVisibility(View.INVISIBLE);
                 context.playerService.start();
             }
@@ -569,16 +598,56 @@ class core{
         if(queueListAdaptor==null){
 
             queueRecycler = context.findViewById(R.id.queueRecycler);
-            RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(context,LinearLayoutManager.VERTICAL,false);
+            queuelayoutmanager = new LinearLayoutManager(context,LinearLayoutManager.VERTICAL,false);
             //layoutManager.setAutoMeasureEnabled(true);
             queueRecycler.hasFixedSize();
-            queueRecycler.setLayoutManager(layoutManager);
+            queueRecycler.setLayoutManager(queuelayoutmanager);
 
             queueRecycler.setNestedScrollingEnabled(false);
             queueListAdaptor = new QueueListAdaptor(context);
             queueRecycler.setAdapter(queueListAdaptor);
+            ItemTouchHelper itemTouchHelper = new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP | ItemTouchHelper.DOWN, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
+
+
+                public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder viewHolder1) {
+
+                    if(viewHolder.getAdapterPosition()!=context.playerService.currentIndex && viewHolder1.getAdapterPosition()!=context.playerService.currentIndex) {
+                        Collections.swap(context.playerService.queue, viewHolder.getAdapterPosition(), viewHolder1.getAdapterPosition());
+                        queueListAdaptor.updateQueue(context.playerService.queue);
+                    }
+                    else if(viewHolder.getAdapterPosition()==context.playerService.currentIndex){
+                        Collections.swap(context.playerService.queue, viewHolder.getAdapterPosition(), viewHolder1.getAdapterPosition());
+                        context.playerService.currentIndex=viewHolder1.getAdapterPosition();
+                        queueListAdaptor.updateQueue(context.playerService.queue);
+
+                    }
+                    else if(viewHolder1.getAdapterPosition()==context.playerService.currentIndex){
+                        Collections.swap(context.playerService.queue, viewHolder.getAdapterPosition(), viewHolder1.getAdapterPosition());
+                        context.playerService.currentIndex=viewHolder.getAdapterPosition();
+                        queueListAdaptor.updateQueue(context.playerService.queue);
+
+                    }
+                    return true;
+                }
+
+                @Override
+                public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int i) {
+                    QueueListAdaptor.QueViewHolder queViewHolder = (QueueListAdaptor.QueViewHolder)viewHolder;
+                    int index=queViewHolder.getLayoutPosition();
+                    if(index<context.playerService.currentIndex){
+                        context.playerService.queue.remove(index);
+                        context.playerService.currentIndex--;
+                    }
+                    if(index>context.playerService.currentIndex){
+                        context.playerService.queue.remove(index);
+                    }
+                    queueListAdaptor.updateQueue(context.playerService.queue);
+                    queueListAdaptor.notifyItemRemoved(queViewHolder.getLayoutPosition());
+                }
+            });
+            itemTouchHelper.attachToRecyclerView(queueRecycler);
         }
-        if(context.playerService.isuMPready){
+        if(context.playerService.streamInfo!=null){
             streamInfo=context.playerService.streamInfo;
             //uMP=context.playerService.umP;
             start();
@@ -602,7 +671,6 @@ class core{
                             totalTime.setText(sectotime(context.playerService.umP.getDuration(),true));
                             seekBar.setMax((int)context.playerService.umP.getDuration()/1000);
                         }
-
                     }
 
                 });
@@ -695,6 +763,7 @@ class core{
         new testPipe().execute(this);
     }
 
+
     public void toggle(){
         if(context.playerService.isuMPready){
             if(context.playerService.umP.isPlaying()){
@@ -709,6 +778,9 @@ class core{
                 playButton2.setImageResource(android.R.drawable.ic_media_pause);
                 context.playerService.buildNotification(context.playerService.ID);
             }
+        }
+        else {
+            context.playerService.playfromQueue(true);
         }
     }
 
@@ -728,6 +800,12 @@ class core{
                 queue.add(i,newqueue.get(i));
             }
             notifyDataSetChanged();
+
+            synchronized (context.thumbviewpager) {
+                context.swipedpageadaptor.notifyDataSetChanged();
+                context.thumbviewpager.setCurrentItem(context.playerService.currentIndex);
+            }
+
         }
 
         QueueListAdaptor(MainActivity mainActivity){
@@ -850,7 +928,7 @@ class testPipe extends AsyncTask<core,Integer,Integer> {
 
     @Override
     protected void onPostExecute(Integer integer){
-        playerService.playfromQueue();
+        playerService.playfromQueue(true);
     }
 }
 

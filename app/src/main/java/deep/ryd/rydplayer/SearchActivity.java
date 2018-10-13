@@ -19,9 +19,13 @@ import android.support.v7.widget.CardView;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SearchView;
+import android.util.AttributeSet;
 import android.util.Log;
+import android.util.TypedValue;
+import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
@@ -54,7 +58,7 @@ import java.util.List;
 public class SearchActivity extends AppCompatActivity {
 
     Activity self;
-    RecyclerView resultRecycler;
+    ContextMenuRecyclerView resultRecycler;
     RecyclerView.Adapter mAdapter;
     RecyclerView.LayoutManager mLayoutManager;
     ActionBar actionBar;
@@ -79,6 +83,7 @@ public class SearchActivity extends AppCompatActivity {
 
         actionBar = getSupportActionBar();
 
+        registerForContextMenu(resultRecycler);
         Intent intent = getIntent();
         if(intent.hasExtra("SearchText")){
             String st=intent.getStringExtra("SearchText");
@@ -86,6 +91,36 @@ public class SearchActivity extends AppCompatActivity {
             Search(st);
         }
     }
+
+    @Override
+    public void onCreateContextMenu(ContextMenu menu,View v,ContextMenu.ContextMenuInfo menuInfo){
+        super.onCreateContextMenu(menu,v,menuInfo);
+
+        MenuInflater menuInflater = this.getMenuInflater();
+        menuInflater.inflate(R.menu.songmenu,menu);
+    }
+    @Override
+    public boolean onContextItemSelected(MenuItem item) {
+        if (item.getItemId()==R.id.addtocurrentqueue) {
+            ContextMenuRecyclerView.RecyclerContextMenuInfo info = (ContextMenuRecyclerView.RecyclerContextMenuInfo) item.getMenuInfo();
+
+            MyAdapter.MyViewHolder myViewHolder = (MyAdapter.MyViewHolder) resultRecycler.findViewHolderForAdapterPosition(info.position);
+
+            StreamInfoItem streamInfoItem = myViewHolder.streamInfoItem;
+
+
+            Intent result = new Intent();
+            result.putExtra("newurl", streamInfoItem.getUrl());
+            result.putExtra("addtoCurrent",true);
+            Activity activity = this;
+            activity.setResult(Activity.RESULT_OK, result);
+            activity.finish();
+
+            return false;
+        }
+        return true;
+    }
+
 
     public void Search(String st){
         actionBar.setTitle(st);
@@ -159,7 +194,9 @@ public class SearchActivity extends AppCompatActivity {
     }
 
 }
+
 class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder>{
+
 
     public static boolean returner=false;
     String searchq;
@@ -193,12 +230,19 @@ class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder>{
     @Override
     public void onBindViewHolder(@NonNull MyViewHolder myViewHolder, int i) {
 
+        myViewHolder.itemView.setLongClickable(true);
+
         myViewHolder.streamInfoItem=(StreamInfoItem)infoItems.get(i);
         CardView cardView=myViewHolder.cardView;
         ConstraintLayout constraintLayout=(ConstraintLayout)cardView.getChildAt(0);
         ImageView img=(ImageView)constraintLayout.findViewById(R.id.cardThumb);
         TextView title=(TextView)constraintLayout.findViewById(R.id.queueContent);
 
+        CardView view=cardView;
+        TypedValue outValue = new TypedValue();
+        view.getContext().getTheme().resolveAttribute(R.attr.selectableItemBackground, outValue, true);
+        //view.setBackgroundResource(outValue.resourceId);
+        view.setForeground(view.getContext().getDrawable(outValue.resourceId));
         title.setText(infoItems.get(i).getName());
         //title.setText("TEST CARD "+new Integer(i).toString());
         //t.setText(new Integer(i).toString());

@@ -4,18 +4,19 @@ package deep.ryd.rydplayer;
 import android.app.Activity;
 import android.app.ActionBar;
 
-import android.app.Fragment;
-import android.app.FragmentManager;
 import android.app.SearchManager;
 import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.support.annotation.NonNull;
 import android.support.constraint.ConstraintLayout;
 import android.support.design.widget.BottomSheetBehavior;
 import android.support.v13.app.FragmentPagerAdapter;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v4.view.ViewPager;
@@ -26,8 +27,10 @@ import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SearchView;
 import android.util.Log;
 import android.util.TypedValue;
+import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
@@ -42,6 +45,7 @@ import com.squareup.picasso.Picasso;
 import org.schabi.newpipe.extractor.NewPipe;
 import org.schabi.newpipe.extractor.stream.AudioStream;
 import org.schabi.newpipe.extractor.stream.StreamInfo;
+import org.schabi.newpipe.extractor.stream.StreamInfoItem;
 import org.schabi.newpipe.extractor.stream.StreamType;
 
 import java.io.InputStream;
@@ -50,7 +54,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Main2Activity extends MainActivity implements android.support.v7.app.ActionBar.TabListener {
+public class Main2Activity extends MainActivity implements android.support.v7.app.ActionBar.TabListener, swipeThumb.OnFragmentInteractionListener {
 
 
     /**
@@ -68,6 +72,9 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
      */
     private ViewPager mViewPager;
 
+    public ContextMenuRecyclerView toptracksrecycler;
+    public ContextMenuRecyclerView tracksRecycler;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -76,7 +83,8 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
         setContentView(R.layout.activity_main2);
         // Create the adapter that will return a fragment for each of the three
         // primary sections of the activity.
-        mSectionsPagerAdapter = new SectionsPagerAdapter(getFragmentManager());
+        fragmentManager=getSupportFragmentManager();
+        mSectionsPagerAdapter = new SectionsPagerAdapter(fragmentManager);
 
         // Set up the ViewPager with the sections adapter.
         mViewPager = (ViewPager) findViewById(R.id.container);
@@ -183,7 +191,31 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
         return super.onOptionsItemSelected(item);
     }
 
+    @Override
+    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo){
+        super.onCreateContextMenu(menu,v,menuInfo);
 
+        MenuInflater menuInflater = this.getMenuInflater();
+        menuInflater.inflate(R.menu.songmenu,menu);
+    }
+    @Override
+    public boolean onContextItemSelected(MenuItem item) {
+        if (item.getItemId()==R.id.addtocurrentqueue) {
+            ContextMenuRecyclerView.RecyclerContextMenuInfo info = (ContextMenuRecyclerView.RecyclerContextMenuInfo) item.getMenuInfo();
+
+
+
+            SongsListAdaptor.MyViewHolder myViewHolder = (SongsListAdaptor.MyViewHolder) info.parentRecycler.findViewHolderForAdapterPosition(info.position);
+
+            StreamInfo streamInfo = myViewHolder.streamInfo;
+
+
+            playerService.addtoqueue(streamInfo);
+
+            return false;
+        }
+        return true;
+    }
     @Override
     public void onTabSelected(android.support.v7.app.ActionBar.Tab tab, android.support.v4.app.FragmentTransaction fragmentTransaction) {
         mViewPager.setCurrentItem(tab.getPosition());
@@ -197,6 +229,11 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
 
     @Override
     public void onTabReselected(android.support.v7.app.ActionBar.Tab tab, android.support.v4.app.FragmentTransaction fragmentTransaction) {
+
+    }
+
+    @Override
+    public void onFragmentInteraction(Uri uri) {
 
     }
 
@@ -236,10 +273,15 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
             if (getArguments().getInt(ARG_SECTION_NUMBER)==1){
                 rootView = inflater.inflate(R.layout.fragment_home,container,false);
                 {
-                    RecyclerView recyclerView = (RecyclerView) rootView.findViewById(R.id.tracksrecycler);
+
+                    Main2Activity main2Activity = (Main2Activity)getActivity();
+                    main2Activity.toptracksrecycler = (ContextMenuRecyclerView) rootView.findViewById(R.id.tracksrecycler);
+                    main2Activity.registerForContextMenu(main2Activity.toptracksrecycler);
+                    ContextMenuRecyclerView recyclerView = main2Activity.toptracksrecycler;
                     recyclerView.setHasFixedSize(true);
                     RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(rootView.getContext(), LinearLayoutManager.HORIZONTAL, false);
 
+                    recyclerView.setLongClickable(true);
                     recyclerView.setLayoutManager(mLayoutManager);
 
 
@@ -270,7 +312,13 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
             if(getArguments().getInt(ARG_SECTION_NUMBER)==2){
                 rootView = inflater.inflate(R.layout.fragment_main2, container, false);
 
-                RecyclerView recyclerView=(RecyclerView)rootView.findViewById(R.id.listRecycler);
+                Main2Activity main2Activity = (Main2Activity)getActivity();
+
+                main2Activity.tracksRecycler=rootView.findViewById(R.id.listRecycler);
+                ContextMenuRecyclerView recyclerView=main2Activity.tracksRecycler;
+
+                main2Activity.registerForContextMenu(main2Activity.tracksRecycler);
+                recyclerView.setLongClickable(true);
                 recyclerView.setHasFixedSize(true);
                 RecyclerView.LayoutManager mLayoutManager=new LinearLayoutManager(rootView.getContext());
                 recyclerView.setLayoutManager(mLayoutManager);
@@ -329,14 +377,14 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
      * A {@link FragmentPagerAdapter} that returns a fragment corresponding to
      * one of the sections/tabs/pages.
      */
-    public class SectionsPagerAdapter extends FragmentPagerAdapter {
+    public class SectionsPagerAdapter extends android.support.v4.app.FragmentPagerAdapter {
 
         public SectionsPagerAdapter(FragmentManager fm) {
             super(fm);
         }
 
         @Override
-        public Fragment getItem(int position) {
+        public android.support.v4.app.Fragment getItem(int position) {
             // getItem is called to instantiate the fragment for the given page.
             // Return a PlaceholderFragment (defined as a static inner class below).
             return PlaceholderFragment.newInstance(position + 1,this);
@@ -418,6 +466,7 @@ class SongsListAdaptor extends RecyclerView.Adapter<SongsListAdaptor.MyViewHolde
     @Override
     public void onBindViewHolder(@NonNull MyViewHolder myViewHolder, final int i) {
 
+        myViewHolder.itemView.setLongClickable(true);
         myViewHolder.streamInfo=(StreamInfo)infoItems.get(i);
         CardView cardView=myViewHolder.cardView;
         ConstraintLayout constraintLayout=(ConstraintLayout)cardView.getChildAt(0);
