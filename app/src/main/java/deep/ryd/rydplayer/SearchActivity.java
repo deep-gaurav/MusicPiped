@@ -8,6 +8,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Rect;
 import android.os.AsyncTask;
+import android.provider.SearchRecentSuggestions;
 import android.support.annotation.NonNull;
 import android.support.constraint.ConstraintLayout;
 import android.support.v4.content.ContextCompat;
@@ -54,6 +55,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import android.app.SearchManager;
 
 public class SearchActivity extends AppCompatActivity {
 
@@ -63,6 +65,8 @@ public class SearchActivity extends AppCompatActivity {
     RecyclerView.LayoutManager mLayoutManager;
     ActionBar actionBar;
     List<InfoItem> searchItems = new ArrayList<>();
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -85,8 +89,8 @@ public class SearchActivity extends AppCompatActivity {
 
         registerForContextMenu(resultRecycler);
         Intent intent = getIntent();
-        if(intent.hasExtra("SearchText")){
-            String st=intent.getStringExtra("SearchText");
+        if(intent.hasExtra(SearchManager.QUERY)){
+            String st=intent.getStringExtra(SearchManager.QUERY);
 
             Search(st);
         }
@@ -112,8 +116,10 @@ public class SearchActivity extends AppCompatActivity {
             Intent result = new Intent();
             result.putExtra("newurl", streamInfoItem.getUrl());
             result.putExtra("addtoCurrent",true);
+            result.setAction(MainActivity.MAINACTIVITYTBROADCASTACTION);
             Activity activity = this;
-            activity.setResult(Activity.RESULT_OK, result);
+            sendBroadcast(result);
+
             activity.finish();
 
             return false;
@@ -123,6 +129,9 @@ public class SearchActivity extends AppCompatActivity {
 
 
     public void Search(String st){
+
+        SearchRecentSuggestions searchRecentSuggestions = new SearchRecentSuggestions(this,mySuggestionProvider.AUTHORITY,mySuggestionProvider.MODE);
+        searchRecentSuggestions.saveRecentQuery(st,null);
         actionBar.setTitle(st);
         new Extractor(resultRecycler,searchItems,self,(ProgressBar)findViewById(R.id.loadingCircle)).execute(st);
     }
@@ -269,9 +278,12 @@ class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder>{
                     public void onClick(View v) {
                         Intent result = new Intent();
                         result.putExtra("newurl", streamInfoItem.getUrl());
-                        Activity activity = (Activity) v.getContext();
-                        activity.setResult(Activity.RESULT_OK, result);
-                        activity.finish();
+                        result.putExtra("addtoCurrent",false);
+                        result.setAction(MainActivity.MAINACTIVITYTBROADCASTACTION);
+                        MyViewHolder.this.cardView.getContext().sendBroadcast(result);
+
+                        ((Activity)MyViewHolder.this.cardView.getContext() ).finish();
+
                     }
                 });
             }

@@ -9,7 +9,7 @@
 
     <deep.ryd.rydplayer.ContextMenuRecyclerView
         android:id="@+id/listRecycler"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_marginBottom="73dp"
         android:layout_marginEnd="8dp"

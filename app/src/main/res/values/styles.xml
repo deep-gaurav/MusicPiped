@@ -7,9 +7,22 @@
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
 
+        <item name="autoCompleteTextViewStyle">@style/myAutoCompleteTextViewStyle</item>
+        <item name="textAppearanceSearchResultTitle">@style/mySearchResult</item>
+
+        <item name="android:navigationBarColor">@color/colorPrimaryDark</item>
+
+
     </style>
     <style name="Green" parent="Theme.AppCompat.Light.NoActionBar">
         <item name="android:colorAccent">#00a600</item>
     </style>
 
+    <style name="myAutoCompleteTextViewStyle" parent="Widget.AppCompat.Light.AutoCompleteTextView">
+        <item name="android:popupBackground">#ffffff</item>
+    </style>
+
+    <style name="mySearchResult" parent="TextAppearance.AppCompat.SearchResult.Title">
+        <item name="android:textColor">#000000</item>
+    </style>
 </resources>

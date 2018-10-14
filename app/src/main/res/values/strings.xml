@@ -11,4 +11,6 @@
     <string name="LastPlayedShared">LastPlayed</string>
 
     <string name="hello_blank_fragment">Hello blank fragment</string>
+
+    <string name="searchHint">Search songs</string>
 </resources>

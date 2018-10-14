@@ -487,9 +487,12 @@ public class PlayerService extends Service {
             Log.i("ryd","ACTION "+action);
             if(action.equals("Close")){
                 mainobj.quitServiceNotif=true;
-                if(mainobj.mainActivity!=null) {
-                    mainobj.mainActivity.finish();
-                }
+
+                Intent intent1 = new Intent();
+                intent1.putExtra("action","Close");
+                intent1.setAction(MainActivity.MAINACTIVITYTBROADCASTACTION);
+                mainobj.sendBroadcast(intent1);
+
                 mainobj.stopForeground(true);
                 mainobj.stopSelf();
                 mainobj.stopForeground(true);

@@ -5,10 +5,12 @@ import android.app.Activity;
 import android.app.ActionBar;
 
 import android.app.SearchManager;
+import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.support.annotation.NonNull;
@@ -129,7 +131,7 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
 
         final MenuItem searchItem = menu.findItem(R.id.action_search);
 
-        final SearchView searchView;
+        //final SearchView searchView;
         if (searchItem != null) {
             searchView = (SearchView) MenuItemCompat.getActionView(searchItem);
             searchView.setOnCloseListener(new SearchView.OnCloseListener() {
@@ -150,6 +152,9 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
             View searchPlateView = searchView.findViewById(android.support.v7.appcompat.R.id.search_plate);
             searchPlateView.setBackgroundColor(ContextCompat.getColor(this, android.R.color.transparent));
             // use this method for search process
+
+            //OLD SEARCH TECHNIQUE
+            /*
             searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
                 @Override
                 public boolean onQueryTextSubmit(String query) {
@@ -168,8 +173,10 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
                     return false;
                 }
             });
-            SearchManager searchManager = (SearchManager) getSystemService(SEARCH_SERVICE);
+            */
+            SearchManager searchManager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);
             searchView.setSearchableInfo(searchManager.getSearchableInfo(getComponentName()));
+            searchView.setSubmitButtonEnabled(true);
 
         }
         return super.onCreateOptionsMenu(menu);
@@ -302,7 +309,7 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
                     List<StreamInfo> songs = loadInfofromDB(true,true);
 
 
-                    SongsListAdaptor mAdapter=new SongsListAdaptor(songs,(Activity)rootView.getContext(),R.layout.top_track_fragments,false);
+                    SongsListAdaptor mAdapter=new SongsListAdaptor(songs,(Activity)rootView.getContext(),R.layout.top_artists,false);
                     mAdapter.artist_thumb=true;
                     recyclerView.setAdapter(mAdapter);
                 }
@@ -424,6 +431,7 @@ class SongsListAdaptor extends RecyclerView.Adapter<SongsListAdaptor.MyViewHolde
     int fragmentID;
     boolean vertical;
     boolean artist_thumb=false;
+    //boolean circular=false;
 
     public SongsListAdaptor(List<StreamInfo> infoItems,Activity activity, int fragmentID,boolean vertical){
         this.infoItems = infoItems;
@@ -479,7 +487,11 @@ class SongsListAdaptor extends RecyclerView.Adapter<SongsListAdaptor.MyViewHolde
             title.setText(infoItems.get(i).getUploaderName());
             Picasso.get()
                     .load(infoItems.get(i).getUploaderAvatarUrl())
+                    .transform(new CircleTransform())
                     .into(img);
+            cardView.setCardElevation(0);
+            cardView.setCardBackgroundColor(Color.TRANSPARENT);
+            //img.setLayoutParams(new ConstraintLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,200));
         }
         else {
             //cachedImageDownloader = new CachedImageDownloader(infoItems.get(i).getThumbnailUrl(), img);

@@ -247,6 +247,7 @@
         app:layout_constraintBottom_toBottomOf="parent">
 
         <android.support.v4.widget.NestedScrollView
+            android:id="@+id/queuebottomsheet"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             app:layout_behavior="@string/bottom_sheet_behavior"
