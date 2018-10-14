@@ -1,21 +1,32 @@
 package deep.ryd.rydplayer;
 
 import android.app.Activity;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.BitmapShader;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.media.MediaPlayer;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.constraint.ConstraintLayout;
+import android.support.design.widget.BottomSheetBehavior;
+import android.support.design.widget.CoordinatorLayout;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v4.view.PagerAdapter;
@@ -25,6 +36,9 @@ import android.os.Bundle;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.SearchView;
+import android.support.v7.widget.helper.ItemTouchHelper;
+import android.util.AttributeSet;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
@@ -65,6 +79,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -77,21 +92,33 @@ import android.support.design.widget.Snackbar;
 
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.Target;
+import com.squareup.picasso.Transformation;
 
 import javax.net.ssl.HttpsURLConnection;
 
 public class MainActivity extends AppCompatActivity {
 
     private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:43.0) Gecko/20100101 Firefox/43.0";
+    public static final String MAINACTIVITYTBROADCASTACTION = "deep.ryd.rydplayer.MAINBROADCAST";
 
     TextView urlText;
-    Activity self;
+    static MainActivity self;
     core coremain;
     public static DBManager dbManager;
     PlayerService playerService;
     boolean isBound =false;
+    public swipedpageadaptor swipedpageadaptor;
+    public ViewPager thumbviewpager;
+
+    public FragmentManager fragmentManager;
+    BottomSheetBehavior bottomSheetBehavior;
+    View nextinqueue;
 
     int MYCHILD=6200;
+
+    SearchView searchView;
+    MainActivityReceiver mainActivityReceiver;
+
 
 
     private ServiceConnection serviceConnection = new ServiceConnection() {
@@ -125,38 +152,53 @@ public class MainActivity extends AppCompatActivity {
 
 
     }
-    public class swipedpageadaptor extends PagerAdapter{
-        public Object instantiateItem(View collection, int position) {
+    public class swipedpageadaptor extends PagerAdapter {
 
-            int resId = 0;
-            switch (position) {
-                case 0:
-                    resId = R.id.cardView3;
-                    break;
-                case 1:
-                    resId = R.id.queuebase;
-                    break;
-            }
-            return findViewById(resId);
-        }
 
+        public ViewGroup container;
         @Override
         public int getCount() {
-            return 2;
+            return playerService.queue.size();
         }
 
         @Override
-        public boolean isViewFromObject(View arg0, Object arg1) {
-            return arg0 == ((View) arg1);
+        public int getItemPosition(Object object){
+            return  POSITION_NONE;
         }
+
+        @Override
+        public View instantiateItem(ViewGroup container, int position) {
+            this.container=container;
+            //View v=getLayoutInflater().inflate(R.layout.fragment_swipe_thumb,container);
+            View v =getLayoutInflater().inflate(R.layout.fragment_swipe_thumb,null);
+            ImageView imageView = v.findViewById(R.id.thumbView);
+            Picasso.get().load(playerService.queue.get(position).getThumbnailUrl()).into(imageView);
+            container.addView(v);
+            return  v;
+        }
+        @Override
+        public boolean isViewFromObject(@NonNull View view, @NonNull Object o) {
+            return view == (View) o;
+        }
+        @Override
+        public void  destroyItem(ViewGroup container, int position, Object object){
+           container.removeView((View)object);
+        }
+
     }
 
     protected void ready() {
         self = this;
 
-        swipedpageadaptor swipedpageadaptor = new swipedpageadaptor();
-        ViewPager viewPager = findViewById(R.id.pagerswipe);
-        viewPager.setAdapter(swipedpageadaptor);
+        mainActivityReceiver=new MainActivityReceiver();
+
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(MAINACTIVITYTBROADCASTACTION);
+        registerReceiver(mainActivityReceiver,intentFilter);
+
+
+        bottomSheetBehavior = BottomSheetBehavior.from(findViewById(R.id.queuebottomsheet));
+        nextinqueue=findViewById(R.id.nextinQueue);
 
         if (playerService == null) {
             Log.i("ryd", "CREATE SERVICE ");
@@ -181,13 +223,35 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy(){
         super.onDestroy();
 
+        unregisterReceiver(mainActivityReceiver);
         unbindService(serviceConnection);
     }
     protected void withService(){
 
         //urlText=findViewById(R.id.urlText);
         //Button submitButton = findViewById(R.id.submitButton);
+        swipedpageadaptor = new swipedpageadaptor();
+        thumbviewpager = findViewById(R.id.pagerswipe);
+        thumbviewpager.setAdapter(swipedpageadaptor);
+        thumbviewpager.setOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+            @Override
+            public void onPageScrolled(int i, float v, int i1) {
 
+            }
+
+            @Override
+            public void onPageSelected(int i) {
+                if (playerService.currentIndex != i) {
+                    playerService.currentIndex = i;
+                    playerService.playfromQueue(true);
+                }
+            }
+
+            @Override
+            public void onPageScrollStateChanged(int i) {
+
+            }
+        });
 
         coremain=new core(
                 this,
@@ -217,8 +281,12 @@ public class MainActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         Log.i("ryd","CHILD ACTIVITY RESULT "+requestCode+" ");
-        if(requestCode==MYCHILD && resultCode==Activity.RESULT_OK){
-            changeSong(data.getStringExtra("newurl"));
+        if(requestCode==MYCHILD && resultCode==Activity.RESULT_OK) {
+            if (data.getBooleanExtra("addtoCurrent", false) && !playerService.queue.isEmpty()) {
+                playerService.addtoqueue(data.getStringExtra("newurl"));
+            } else {
+                changeSong(data.getStringExtra("newurl"));
+            }
         }
 
     }
@@ -226,8 +294,7 @@ public class MainActivity extends AppCompatActivity {
     public void changeSong(String url){
 
         Log.i("ryd","EMPTYING QUEUE TO CHANGE SONG");
-        playerService.queue=new ArrayList<>();
-        playerService.currentIndex=0;
+
         coremain.playurl=url;
         //urlText.setText(url);
         coremain.changeSong();
@@ -236,13 +303,16 @@ public class MainActivity extends AppCompatActivity {
     public void playStream(List<StreamInfo> queue,int startIndex){
 
         Log.i("ryd","SETTING NEW QUEUE TO PLAY STREAM");
-        playerService.queue=queue;
+        playerService.queue.clear();
+        for(int i=0;i<queue.size();i++){
+            playerService.queue.add(queue.get(i));
+        }
         playerService.currentIndex=startIndex;
 
 
         //playerService.queue=queue;
         //playerService.currentIndex=startIndex;
-        playerService.playfromQueue();
+        playerService.playfromQueue(true);
 
     }
     @Override
@@ -283,7 +353,29 @@ public class MainActivity extends AppCompatActivity {
         //String myString = savedInstanceState.getString("MyString");
     }
 
+    public class MainActivityReceiver extends BroadcastReceiver{
 
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Log.i("ryd","Broadcast received");
+            if(intent.hasExtra("newurl")){
+
+                searchView.setIconified(true);
+
+
+                if (intent.getBooleanExtra("addtoCurrent", false) && !playerService.queue.isEmpty()) {
+                    playerService.addtoqueue(intent.getStringExtra("newurl"));
+                } else {
+                    changeSong(intent.getStringExtra("newurl"));
+                }
+            }
+            else if(intent.hasExtra("action")){
+                if(intent.getStringExtra("action").equals("Close")){
+                    MainActivity.this.finish();
+                }
+            }
+        }
+    }
 }
 
 class core{
@@ -307,8 +399,10 @@ class core{
     public Button submitButton;
     public ImageButton playButton2;
     DBManager dbManager;
+    public RecyclerView queueRecycler;
 
     public QueueListAdaptor queueListAdaptor;
+    public LinearLayoutManager queuelayoutmanager;
 
     @Deprecated
     public void play() throws IOException {
@@ -391,10 +485,18 @@ class core{
         context.runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                if (state)
+                if (state){
                     circleLoader2.setVisibility(View.VISIBLE);
+
+                    playButton2.setImageResource(android.R.drawable.ic_popup_sync);
+                }
                 else {
                     circleLoader2.setVisibility(View.INVISIBLE);
+
+                    if(context.playerService.umP.isPlaying())
+                        playButton2.setImageResource(android.R.drawable.ic_media_pause);
+                    else
+                        playButton2.setImageResource(android.R.drawable.ic_media_play);
                 }
             }
         });
@@ -403,10 +505,16 @@ class core{
         context.runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                if (state)
+                if (state) {
+                    playButton2.setImageResource(android.R.drawable.ic_popup_sync);
                     circleLoader.setVisibility(View.VISIBLE);
+                }
                 else {
                     circleLoader.setVisibility(View.INVISIBLE);
+                    if(context.playerService.umP.isPlaying())
+                        playButton2.setImageResource(android.R.drawable.ic_media_pause);
+                    else
+                        playButton2.setImageResource(android.R.drawable.ic_media_play);
                 }
             }
         });
@@ -439,6 +547,9 @@ class core{
             @Override
             public void run() {
                 queueListAdaptor.updateQueue(context.playerService.queue);
+
+                //queueRecycler.scrollToPosition(context.playerService.currentIndex);
+                queuelayoutmanager.scrollToPositionWithOffset(context.playerService.currentIndex,0);
                 //submitButton.setEnabled(true);
                 //circleLoader.setVisibility(View.INVISIBLE);
                 setLoadingCircle1(false);
@@ -452,26 +563,8 @@ class core{
         context.runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                Picasso.get()
-                        .load(streamInfo.getThumbnailUrl())
-                        .into(new Target() {
-                            @Override
-                            public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
-                                context.playerService.thumbnail=bitmap;
-                                thumbView.setImageBitmap(bitmap);
-                                context.playerService.buildNotification(context.playerService.ID);
-                            }
-
-                            @Override
-                            public void onBitmapFailed(Exception e, Drawable errorDrawable) {
-
-                            }
-
-                            @Override
-                            public void onPrepareLoad(Drawable placeHolderDrawable) {
-
-                            }
-                        });
+                Log.i("ryd","GETTING THUMBNAIL URL");
+                context.thumbviewpager.setCurrentItem(context.playerService.currentIndex,true);
                 //circleLoader2.setVisibility(View.INVISIBLE);
                 context.playerService.start();
             }
@@ -561,15 +654,57 @@ class core{
     public void ready(){
         if(queueListAdaptor==null){
 
-            RecyclerView queueRecycler = context.findViewById(R.id.queueRecycler);
-            RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(context,LinearLayoutManager.VERTICAL,false);
-            queueRecycler.hasFixedSize();
-            queueRecycler.setLayoutManager(layoutManager);
+            queueRecycler = context.findViewById(R.id.queueRecycler);
+            queuelayoutmanager = new LinearLayoutManager(context,LinearLayoutManager.VERTICAL,false);
+            //layoutManager.setAutoMeasureEnabled(true);
+            //queueRecycler.hasFixedSize();
+            queueRecycler.setLayoutManager(queuelayoutmanager);
 
+            queueRecycler.setNestedScrollingEnabled(true);
             queueListAdaptor = new QueueListAdaptor(context);
             queueRecycler.setAdapter(queueListAdaptor);
+            ItemTouchHelper itemTouchHelper = new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP | ItemTouchHelper.DOWN, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
+
+
+                public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder viewHolder1) {
+
+                    if(viewHolder.getAdapterPosition()!=context.playerService.currentIndex && viewHolder1.getAdapterPosition()!=context.playerService.currentIndex) {
+                        Collections.swap(context.playerService.queue, viewHolder.getAdapterPosition(), viewHolder1.getAdapterPosition());
+                        queueListAdaptor.updateQueue(context.playerService.queue);
+                    }
+                    else if(viewHolder.getAdapterPosition()==context.playerService.currentIndex){
+                        Collections.swap(context.playerService.queue, viewHolder.getAdapterPosition(), viewHolder1.getAdapterPosition());
+                        context.playerService.currentIndex=viewHolder1.getAdapterPosition();
+                        queueListAdaptor.updateQueue(context.playerService.queue);
+
+                    }
+                    else if(viewHolder1.getAdapterPosition()==context.playerService.currentIndex){
+                        Collections.swap(context.playerService.queue, viewHolder.getAdapterPosition(), viewHolder1.getAdapterPosition());
+                        context.playerService.currentIndex=viewHolder.getAdapterPosition();
+                        queueListAdaptor.updateQueue(context.playerService.queue);
+
+                    }
+                    return true;
+                }
+
+                @Override
+                public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int i) {
+                    QueueListAdaptor.QueViewHolder queViewHolder = (QueueListAdaptor.QueViewHolder)viewHolder;
+                    int index=queViewHolder.getLayoutPosition();
+                    if(index<context.playerService.currentIndex){
+                        context.playerService.queue.remove(index);
+                        context.playerService.currentIndex--;
+                    }
+                    if(index>context.playerService.currentIndex){
+                        context.playerService.queue.remove(index);
+                    }
+                    queueListAdaptor.updateQueue(context.playerService.queue);
+                    queueListAdaptor.notifyItemRemoved(queViewHolder.getLayoutPosition());
+                }
+            });
+            itemTouchHelper.attachToRecyclerView(queueRecycler);
         }
-        if(context.playerService.isuMPready){
+        if(context.playerService.streamInfo!=null){
             streamInfo=context.playerService.streamInfo;
             //uMP=context.playerService.umP;
             start();
@@ -593,7 +728,6 @@ class core{
                             totalTime.setText(sectotime(context.playerService.umP.getDuration(),true));
                             seekBar.setMax((int)context.playerService.umP.getDuration()/1000);
                         }
-
                     }
 
                 });
@@ -676,6 +810,25 @@ class core{
         }
 
 
+        context.bottomSheetBehavior.setBottomSheetCallback(new BottomSheetBehavior.BottomSheetCallback() {
+            @Override
+            public void onStateChanged(@NonNull View view, int i) {
+                if(i==BottomSheetBehavior.STATE_EXPANDED ){
+                    context.nextinqueue.setVisibility(View.GONE);
+                    queuelayoutmanager.scrollToPositionWithOffset(context.playerService.currentIndex,0);
+                }
+                else if(i==BottomSheetBehavior.STATE_COLLAPSED) {
+                    context.nextinqueue.setVisibility(View.VISIBLE);
+                }
+
+            }
+
+            @Override
+            public void onSlide(@NonNull View view, float v) {
+
+            }
+        });
+
     }
 
     public void changeSong(){
@@ -685,6 +838,7 @@ class core{
         //submitButton.setEnabled(false);
         new testPipe().execute(this);
     }
+
 
     public void toggle(){
         if(context.playerService.isuMPready){
@@ -701,6 +855,9 @@ class core{
                 context.playerService.buildNotification(context.playerService.ID);
             }
         }
+        else {
+            context.playerService.playfromQueue(true);
+        }
     }
 
 
@@ -712,13 +869,31 @@ class core{
 
         List<StreamInfo> queue=new ArrayList<>();
         MainActivity activity;
+        boolean hide_previous=false;
 
         public void updateQueue(List<StreamInfo> newqueue){
             queue.clear();
             for(int i=0;i<newqueue.size();i++){
                 queue.add(i,newqueue.get(i));
             }
+            TextView nextNo = context.nextinqueue.findViewById(R.id.queuenumber);
+            TextView nextName = context.nextinqueue.findViewById(R.id.queueContent);
+
+            if(context.playerService.currentIndex!= queue.size()-1){
+                nextNo.setText(String.valueOf(context.playerService.currentIndex+1));
+                nextName.setText(context.playerService.queue.get(context.playerService.currentIndex+1).getName());
+            }
+            else {
+                nextNo.setText("");
+                nextName.setText("QUEUE END");
+            }
             notifyDataSetChanged();
+
+            synchronized (context.thumbviewpager) {
+                context.swipedpageadaptor.notifyDataSetChanged();
+                context.thumbviewpager.setCurrentItem(context.playerService.currentIndex);
+            }
+
         }
 
         QueueListAdaptor(MainActivity mainActivity){
@@ -757,6 +932,15 @@ class core{
         @Override
         public void onBindViewHolder(@NonNull QueueListAdaptor.QueViewHolder queViewHolder, int i) {
 
+            if(hide_previous && i<= context.playerService.currentIndex ){
+                queViewHolder.cardView.setVisibility(View.GONE);
+                queViewHolder.cardView.setLayoutParams(new RecyclerView.LayoutParams(0,0));
+            }
+            else {
+                queViewHolder.cardView.setVisibility(View.VISIBLE);
+                queViewHolder.cardView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+            }
+
             TextView Sno= (TextView)queViewHolder.cardView.findViewById(R.id.queuenumber);
             TextView SongName= (TextView)queViewHolder.cardView.findViewById(R.id.queueContent);
 
@@ -780,11 +964,11 @@ class core{
                 cardView=(CardView)itemView;
             }
         }
-    }
 
-    public void updateUI(){
 
     }
+
+
 
 }
 
@@ -841,6 +1025,7 @@ class testPipe extends AsyncTask<core,Integer,Integer> {
 
     @Override
     protected void onPostExecute(Integer integer){
-        playerService.playfromQueue();
+        playerService.playfromQueue(true);
     }
 }
+

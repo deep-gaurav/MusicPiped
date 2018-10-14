@@ -37,7 +37,7 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="0.431" />
 
-    <android.support.v7.widget.RecyclerView
+    <deep.ryd.rydplayer.ContextMenuRecyclerView
         android:id="@+id/tracksrecycler"
         android:layout_width="368dp"
         android:layout_height="0dp"

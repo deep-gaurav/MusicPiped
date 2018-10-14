@@ -9,12 +9,15 @@ import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.media.AudioFocusRequest;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Binder;
 import android.os.Build;
@@ -22,7 +25,9 @@ import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
+import android.support.v4.util.ArraySet;
 import android.util.Log;
+import android.widget.ImageView;
 import android.widget.RemoteViews;
 import android.widget.Toast;
 
@@ -31,14 +36,24 @@ import com.squareup.picasso.Target;
 
 import org.schabi.newpipe.extractor.NewPipe;
 import org.schabi.newpipe.extractor.services.youtube.YoutubeService;
+import org.schabi.newpipe.extractor.stream.Stream;
 import org.schabi.newpipe.extractor.stream.StreamInfo;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -65,6 +80,7 @@ public class PlayerService extends Service {
     public static final String ACTION_PREVIOUS = "action_previous";
     public static final String ACTION_STOP = "action_stop";
 
+    public ImageView thumbStore;
     public Bitmap thumbnail;
     public boolean isuMPready=false;
     PendingIntent launchIntent;
@@ -156,17 +172,17 @@ public class PlayerService extends Service {
         if(currentIndex!=queue.size()-1) {
 
                 currentIndex++;
-                playfromQueue();
+                playfromQueue(true);
         }
     }
     public void previousSong(){
         if(currentIndex>0){
             currentIndex--;
-            playfromQueue();
+            playfromQueue(true);
         }
     }
 
-    public  void playfromQueue(){
+    public  void playfromQueue(final boolean start){
         Log.i("ryd","QUEUE LENGTH "+queue.size());
         streamInfo=queue.get(currentIndex);
         umP.reset();
@@ -174,22 +190,7 @@ public class PlayerService extends Service {
         try {
             Picasso.get()
                     .load(streamInfo.getThumbnailUrl())
-                    .into(new Target() {
-                        @Override
-                        public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
-                            thumbnail=bitmap;
-                        }
-
-                        @Override
-                        public void onBitmapFailed(Exception e, Drawable errorDrawable) {
-
-                        }
-
-                        @Override
-                        public void onPrepareLoad(Drawable placeHolderDrawable) {
-
-                        }
-                    });
+                    .into(thumbStore);
             start();
             new PlayerService.UpdateSongStream().execute();
 
@@ -202,14 +203,15 @@ public class PlayerService extends Service {
                     umP.setAudioStreamType(AudioManager.STREAM_MUSIC);
                     core.updateStreaminDB(streamInfo,dbManager);
 
+                    if(start) {
+                        if (mainActivity != null) {
+                            mainActivity.coremain.toggle();
+                            mainActivity.coremain.setLoadingCircle2(false);
+                        } else {
+                            umP.start();
+                        }
+                    }
 
-                    if(mainActivity!=null){
-                        mainActivity.coremain.toggle();
-                        mainActivity.coremain.setLoadingCircle2(false);
-                    }
-                    else {
-                        umP.start();
-                    }
 
                 }
             });
@@ -258,6 +260,17 @@ public class PlayerService extends Service {
         super.onDestroy();
         umP.stop();
         Log.i("ryd","SERVICE DESTROYED");
+
+        SharedPreferences sharedPreferences = getSharedPreferences(getApplication().getPackageName()+getString(R.string.LastPlayedShared),Context.MODE_PRIVATE);
+
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putInt("currentIndex",currentIndex);
+        Set<String> queueSet = new ArraySet<>();
+        for(int i=0;i<queue.size();i++){
+            queueSet.add(i+" "+queue.get(i).getUrl());
+        }
+        editor.putStringSet("queue",queueSet);
+        editor.commit();
     }
 
     public void CreateToast(String toast){
@@ -267,14 +280,6 @@ public class PlayerService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
 
-        if (queue==null ) {
-            queue = new ArrayList<>();
-            Log.i("ryd","NEW QUEUE CREATED");
-        }
-        else {
-            Log.i("ryd","USING OLD QUEUE");
-            Log.i("ryd","QUEUE LENGTH "+queue.size());
-        }
         if(umP==null) {
             umP = new MediaPlayer();
             Log.i("ryd","NEW UMP CREATED");
@@ -283,6 +288,8 @@ public class PlayerService extends Service {
             Log.i("ryd","USING OLD UMP");
 
         }
+        if(thumbStore==null)
+            thumbStore=new ImageView(this);
         if(audioManager==null) {
             audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
             audioManager.requestAudioFocus(new AudioManager.OnAudioFocusChangeListener() {
@@ -315,6 +322,34 @@ public class PlayerService extends Service {
 
 
         }
+
+
+        if (queue==null ) {
+            queue = new ArrayList<>();
+            SharedPreferences sharedPreferences = getSharedPreferences(getApplication().getPackageName()+getString(R.string.LastPlayedShared),Context.MODE_PRIVATE);
+            if(sharedPreferences.contains("currentIndex")){
+                currentIndex=sharedPreferences.getInt("currentIndex",0);
+                Set<String> queueSet = sharedPreferences.getStringSet("queue",new ArraySet<String>());
+                String urlarray[]= (String[]) queueSet.toArray();
+                dbManager.open();
+                StreamInfo tempstrinfo[] = new StreamInfo[queueSet.size()];
+                for (Object object : queueSet){
+                    String url = (((String)object).split(" "))[1];
+                    StreamInfo streamInfo = dbManager.fetchSong(url);
+                    tempstrinfo[Integer.parseInt((((String)object).split(" "))[0])]=streamInfo;
+                }
+                queue.addAll(Arrays.asList(tempstrinfo));
+                dbManager.close();
+
+                streamInfo=queue.get(currentIndex);
+                //playfromQueue(false);
+            }
+
+        }
+        else {
+            Log.i("ryd","USING OLD QUEUE");
+            Log.i("ryd","QUEUE LENGTH "+queue.size());
+        }
         //Toast.makeText(this, "Service Created", Toast.LENGTH_SHORT).show();
         Log.i("ryd","Service Started");
         return super.onStartCommand(intent, flags, startId);
@@ -328,6 +363,8 @@ public class PlayerService extends Service {
         Log.i("ryd","Service Unbinded");
         return true;
     }
+
+
 
     public void buildNotification( int id){
         // Given a media session and its context (usually the component containing the session)
@@ -374,6 +411,10 @@ public class PlayerService extends Service {
         contentView.setTextColor(R.id.notifTitle,Color.DKGRAY);
         contentView.setTextViewText(R.id.notifText,streamInfo.getUploaderName());
         contentView.setTextColor(R.id.notifText,Color.LTGRAY);
+        if(thumbStore!=null && thumbStore.getDrawable()!=null){
+            BitmapDrawable bitmapDrawable = (BitmapDrawable) thumbStore.getDrawable();
+            thumbnail = bitmapDrawable.getBitmap();
+        }
         contentView.setImageViewBitmap(R.id.notifThumb,thumbnail);
         contentView.setImageViewResource(R.id.prevButton,android.R.drawable.ic_media_previous);
         contentView.setImageViewResource(R.id.nextButton,android.R.drawable.ic_media_next);
@@ -446,9 +487,12 @@ public class PlayerService extends Service {
             Log.i("ryd","ACTION "+action);
             if(action.equals("Close")){
                 mainobj.quitServiceNotif=true;
-                if(mainobj.mainActivity!=null) {
-                    mainobj.mainActivity.finish();
-                }
+
+                Intent intent1 = new Intent();
+                intent1.putExtra("action","Close");
+                intent1.setAction(MainActivity.MAINACTIVITYTBROADCASTACTION);
+                mainobj.sendBroadcast(intent1);
+
                 mainobj.stopForeground(true);
                 mainobj.stopSelf();
                 mainobj.stopForeground(true);
@@ -509,6 +553,17 @@ public class PlayerService extends Service {
 
     }
 
+    public void  addtoqueue(String url){
+        AddtoQueue addtoQueue = new AddtoQueue();
+        addtoQueue.execute(url);
+    }
+    public void  addtoqueue(StreamInfo streamInfo){
+        queue.add(streamInfo);
+        if(mainActivity!=null){
+            mainActivity.coremain.queueListAdaptor.updateQueue(queue);
+        }
+    }
+
     static class UpdateSongStream extends AsyncTask<String,String,String>{
 
 
@@ -564,6 +619,77 @@ public class PlayerService extends Service {
                 e.printStackTrace();
             }
         }
+    }
+    class AddtoQueue extends AsyncTask<String,String,String>{
+
+        StreamInfo streamInfo;
+
+        @Override
+        protected String doInBackground(String... strings) {
+
+            try{
+
+                if(PlayerService.this.mainActivity!=null)
+                    PlayerService.this.mainActivity.coremain.setLoadingCircle1(true);
+                Downloader.init(null);
+                NewPipe.init(Downloader.getInstance());
+                int sid = NewPipe.getIdOfService("YouTube");
+                YoutubeService ys= (YoutubeService)NewPipe.getService(sid);
+
+                streamInfo= StreamInfo.getInfo(ys,strings[0]);
+
+                Log.i("ryd","New Stream link received "+streamInfo.getAudioStreams().get(0).getUrl());
+            }
+            catch (Exception e){
+                e.printStackTrace();
+            }
+
+            return "Done";
+        }
+
+        @Override
+        protected void onPostExecute(String string){
+            try {
+
+                PlayerService.this.queue.add(streamInfo);
+                if(mainActivity!=null){
+                    mainActivity.coremain.setLoadingCircle1(false);
+                    mainActivity.coremain.queueListAdaptor.updateQueue(mainobj.queue);
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private File getTempFile(Context context, String fname) {
+        File file = null;
+        try {
+            String fileName = fname;
+            file = File.createTempFile(fileName, null, context.getCacheDir());
+        } catch (IOException e) {
+            // Error while creating file
+        }
+        return file;
+    }
+    public static String convertStreamToString(InputStream is) throws Exception {
+        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+        StringBuilder sb = new StringBuilder();
+        String line = null;
+        while ((line = reader.readLine()) != null) {
+            sb.append(line).append("\n");
+        }
+        reader.close();
+        return sb.toString();
+    }
+
+    public static String getStringFromFile (String filename) throws Exception {
+        FileInputStream fin = mainobj.openFileInput(filename);
+        String ret = convertStreamToString(fin);
+        //Make sure you close all streams.
+        fin.close();
+        return ret;
     }
 }
 

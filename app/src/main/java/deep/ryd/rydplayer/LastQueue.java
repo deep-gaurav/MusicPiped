@@ -4,9 +4,8 @@ import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
-public class DatabasHelper extends SQLiteOpenHelper {
-    // Table Name
-    public static final String TABLE_NAME = "ALL_SONGS";
+public class LastQueue extends SQLiteOpenHelper {
+    public static final String TABLE_NAME = "LAST_QUEUE";
 
     // Table columns
     public static final String _ID = "_id";
@@ -21,10 +20,10 @@ public class DatabasHelper extends SQLiteOpenHelper {
 
 
     // Database Information
-    static final String DB_NAME = "History.DB";
+    static final String DB_NAME = "TempHistory.DB";
 
     // database version
-    static final int DB_VERSION = 3;
+    static final int DB_VERSION = 1;
 
     // Creating table query
     private static final String CREATE_TABLE = "create table " + TABLE_NAME + "(" +
@@ -35,11 +34,10 @@ public class DatabasHelper extends SQLiteOpenHelper {
             + ARTIST + " TEXT, "
             + THUMBNAIL_URL + " TEXT, "
             + ARTIST_THUMBNAIL_URL + " TEXT, "
-            + PLAYED_TIMES + " INTEGER, "
             + STREAM_URL_1 + " TEXT );";
 
 
-    public DatabasHelper(Context context) {
+    public LastQueue(Context context) {
         super(context, DB_NAME, null, DB_VERSION);
     }
 
@@ -47,42 +45,13 @@ public class DatabasHelper extends SQLiteOpenHelper {
     public void onCreate(SQLiteDatabase db) {
 
         db.execSQL(CREATE_TABLE);
-        createLastTempTable(db);
     }
 
-    public void createLastTempTable(SQLiteDatabase db){
-        String TABLE_NAME = "LAST_QUEUE";
-
-        String _ID = "_id";
-        String URL = "url";
-        String ARTIST = "artist";
-        String TITLE = "title";
-        String ARTIST_URL = "artist_url";
-        String PLAYED_TIMES = "times_played";
-        String THUMBNAIL_URL = "thumbnail_url";
-        String ARTIST_THUMBNAIL_URL = "artist_thumb_url";
-        String STREAM_URL_1 = "stream_url_1";
-
-        String CREATE_TABLE = "create table " + TABLE_NAME + "(" +
-                _ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
-                + URL + " TEXT NOT NULL, "
-                + TITLE + " TEXT, "
-                + ARTIST_URL + " TEXT, "
-                + ARTIST + " TEXT, "
-                + THUMBNAIL_URL + " TEXT, "
-                + ARTIST_THUMBNAIL_URL + " TEXT, "
-                + STREAM_URL_1 + " TEXT );";
-
-        db.execSQL(CREATE_TABLE);
-
-
-    }
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-
 
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_NAME);
         onCreate(db);
     }
-}
 
+}
