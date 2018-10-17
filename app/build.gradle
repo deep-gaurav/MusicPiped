@@ -7,7 +7,7 @@ android {
         minSdkVersion 21
         targetSdkVersion 28
         versionCode 1
-        versionName "1.0"
+        versionName "0.1-beta"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
@@ -28,8 +28,9 @@ dependencies {
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
     implementation 'com.github.TeamNewPipe:NewPipeExtractor:v0.14.1'
-    api 'com.squareup.okhttp3:okhttp:3.4.1'
+    api 'com.squareup.okhttp3:okhttp:3.11.0'
     implementation 'com.android.support:design:28.0.0'
     implementation 'com.android.support:cardview-v7:28.0.0'
     implementation 'com.squareup.picasso:picasso:2.71828'
+    implementation 'com.android.support:recyclerview-v7:28.0.0'
 }

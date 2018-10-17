@@ -116,9 +116,12 @@ public class MainActivity extends AppCompatActivity {
 
     int MYCHILD=6200;
 
+    public List<Playlist> playlists = new ArrayList<>();
+
+    public AddNewPlayList dialogmaker;
+
     SearchView searchView;
     MainActivityReceiver mainActivityReceiver;
-
 
 
     private ServiceConnection serviceConnection = new ServiceConnection() {
@@ -188,8 +191,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     protected void ready() {
-        self = this;
 
+        playlists = Playlist.loadfromSharedPreference((Main2Activity)this);
         mainActivityReceiver=new MainActivityReceiver();
 
         IntentFilter intentFilter = new IntentFilter();
@@ -374,6 +377,14 @@ public class MainActivity extends AppCompatActivity {
                     MainActivity.this.finish();
                 }
             }
+            else if(intent.hasExtra("playListid")){
+                if(intent.getIntExtra("playListid",0)>0)
+                    playerService.queue=dbManager.songinList(intent.getIntExtra("playListid",0));
+                else if(intent.getStringExtra("playlisttype").equals("artist"))
+                    playerService.queue=dbManager.artistlists(intent.getStringExtra("channelurl"));
+                playerService.currentIndex = intent.getIntExtra("songindex",0);
+                playerService.playfromQueue(true);
+            }
         }
     }
 }
@@ -464,8 +475,6 @@ class core{
 
 
         start();
-
-
     }
 
     public  static void updateStreaminDB(StreamInfo streamInfo, DBManager dbManager){
@@ -480,6 +489,15 @@ class core{
                 streamInfo.getUploaderUrl(),
                 audiostreamtoString(streamInfo.getAudioStreams().get(0)));
         dbManager.close();
+
+
+        try {
+            ((Main2Activity) MainActivity.self).mSectionsPagerAdapter.refresh();
+            PlayerService.savelastplaying();
+        }
+        catch (Exception e){
+            e.printStackTrace();
+        }
     }
     public void setLoadingCircle2(final boolean state){
         context.runOnUiThread(new Runnable() {
@@ -964,12 +982,7 @@ class core{
                 cardView=(CardView)itemView;
             }
         }
-
-
     }
-
-
-
 }
 
 class testPipe extends AsyncTask<core,Integer,Integer> {
@@ -1025,6 +1038,7 @@ class testPipe extends AsyncTask<core,Integer,Integer> {
 
     @Override
     protected void onPostExecute(Integer integer){
+        if(playerService!=null)
         playerService.playfromQueue(true);
     }
 }

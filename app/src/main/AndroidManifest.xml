@@ -3,9 +3,10 @@
     package="deep.ryd.rydplayer">
 
     <uses-permission android:name="android.permission.INTERNET" />
-    <permission android:name="android.permission.MEDIA_CONTENT_CONTROL" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 
+    <permission android:name="android.permission.MEDIA_CONTENT_CONTROL" />
+
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 
     <application
         android:allowBackup="true"
@@ -13,34 +14,38 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".MainActivity">
 
-        </activity>
-        <activity android:name=".SearchActivity" >
+        <activity android:name=".PlaylistUniversal"
+            android:theme="@style/NoActionBarTheme"/>
+        <activity android:name=".MainActivity" />
+        <activity android:name=".SearchActivity">
             <intent-filter>
                 <action android:name="android.intent.action.SEARCH" />
             </intent-filter>
-            <meta-data android:name="android.app.searchable"
-                android:resource="@xml/searchable"/>
+
+            <meta-data
+                android:name="android.app.searchable"
+                android:resource="@xml/searchable" />
         </activity>
-        <activity
-            android:name=".Main2Activity"
-            >
+        <activity android:name=".Main2Activity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <meta-data android:name="android.app.default_searchable"
+
+            <meta-data
+                android:name="android.app.default_searchable"
                 android:value=".SearchActivity" />
         </activity>
 
-        <service android:name=".PlayerService" android:stopWithTask="false">
+        <service
+            android:name=".PlayerService"
+            android:stopWithTask="false" />
 
-        </service>
-        <receiver android:name=".PlayerService$ButtonReceiver"></receiver>
+        <receiver android:name=".PlayerService$ButtonReceiver" />
 
-        <provider android:name=".mySuggestionProvider"
+        <provider
+            android:name=".mySuggestionProvider"
             android:authorities="deep.ryd.rydplayer.SearchSuggestionProvider" />
     </application>
 

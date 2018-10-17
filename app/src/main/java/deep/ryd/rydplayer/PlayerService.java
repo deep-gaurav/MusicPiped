@@ -183,44 +183,49 @@ public class PlayerService extends Service {
     }
 
     public  void playfromQueue(final boolean start){
-        Log.i("ryd","QUEUE LENGTH "+queue.size());
-        streamInfo=queue.get(currentIndex);
-        umP.reset();
-        isuMPready=false;
-        try {
-            Picasso.get()
-                    .load(streamInfo.getThumbnailUrl())
-                    .into(thumbStore);
-            start();
-            new PlayerService.UpdateSongStream().execute();
+        if( !(queue.size()>0) || !(currentIndex<queue.size())) {
+            return;
+        }
+        else {
+            Log.i("ryd", "QUEUE LENGTH " + queue.size());
+            streamInfo = queue.get(currentIndex);
+            umP.reset();
+            isuMPready = false;
+            try {
+                Picasso.get()
+                        .load(streamInfo.getThumbnailUrl())
+                        .into(thumbStore);
+                start();
+                new PlayerService.UpdateSongStream().execute();
 
-            umP.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
-                @Override
-                public void onPrepared(MediaPlayer mp) {
+                umP.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+                    @Override
+                    public void onPrepared(MediaPlayer mp) {
 
-                    isuMPready=true;
-                    umP.setVolume(VOLUME,VOLUME);
-                    umP.setAudioStreamType(AudioManager.STREAM_MUSIC);
-                    core.updateStreaminDB(streamInfo,dbManager);
+                        isuMPready = true;
+                        umP.setVolume(VOLUME, VOLUME);
+                        umP.setAudioStreamType(AudioManager.STREAM_MUSIC);
+                        core.updateStreaminDB(streamInfo, dbManager);
 
-                    if(start) {
-                        if (mainActivity != null) {
-                            mainActivity.coremain.toggle();
-                            mainActivity.coremain.setLoadingCircle2(false);
-                        } else {
-                            umP.start();
+                        if (start) {
+                            if (mainActivity != null) {
+                                mainActivity.coremain.toggle();
+                                mainActivity.coremain.setLoadingCircle2(false);
+                            } else {
+                                umP.start();
+                            }
                         }
+
+
                     }
-
-
+                });
+                if (mainActivity != null) {
+                    mainActivity.coremain.start();
                 }
-            });
-            if(mainActivity!=null) {
-                mainActivity.coremain.start();
-            }
 
-        } catch (Exception e) {
-            e.printStackTrace();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -259,16 +264,20 @@ public class PlayerService extends Service {
     public void onDestroy() {
         super.onDestroy();
         umP.stop();
-        Log.i("ryd","SERVICE DESTROYED");
-
-        SharedPreferences sharedPreferences = getSharedPreferences(getApplication().getPackageName()+getString(R.string.LastPlayedShared),Context.MODE_PRIVATE);
+        Log.i("ryd", "SERVICE DESTROYED");
+        savelastplaying();
+    }
+    public static void savelastplaying(){
+        SharedPreferences sharedPreferences = mainobj.getSharedPreferences(mainobj.getApplication().getPackageName()+mainobj.getString(R.string.LastPlayedShared),Context.MODE_PRIVATE);
 
         SharedPreferences.Editor editor = sharedPreferences.edit();
-        editor.putInt("currentIndex",currentIndex);
+        editor.clear();
+        editor.putInt("currentIndex",mainobj.currentIndex);
         Set<String> queueSet = new ArraySet<>();
-        for(int i=0;i<queue.size();i++){
-            queueSet.add(i+" "+queue.get(i).getUrl());
+        for(int i=0;i<mainobj.queue.size();i++){
+            queueSet.add(i+" "+mainobj.queue.get(i).getUrl());
         }
+
         editor.putStringSet("queue",queueSet);
         editor.commit();
     }
@@ -319,8 +328,6 @@ public class PlayerService extends Service {
                     }
                 }
             },AudioManager.STREAM_MUSIC,AudioManager.AUDIOFOCUS_GAIN);
-
-
         }
 
 
@@ -330,7 +337,6 @@ public class PlayerService extends Service {
             if(sharedPreferences.contains("currentIndex")){
                 currentIndex=sharedPreferences.getInt("currentIndex",0);
                 Set<String> queueSet = sharedPreferences.getStringSet("queue",new ArraySet<String>());
-                String urlarray[]= (String[]) queueSet.toArray();
                 dbManager.open();
                 StreamInfo tempstrinfo[] = new StreamInfo[queueSet.size()];
                 for (Object object : queueSet){
@@ -344,7 +350,6 @@ public class PlayerService extends Service {
                 streamInfo=queue.get(currentIndex);
                 //playfromQueue(false);
             }
-
         }
         else {
             Log.i("ryd","USING OLD QUEUE");
@@ -367,6 +372,7 @@ public class PlayerService extends Service {
 
 
     public void buildNotification( int id){
+
         // Given a media session and its context (usually the component containing the session)
 // Create a NotificationCompat.Builder
 
@@ -376,9 +382,8 @@ public class PlayerService extends Service {
 
 
                 //.setSubText(description.getDescription()
-
-// Display the notification and place the service in the foreground
-        startForeground(id, builder.build());
+        if(builder!=null)
+            startForeground(id, builder.build());
     }
 
     public NotificationCompat.Builder notifbuilder(){
@@ -589,6 +594,7 @@ public class PlayerService extends Service {
                 NewPipe.init(Downloader.getInstance());
                 int sid = NewPipe.getIdOfService("YouTube");
                 YoutubeService ys= (YoutubeService)NewPipe.getService(sid);
+
 
                 streamInfo= StreamInfo.getInfo(ys,streamInfo.getUrl());
                 PlayerService.mainobj.streamInfo=streamInfo;

@@ -18,13 +18,13 @@ public class DatabasHelper extends SQLiteOpenHelper {
     public static final String THUMBNAIL_URL = "thumbnail_url";
     public static final String ARTIST_THUMBNAIL_URL = "artist_thumb_url";
     public static final String STREAM_URL_1 = "stream_url_1";
-
+    public static final String PLAYLISTS = "playlists";
 
     // Database Information
     static final String DB_NAME = "History.DB";
 
     // database version
-    static final int DB_VERSION = 3;
+    static final int DB_VERSION = 4;
 
     // Creating table query
     private static final String CREATE_TABLE = "create table " + TABLE_NAME + "(" +
@@ -36,7 +36,8 @@ public class DatabasHelper extends SQLiteOpenHelper {
             + THUMBNAIL_URL + " TEXT, "
             + ARTIST_THUMBNAIL_URL + " TEXT, "
             + PLAYED_TIMES + " INTEGER, "
-            + STREAM_URL_1 + " TEXT );";
+            + STREAM_URL_1 + " TEXT, "
+            + PLAYLISTS + " INTEGER DEFAULT 0);";
 
 
     public DatabasHelper(Context context) {
@@ -80,9 +81,9 @@ public class DatabasHelper extends SQLiteOpenHelper {
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
 
-
-        db.execSQL("DROP TABLE IF EXISTS " + TABLE_NAME);
-        onCreate(db);
+        if (newVersion > oldVersion) {
+            db.execSQL("ALTER TABLE "+TABLE_NAME+" ADD COLUMN "+PLAYLISTS+" INTEGER DEFAULT 0");
+        }
     }
 }
 
