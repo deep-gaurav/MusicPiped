@@ -139,7 +139,9 @@ public class DBManager {
                 streamInfo.setUploaderUrl(cursor.getString(cursor.getColumnIndex(DatabasHelper.ARTIST_URL)));
                 streamInfo.setUploaderAvatarUrl(cursor.getString(cursor.getColumnIndex(DatabasHelper.ARTIST_THUMBNAIL_URL)));
                 List<AudioStream> audioStreams = new ArrayList<>();
-                audioStreams.add(core.StringtoAudioStream(cursor.getString(cursor.getColumnIndex(DatabasHelper.STREAM_URL_1))));
+                String audiostram=cursor.getString(cursor.getColumnIndex(DatabasHelper.STREAM_URL_1));
+
+                audioStreams.add(core.StringtoAudioStream(audiostram));
                 Log.i("ryd","AUDIO STREAM LOADED "+audioStreams.get(0).getUrl());
                 streamInfo.setAudioStreams(audioStreams);
 
@@ -341,4 +343,5 @@ public class DBManager {
         close();
         return playlistsongs;
     }
+
 }

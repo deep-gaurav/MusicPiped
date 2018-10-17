@@ -634,6 +634,11 @@ public class PlayerService extends Service {
         protected String doInBackground(String... strings) {
 
             try{
+                streamInfo = dbManager.open().fetchSong(strings[0]);
+                dbManager.close();
+
+                if(streamInfo!=null)
+                    return "Done";
 
                 if(PlayerService.this.mainActivity!=null)
                     PlayerService.this.mainActivity.coremain.setLoadingCircle1(true);
@@ -644,6 +649,8 @@ public class PlayerService extends Service {
 
                 streamInfo= StreamInfo.getInfo(ys,strings[0]);
 
+                dbManager.open();
+                dbManager.addSong(streamInfo.getName(),streamInfo.getUrl(),streamInfo.getUploaderName(),streamInfo.getThumbnailUrl(),streamInfo.getUploaderAvatarUrl(),streamInfo.getUploaderUrl(),streamInfo.getAudioStreams().get(0).getUrl());
                 Log.i("ryd","New Stream link received "+streamInfo.getAudioStreams().get(0).getUrl());
             }
             catch (Exception e){

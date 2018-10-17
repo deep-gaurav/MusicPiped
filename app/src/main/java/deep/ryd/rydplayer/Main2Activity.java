@@ -192,6 +192,7 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
             SearchManager searchManager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);
             searchView.setSearchableInfo(searchManager.getSearchableInfo(getComponentName()));
             searchView.setSubmitButtonEnabled(true);
+            searchView.setQueryRefinementEnabled(true);
 
         }
         return super.onCreateOptionsMenu(menu);
@@ -381,7 +382,7 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
 
                 RecyclerView recyclerView=(RecyclerView)rootView.findViewById(R.id.ArtistRecycler);
                 recyclerView.setHasFixedSize(true);
-                RecyclerView.LayoutManager mLayoutManager=new GridLayoutManager(main2Activity,2);
+                RecyclerView.LayoutManager mLayoutManager=new GridLayoutManager(main2Activity,3);
                 recyclerView.setOverScrollMode(View.OVER_SCROLL_ALWAYS);
                 recyclerView.setLayoutManager(mLayoutManager);
 

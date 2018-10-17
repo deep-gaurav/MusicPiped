@@ -6,8 +6,8 @@ android {
         applicationId "deep.ryd.rydplayer"
         minSdkVersion 21
         targetSdkVersion 28
-        versionCode 1
-        versionName "0.1-beta"
+        versionCode 3
+        versionName "0.1.3-beta"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {

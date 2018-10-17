@@ -548,13 +548,18 @@ class core{
     }
 
     public static AudioStream StringtoAudioStream(String str){
-        String array[]= str.split(" ");
-        String url=array[0];
-        Integer averageBitrate = Integer.parseInt(array[1]);
-        MediaFormat mediaFormat = MediaFormat.getFormatById(Integer.parseInt(array[2]));
+        AudioStream audioStream;
+        try {
+            String array[] = str.split(" ");
+            String url = array[0];
+            Integer averageBitrate = Integer.parseInt(array[1]);
+            MediaFormat mediaFormat = MediaFormat.getFormatById(Integer.parseInt(array[2]));
 
-        AudioStream audioStream = new AudioStream(url,mediaFormat,averageBitrate);
-
+            audioStream = new AudioStream(url, mediaFormat, averageBitrate);
+        }
+        catch (Exception e){
+            audioStream=new AudioStream("",MediaFormat.getFormatById(0),0);
+        }
         return audioStream;
     }
     public void start(){
