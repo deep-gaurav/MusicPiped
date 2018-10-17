@@ -7,23 +7,31 @@ import android.app.ActionBar;
 import android.app.SearchManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
+import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.constraint.ConstraintLayout;
 import android.support.design.widget.BottomSheetBehavior;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v13.app.FragmentPagerAdapter;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.util.ArraySet;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v4.view.ViewPager;
 import android.os.Bundle;
+import android.support.v4.widget.TextViewCompat;
 import android.support.v7.widget.CardView;
+import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SearchView;
@@ -39,11 +47,13 @@ import android.view.ViewGroup;
 
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.squareup.picasso.Picasso;
 
+import org.mozilla.javascript.ast.ForInLoop;
 import org.schabi.newpipe.extractor.NewPipe;
 import org.schabi.newpipe.extractor.stream.AudioStream;
 import org.schabi.newpipe.extractor.stream.StreamInfo;
@@ -55,6 +65,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 public class Main2Activity extends MainActivity implements android.support.v7.app.ActionBar.TabListener, swipeThumb.OnFragmentInteractionListener {
 
@@ -67,7 +78,7 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
      * may be best to switch to a
      * {@link android.support.v13.app.FragmentStatePagerAdapter}.
      */
-    private SectionsPagerAdapter mSectionsPagerAdapter;
+    public SectionsPagerAdapter mSectionsPagerAdapter;
 
     /**
      * The {@link ViewPager} that will host the section contents.
@@ -76,11 +87,13 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
 
     public ContextMenuRecyclerView toptracksrecycler;
     public ContextMenuRecyclerView tracksRecycler;
+    public RecyclerView playlistrecycler;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        self=this;
 
         setContentView(R.layout.activity_main2);
         // Create the adapter that will return a fragment for each of the three
@@ -119,6 +132,8 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
 
         }
 
+        dialogmaker = new AddNewPlayList();
+        dialogmaker.activity=this;
 
         ready();
     }
@@ -202,8 +217,12 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
     public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo){
         super.onCreateContextMenu(menu,v,menuInfo);
 
+        int PlaylistGroupid=1;
         MenuInflater menuInflater = this.getMenuInflater();
         menuInflater.inflate(R.menu.songmenu,menu);
+        for(Playlist x : playlists){
+            menu.add(PlaylistGroupid,x.playlistid,x.playlistnumber,"Add to " + x.playlistname);
+        }
     }
     @Override
     public boolean onContextItemSelected(MenuItem item) {
@@ -220,6 +239,21 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
             playerService.addtoqueue(streamInfo);
 
             return false;
+        }
+        else {
+            for(Playlist i:playlists){
+                if(item.getItemId()==i.playlistid){
+                    ContextMenuRecyclerView.RecyclerContextMenuInfo info = (ContextMenuRecyclerView.RecyclerContextMenuInfo) item.getMenuInfo();
+
+                    SongsListAdaptor.MyViewHolder myViewHolder = (SongsListAdaptor.MyViewHolder) info.parentRecycler.findViewHolderForAdapterPosition(info.position);
+
+                    StreamInfo streamInfo = myViewHolder.streamInfo;
+
+                    dbManager.open();
+                    dbManager.addtoPlaylist(streamInfo.getUrl(),i.playlistid);
+                    dbManager.close();
+                }
+            }
         }
         return true;
     }
@@ -337,8 +371,50 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
 
                 SongsListAdaptor mAdapter=new SongsListAdaptor(songs,(Activity)rootView.getContext(),R.layout.resultlist,true);
                 recyclerView.setAdapter(mAdapter);
-            }
 
+                main2Activity.playlistrecycler=recyclerView;
+            }
+            if(getArguments().getInt(ARG_SECTION_NUMBER)==3){
+                rootView = inflater.inflate(R.layout.artistspage, container, false);
+
+                Main2Activity main2Activity = (Main2Activity)getActivity();
+
+                RecyclerView recyclerView=(RecyclerView)rootView.findViewById(R.id.ArtistRecycler);
+                recyclerView.setHasFixedSize(true);
+                RecyclerView.LayoutManager mLayoutManager=new GridLayoutManager(main2Activity,2);
+                recyclerView.setOverScrollMode(View.OVER_SCROLL_ALWAYS);
+                recyclerView.setLayoutManager(mLayoutManager);
+
+
+                List<StreamInfo> songs = loadInfofromDB(true,true);
+
+
+                SongsListAdaptor mAdapter=new SongsListAdaptor(songs,(Activity)rootView.getContext(),R.layout.top_artists,true);
+                mAdapter.artist_thumb=true;
+                recyclerView.setAdapter(mAdapter);
+            }
+            if(getArguments().getInt(ARG_SECTION_NUMBER)==4){
+                rootView = inflater.inflate(R.layout.playlist_list, container, false);
+                final Main2Activity main2Activity = (Main2Activity)getActivity();
+
+                RecyclerView recyclerView = rootView.findViewById(R.id.playlist_list_recycler);
+                recyclerView.setHasFixedSize(true);
+                RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(rootView.getContext());
+                recyclerView.setLayoutManager(layoutManager);
+                recyclerView.setOverScrollMode(View.OVER_SCROLL_ALWAYS);
+
+                List<Playlist> playlists = Playlist.loadfromSharedPreference(main2Activity);
+                PlayListMainAdapter playListMainAdapter = new PlayListMainAdapter(playlists,main2Activity,R.layout.resultlist,true);
+                recyclerView.setAdapter(playListMainAdapter);
+
+                FloatingActionButton AddPlaylistFAB = rootView.findViewById(R.id.addNewPlaylistFAB);
+                AddPlaylistFAB.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        main2Activity.dialogmaker.onCreateDialog(null).show();
+                    }
+                });
+            }
             return rootView;
         }
     }
@@ -386,8 +462,10 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
      */
     public class SectionsPagerAdapter extends android.support.v4.app.FragmentPagerAdapter {
 
+        FragmentManager fragmentManager;
         public SectionsPagerAdapter(FragmentManager fm) {
             super(fm);
+            fragmentManager = fm;
         }
 
         @Override
@@ -417,7 +495,15 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
             }
             return null;
         }
+
+        public void refresh(){
+            List<Fragment> fragments = fragmentManager.getFragments();
+            for(Fragment x:fragments){
+                fragmentManager.beginTransaction().detach(x).attach(x).commit();
+            }
+        }
     }
+
 }
 
 
@@ -448,11 +534,20 @@ class SongsListAdaptor extends RecyclerView.Adapter<SongsListAdaptor.MyViewHolde
     public MyViewHolder onCreateViewHolder(@NonNull ViewGroup viewGroup, int i) {
         CardView view= new CardView(viewGroup.getContext());
         ViewGroup.MarginLayoutParams params;
-        if(vertical)
-            params=new ViewGroup.MarginLayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        else
-            params=new ViewGroup.MarginLayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT);
-
+        if(artist_thumb){
+            if(vertical) {
+                params = new ViewGroup.MarginLayoutParams(ViewGroup.LayoutParams.FILL_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                params.setMargins(100,100,100,100);
+            }
+            else
+                params = new ViewGroup.MarginLayoutParams(300, ViewGroup.LayoutParams.FILL_PARENT);
+        }
+        else {
+            if (vertical)
+                params = new ViewGroup.MarginLayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            else
+                params = new ViewGroup.MarginLayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT);
+        }
         params.setMargins(10,10,10,10);
         view.setLayoutParams(params);
         view.setPadding(10,10,10,10);
@@ -462,7 +557,7 @@ class SongsListAdaptor extends RecyclerView.Adapter<SongsListAdaptor.MyViewHolde
         //view.setBackgroundResource(outValue.resourceId);
         view.setForeground(view.getContext().getDrawable(outValue.resourceId));
 
-        view.addView((ConstraintLayout) LayoutInflater.from(viewGroup.getContext())
+        view.addView( LayoutInflater.from(viewGroup.getContext())
                 .inflate(fragmentID,viewGroup,false));
 
         MyViewHolder vh=new MyViewHolder(view);
@@ -477,7 +572,7 @@ class SongsListAdaptor extends RecyclerView.Adapter<SongsListAdaptor.MyViewHolde
         myViewHolder.itemView.setLongClickable(true);
         myViewHolder.streamInfo=(StreamInfo)infoItems.get(i);
         CardView cardView=myViewHolder.cardView;
-        ConstraintLayout constraintLayout=(ConstraintLayout)cardView.getChildAt(0);
+        View constraintLayout= cardView.getChildAt(0);
         ImageView img=(ImageView)constraintLayout.findViewById(R.id.thumbHolder);
         TextView title=(TextView)constraintLayout.findViewById(R.id.queueContent);
 
@@ -504,11 +599,22 @@ class SongsListAdaptor extends RecyclerView.Adapter<SongsListAdaptor.MyViewHolde
         //t.setText(new Integer(i).toString());
         //cachedImageDownloader.execute();
 
+
         cardView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 MainActivity ma=(MainActivity)activity;
-                ma.playStream(infoItems,i);
+                if(artist_thumb){
+                    Intent intent = new Intent(ma,PlaylistUniversal.class);
+                    intent.putExtra("name",infoItems.get(i).getUploaderName());
+                    //List<StreamInfo> playliststreaminfos=((MainActivity) activity).playerService.dbManager.songinList(playlists.get(i).playlistid);
+                    intent.putExtra("playlisttype","artist");
+                    intent.putExtra("channelurl",infoItems.get(i).getUploaderUrl());
+                    activity.startActivity(intent);
+                }
+                else {
+                    ma.playStream(infoItems, i);
+                }
             }
         });
 
@@ -527,6 +633,103 @@ class SongsListAdaptor extends RecyclerView.Adapter<SongsListAdaptor.MyViewHolde
             this.cardView=cardView;
 
             }
+
+    }
+}
+
+class PlayListMainAdapter extends RecyclerView.Adapter<PlayListMainAdapter.MyViewHolder>{
+
+    List<Playlist> playlists;
+    Activity activity;
+    Cursor cursor;
+    Main2Activity.SectionsPagerAdapter notifyadaptor;
+    int fragmentID;
+    boolean vertical;
+    boolean artist_thumb=false;
+    //boolean circular=false;
+
+    public PlayListMainAdapter(List<Playlist> playlists, Activity activity, int fragmentID, boolean vertical){
+        this.playlists = playlists;
+        this.activity=activity;
+        this.fragmentID=fragmentID;
+        this.vertical=vertical;
+        //downloaditeminfos();
+    }
+
+
+
+    @NonNull
+    @Override
+    public MyViewHolder onCreateViewHolder(@NonNull ViewGroup viewGroup, int i) {
+        CardView view= new CardView(viewGroup.getContext());
+        ViewGroup.MarginLayoutParams params;
+        if(vertical)
+            params=new ViewGroup.MarginLayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        else
+            params=new ViewGroup.MarginLayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT);
+
+        params.setMargins(10,10,10,10);
+        view.setLayoutParams(params);
+        view.setPadding(10,10,10,10);
+
+        TypedValue outValue = new TypedValue();
+        view.getContext().getTheme().resolveAttribute(R.attr.selectableItemBackground, outValue, true);
+        //view.setBackgroundResource(outValue.resourceId);
+        view.setForeground(view.getContext().getDrawable(outValue.resourceId));
+
+        view.addView( LayoutInflater.from(viewGroup.getContext())
+                .inflate(fragmentID,viewGroup,false));
+
+        MyViewHolder vh=new MyViewHolder(view);
+
+
+        return vh;
+    }
+
+    @Override
+    public void onBindViewHolder(@NonNull final MyViewHolder myViewHolder, final int i) {
+
+        myViewHolder.itemView.setLongClickable(true);
+        myViewHolder.playlistinfo=playlists.get(i);
+        final CardView cardView=myViewHolder.cardView;
+        View constraintLayout=cardView.getChildAt(0);
+        ImageView img=(ImageView)constraintLayout.findViewById(R.id.thumbHolder);
+        TextView title= constraintLayout.findViewById(R.id.queueContent);
+        //title.setAutoSizeTextTypeUniformWithConfiguration(18,24,);
+        img.setImageResource(R.drawable.ic_library_music_white_24dp);
+
+        TextViewCompat.setAutoSizeTextTypeUniformWithConfiguration(title,12,24,1,TextViewCompat.AUTO_SIZE_TEXT_TYPE_UNIFORM);
+        title.setText(playlists.get(i).playlistname);
+
+        cardView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                MainActivity ma=(MainActivity)activity;
+                //TODO: ON CLICK OF PLAYLIST
+                Intent intent = new Intent(cardView.getContext(),PlaylistUniversal.class);
+                intent.putExtra("name",playlists.get(i).playlistname);
+                //List<StreamInfo> playliststreaminfos=((MainActivity) activity).playerService.dbManager.songinList(playlists.get(i).playlistid);
+                intent.putExtra("playlisttype","playlist");
+                intent.putExtra("playlistid",playlists.get(i).playlistid);
+                activity.startActivity(intent);
+            }
+        });
+
+    }
+
+    @Override
+    public int getItemCount() {
+        return playlists.size();
+    }
+
+    public static class MyViewHolder extends RecyclerView.ViewHolder{
+        public Playlist playlistinfo;
+        public CardView cardView;
+        public  MyViewHolder(CardView cardView){
+            super(cardView);
+            this.cardView=cardView;
+
+        }
 
     }
 }

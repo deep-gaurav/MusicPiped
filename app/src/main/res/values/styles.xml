@@ -14,6 +14,19 @@
 
 
     </style>
+    <style name="NoActionBarTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <!-- Customize your theme here. -->
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item>
+
+        <item name="autoCompleteTextViewStyle">@style/myAutoCompleteTextViewStyle</item>
+        <item name="textAppearanceSearchResultTitle">@style/mySearchResult</item>
+
+        <item name="android:navigationBarColor">@color/colorPrimaryDark</item>
+
+
+    </style>
     <style name="Green" parent="Theme.AppCompat.Light.NoActionBar">
         <item name="android:colorAccent">#00a600</item>
     </style>

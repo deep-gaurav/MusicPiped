@@ -201,4 +201,144 @@ public class DBManager {
         database.delete(DatabasHelper.TABLE_NAME, DatabasHelper._ID + "=" + _id, null);
     }
 
+    public int addtoPlaylist(String url,int playlist) {
+        String[] colums = new String[]{
+                DatabasHelper._ID,
+                DatabasHelper.TITLE,
+                DatabasHelper.URL,
+                DatabasHelper.PLAYLISTS
+        };
+        Cursor cursor = database.query(DatabasHelper.TABLE_NAME, colums, DatabasHelper.URL + "=?", new String[]{url}, null, null, null, null);
+        if (cursor != null && cursor.getCount() != 0) {
+            cursor.moveToFirst();
+            Integer oldplaylist = Integer.parseInt(cursor.getString(cursor.getColumnIndex(DatabasHelper.PLAYLISTS)));
+            int newplaylist=oldplaylist|playlist;
+            String songname=cursor.getString(cursor.getColumnIndex(DatabasHelper.TITLE));
+            Log.i("ryd","ADDING "+songname+" to playlist "+playlist+" old = "+oldplaylist+" new "+newplaylist);
+            String _id = (cursor.getString(cursor.getColumnIndex(DatabasHelper._ID)));
+            close();
+            open();
+            ContentValues contentValues = new ContentValues();
+            contentValues.put(DatabasHelper.PLAYLISTS,String.valueOf(newplaylist));
+            int i = database.update(DatabasHelper.TABLE_NAME, contentValues, DatabasHelper._ID + " = " + _id, null);
+        }
+
+        return 0;
+    }
+    public void removeFromPlaylist(String url,int playlist) {
+        String[] colums = new String[]{
+                DatabasHelper._ID,
+                DatabasHelper.TITLE,
+                DatabasHelper.URL,
+                DatabasHelper.PLAYLISTS
+        };
+        Cursor cursor = database.query(DatabasHelper.TABLE_NAME, colums, DatabasHelper.URL + "=?", new String[]{url}, null, null, null, null);
+        if (cursor != null && cursor.getCount() != 0) {
+            cursor.moveToFirst();
+            Integer oldplaylist = Integer.parseInt(cursor.getString(cursor.getColumnIndex(DatabasHelper.PLAYLISTS)));
+            int newplaylist = oldplaylist & ~(1 << (int)(Math.log(playlist)/Math.log(2)));
+            String songname=cursor.getString(cursor.getColumnIndex(DatabasHelper.TITLE));
+            Log.i("ryd","REMOVING "+songname+" to playlist "+playlist+" old = "+oldplaylist+" new "+newplaylist);
+            String _id = (cursor.getString(cursor.getColumnIndex(DatabasHelper._ID)));
+            close();
+            open();
+            ContentValues contentValues = new ContentValues();
+            contentValues.put(DatabasHelper.PLAYLISTS,String.valueOf(newplaylist));
+            int i = database.update(DatabasHelper.TABLE_NAME, contentValues, DatabasHelper._ID + " = " + _id, null);
+        }
+    }
+    public List<StreamInfo> songinList(int playlist){
+        open();
+        List<StreamInfo> playlistsongs = new ArrayList<>();
+        String[] colums = new String[]{
+                DatabasHelper._ID,
+                DatabasHelper.TITLE,
+                DatabasHelper.URL,
+                DatabasHelper.ARTIST_URL,
+                DatabasHelper.ARTIST,
+                DatabasHelper.THUMBNAIL_URL,
+                DatabasHelper.ARTIST_THUMBNAIL_URL,
+                DatabasHelper.PLAYED_TIMES,
+                DatabasHelper.STREAM_URL_1,
+                DatabasHelper.PLAYLISTS
+        };
+        Log.i("ryd","Getting Songs for playlist id "+playlist);
+        Cursor cursor = database.query(DatabasHelper.TABLE_NAME, colums, null,null, null, null, null, null);
+        if (cursor != null && cursor.getCount()!=0) {
+            cursor.moveToFirst();
+            for(int i = 0 ; i<cursor.getCount();i++) {
+                if((cursor.getInt(cursor.getColumnIndex(DatabasHelper.PLAYLISTS)) & playlist ) > 0) {
+                    int sid = NewPipe.getIdOfService("YouTube");
+                    StreamInfo streamInfo = new StreamInfo(
+                            sid,
+                            cursor.getString(cursor.getColumnIndex(DatabasHelper.URL)),
+                            cursor.getString(cursor.getColumnIndex(DatabasHelper.URL)),
+                            StreamType.AUDIO_STREAM,
+                            "",
+                            cursor.getString(cursor.getColumnIndex(DatabasHelper.TITLE)),
+                            0
+                    );
+                    streamInfo.setThumbnailUrl(cursor.getString(cursor.getColumnIndex(DatabasHelper.THUMBNAIL_URL)));
+                    streamInfo.setUploaderName(cursor.getString(cursor.getColumnIndex(DatabasHelper.ARTIST)));
+                    streamInfo.setUploaderUrl(cursor.getString(cursor.getColumnIndex(DatabasHelper.ARTIST_URL)));
+                    streamInfo.setUploaderAvatarUrl(cursor.getString(cursor.getColumnIndex(DatabasHelper.ARTIST_THUMBNAIL_URL)));
+                    List<AudioStream> audioStreams = new ArrayList<>();
+                    audioStreams.add(core.StringtoAudioStream(cursor.getString(cursor.getColumnIndex(DatabasHelper.STREAM_URL_1))));
+                    Log.i("ryd", "AUDIO STREAM LOADED " + audioStreams.get(0).getUrl());
+                    streamInfo.setAudioStreams(audioStreams);
+
+                    playlistsongs.add(streamInfo);
+                }
+                cursor.moveToNext();
+            }
+        }
+        close();
+        return playlistsongs;
+    }
+    public List<StreamInfo> artistlists(String artistURL){
+        open();
+        List<StreamInfo> playlistsongs = new ArrayList<>();
+        String[] colums = new String[]{
+                DatabasHelper._ID,
+                DatabasHelper.TITLE,
+                DatabasHelper.URL,
+                DatabasHelper.ARTIST_URL,
+                DatabasHelper.ARTIST,
+                DatabasHelper.THUMBNAIL_URL,
+                DatabasHelper.ARTIST_THUMBNAIL_URL,
+                DatabasHelper.PLAYED_TIMES,
+                DatabasHelper.STREAM_URL_1,
+                DatabasHelper.PLAYLISTS
+        };
+        Cursor cursor = database.query(DatabasHelper.TABLE_NAME, colums, DatabasHelper.ARTIST_URL + "=?", new String[]{artistURL}, null, null, null, null);
+        if (cursor != null && cursor.getCount()!=0) {
+            cursor.moveToFirst();
+            for(int i = 0 ; i<cursor.getCount();i++) {
+                int sid = NewPipe.getIdOfService("YouTube");
+                StreamInfo streamInfo = new StreamInfo(
+                        sid,
+                        cursor.getString(cursor.getColumnIndex(DatabasHelper.URL)),
+                        cursor.getString(cursor.getColumnIndex(DatabasHelper.URL)),
+                        StreamType.AUDIO_STREAM,
+                        "",
+                        cursor.getString(cursor.getColumnIndex(DatabasHelper.TITLE)),
+                        0
+                );
+                streamInfo.setThumbnailUrl(cursor.getString(cursor.getColumnIndex(DatabasHelper.THUMBNAIL_URL)));
+                streamInfo.setUploaderName(cursor.getString(cursor.getColumnIndex(DatabasHelper.ARTIST)));
+                streamInfo.setUploaderUrl(cursor.getString(cursor.getColumnIndex(DatabasHelper.ARTIST_URL)));
+                streamInfo.setUploaderAvatarUrl(cursor.getString(cursor.getColumnIndex(DatabasHelper.ARTIST_THUMBNAIL_URL)));
+                List<AudioStream> audioStreams = new ArrayList<>();
+                audioStreams.add(core.StringtoAudioStream(cursor.getString(cursor.getColumnIndex(DatabasHelper.STREAM_URL_1))));
+                Log.i("ryd", "AUDIO STREAM LOADED " + audioStreams.get(0).getUrl());
+                streamInfo.setAudioStreams(audioStreams);
+
+                playlistsongs.add(streamInfo);
+
+                cursor.moveToNext();
+            }
+        }
+        close();
+        return playlistsongs;
+    }
 }
