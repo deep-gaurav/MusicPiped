@@ -18,6 +18,11 @@ MusicPiped is an copylefted libre music player that plays streams from various p
 - [x] Local playlist
 - [x] Support for artists, tracks
 
+## Download
+
+Get latest version from [GitHub release](https://github.com/deep-gaurav/MusicPiped/releases/)
+or from the [Website](https://musicpiped.devsilver.me/) 
+
 ## Credits
 
 Thanks to [NewPipe Team](https://github.com/TeamNewPipe),
