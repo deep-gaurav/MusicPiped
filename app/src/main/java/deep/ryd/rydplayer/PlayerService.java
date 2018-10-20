@@ -31,6 +31,7 @@ import android.widget.ImageView;
 import android.widget.RemoteViews;
 import android.widget.Toast;
 
+import com.danikula.videocache.HttpProxyCacheServer;
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.Target;
 
@@ -66,8 +67,6 @@ public class PlayerService extends Service {
 
     public static PlayerService mainobj;
     public AudioManager audioManager;
-
-    public boolean isLooping=false;
 
     public  int ID=1;
     private String CHANNEL_ID = "player";
@@ -141,7 +140,7 @@ public class PlayerService extends Service {
                     @Override
                     public void onCompletion(MediaPlayer mp) {
                         buildNotification(ID);
-                        if(isLooping)
+                        if(getSharedPreferences("InternalSettings",Context.MODE_PRIVATE).getInt("Repeat",0)==2)
                             umP.start();
                         else {
                             nextSong();
@@ -170,9 +169,12 @@ public class PlayerService extends Service {
         Log.i("ryd","Old Index "+currentIndex);
         Log.i("ryd","Old streamurl "+streamInfo.getAudioStreams().get(0).getUrl());
         if(currentIndex!=queue.size()-1) {
-
                 currentIndex++;
                 playfromQueue(true);
+        }
+        else if(getSharedPreferences("InternalSettings",Context.MODE_PRIVATE).getInt("Repeat",0)==1){
+            currentIndex=0;
+            playfromQueue(true);
         }
     }
     public void previousSong(){
@@ -246,24 +248,11 @@ public class PlayerService extends Service {
 
 
     }
-    public void play() throws IOException {
-        umP.reset();
-        umP.setDataSource(streamInfo.getAudioStreams().get(0).getUrl());
-        umP.prepareAsync();
-        umP.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
-            @Override
-            public void onPrepared(MediaPlayer mp) {
-                umP.start();
-            }
-        });
-        start();
-
-    }
-
     @Override
     public void onDestroy() {
         super.onDestroy();
         umP.stop();
+        umP.release();
         Log.i("ryd", "SERVICE DESTROYED");
         savelastplaying();
     }
@@ -310,9 +299,11 @@ public class PlayerService extends Service {
                                 mainActivity.coremain.toggle();
                             }
                             else{
-                                Intent i= new Intent(PlayerService.this,PlayerService.ButtonReceiver.class);
-                                i.putExtra("action","Pause");
-                                sendBroadcast(i);
+                                if(getSharedPreferences("Settings",Context.MODE_PRIVATE).getBoolean("respectAudioFocus",true)) {
+                                    Intent i = new Intent(PlayerService.this, PlayerService.ButtonReceiver.class);
+                                    i.putExtra("action", "Pause");
+                                    sendBroadcast(i);
+                                }
                             }
 
                         }
@@ -341,14 +332,24 @@ public class PlayerService extends Service {
                 StreamInfo tempstrinfo[] = new StreamInfo[queueSet.size()];
                 for (Object object : queueSet){
                     String url = (((String)object).split(" "))[1];
+
                     StreamInfo streamInfo = dbManager.fetchSong(url);
                     tempstrinfo[Integer.parseInt((((String)object).split(" "))[0])]=streamInfo;
                 }
-                queue.addAll(Arrays.asList(tempstrinfo));
+                for(StreamInfo x : tempstrinfo){
+                    if(x!=null)
+                        queue.add(x);
+                    else {
+                        currentIndex--;
+                    }
+                }
                 dbManager.close();
-
-                streamInfo=queue.get(currentIndex);
-                //playfromQueue(false);
+                try {
+                    streamInfo = queue.get(currentIndex);
+                }
+                catch (Exception e){
+                    streamInfo=null;
+                }
             }
         }
         else {
@@ -576,6 +577,11 @@ public class PlayerService extends Service {
         protected String doInBackground(String... strings) {
             StreamInfo streamInfo = PlayerService.mainobj.streamInfo;
             String ping_status = null;
+            HttpProxyCacheServer proxyCacheServer = ProxyFactory.getProxy(PlayerService.mainobj);
+            if(proxyCacheServer.isCached(streamInfo.getAudioStreams().get(0).getUrl())){
+                Log.i("ryd","Already cached");
+                return "Using cached";
+            }
             try {
                 ping_status = CrunchifyGetPingStatus.getStatus(streamInfo.getAudioStreams().get(0).getUrl());
             } catch (IOException e) {
@@ -618,9 +624,17 @@ public class PlayerService extends Service {
                 }
                 PlayerService.mainobj.umP.reset();
                 PlayerService.mainobj.isuMPready=false;
-                PlayerService.mainobj.umP.setDataSource(PlayerService.mainobj.streamInfo.getAudioStreams().get(0).url);
+                HttpProxyCacheServer proxy  = ProxyFactory.getProxy(PlayerService.mainobj);
+                String proxiedurl  = proxy.getProxyUrl(PlayerService.mainobj.streamInfo.getAudioStreams().get(0).url);
+                PlayerService.mainobj.umP.setDataSource(proxiedurl);
                 PlayerService.mainobj.umP.prepareAsync();
-
+                PlayerService.mainobj.umP.setOnErrorListener(new MediaPlayer.OnErrorListener() {
+                    @Override
+                    public boolean onError(MediaPlayer mp, int what, int extra) {
+                        Log.i("ryd","ERROR LISTENER ENVOKED ");
+                        return false;
+                    }
+                });
             } catch (IOException e) {
                 e.printStackTrace();
             }

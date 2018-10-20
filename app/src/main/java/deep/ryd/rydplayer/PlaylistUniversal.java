@@ -24,11 +24,14 @@ import android.widget.TextView;
 
 import com.squareup.picasso.Picasso;
 
+import org.schabi.newpipe.extractor.ListExtractor;
 import org.schabi.newpipe.extractor.NewPipe;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
 import org.schabi.newpipe.extractor.services.youtube.YoutubeService;
 import org.schabi.newpipe.extractor.services.youtube.extractors.YoutubeChannelExtractor;
+import org.schabi.newpipe.extractor.services.youtube.extractors.YoutubePlaylistExtractor;
 import org.schabi.newpipe.extractor.stream.StreamInfo;
+import org.schabi.newpipe.extractor.stream.StreamInfoItem;
 
 import java.io.IOException;
 import java.util.List;
@@ -145,6 +148,7 @@ public class PlaylistUniversal extends AppCompatActivity {
 
             try {
                 YoutubeChannelExtractor yce = (YoutubeChannelExtractor)ys.getChannelExtractor(strings[0]);
+
                 yce.fetchPage();
                 BannerURL=yce.getBannerUrl();
             } catch (ExtractionException e) {

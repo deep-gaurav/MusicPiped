@@ -24,7 +24,7 @@ public class DatabasHelper extends SQLiteOpenHelper {
     static final String DB_NAME = "History.DB";
 
     // database version
-    static final int DB_VERSION = 4;
+    static final int DB_VERSION = 5;
 
     // Creating table query
     private static final String CREATE_TABLE = "create table " + TABLE_NAME + "(" +
@@ -81,8 +81,11 @@ public class DatabasHelper extends SQLiteOpenHelper {
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
 
-        if (newVersion > oldVersion) {
+        if (newVersion > oldVersion && oldVersion<5) {
             db.execSQL("ALTER TABLE "+TABLE_NAME+" ADD COLUMN "+PLAYLISTS+" INTEGER DEFAULT 0");
+        }
+        else if(newVersion>oldVersion && oldVersion>4){
+
         }
     }
 }
