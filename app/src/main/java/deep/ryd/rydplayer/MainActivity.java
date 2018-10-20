@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.BitmapShader;
@@ -102,7 +103,7 @@ public class MainActivity extends AppCompatActivity {
     public static final String MAINACTIVITYTBROADCASTACTION = "deep.ryd.rydplayer.MAINBROADCAST";
 
     TextView urlText;
-    static MainActivity self;
+    static Main2Activity self;
     core coremain;
     public static DBManager dbManager;
     PlayerService playerService;
@@ -311,7 +312,6 @@ public class MainActivity extends AppCompatActivity {
             playerService.queue.add(queue.get(i));
         }
         playerService.currentIndex=startIndex;
-
 
         //playerService.queue=queue;
         //playerService.currentIndex=startIndex;
@@ -548,13 +548,18 @@ class core{
     }
 
     public static AudioStream StringtoAudioStream(String str){
-        String array[]= str.split(" ");
-        String url=array[0];
-        Integer averageBitrate = Integer.parseInt(array[1]);
-        MediaFormat mediaFormat = MediaFormat.getFormatById(Integer.parseInt(array[2]));
+        AudioStream audioStream;
+        try {
+            String array[] = str.split(" ");
+            String url = array[0];
+            Integer averageBitrate = Integer.parseInt(array[1]);
+            MediaFormat mediaFormat = MediaFormat.getFormatById(Integer.parseInt(array[2]));
 
-        AudioStream audioStream = new AudioStream(url,mediaFormat,averageBitrate);
-
+            audioStream = new AudioStream(url, mediaFormat, averageBitrate);
+        }
+        catch (Exception e){
+            audioStream=new AudioStream("",MediaFormat.getFormatById(0),0);
+        }
         return audioStream;
     }
     public void start(){
@@ -728,7 +733,7 @@ class core{
             start();
         }
         final ImageButton repeat=context.findViewById(R.id.repeatButton);
-        if(context.playerService.isLooping){
+        if(context.getSharedPreferences("InternalSettings",Context.MODE_PRIVATE).getInt("Repeat",0)>0){
             DrawableCompat.setTint(repeat.getDrawable(), ContextCompat.getColor(context, R.color.colorAccent));
         }
         Timer timer = new Timer(false);
@@ -755,14 +760,30 @@ class core{
         repeat.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                SharedPreferences extrasettings=context.getSharedPreferences("InternalSettings",Context.MODE_PRIVATE);
                 ImageButton b= (ImageButton)v;
-                if(context.playerService.isLooping) {
-                    b.setImageResource(R.drawable.ic_repeat_one_white_24dp);
-                    b.setColorFilter(null);
-                    context.playerService.isLooping=false;
+                if(extrasettings.getInt("Repeat",0)==0){
+                    b.setImageResource(R.drawable.ic_repeat_white_24dp);
+                    b.setColorFilter(ContextCompat.getColor(b.getContext(),R.color.colorAccent));
+                    SharedPreferences.Editor editor = extrasettings.edit();
+                    editor.remove("Repeat");
+                    editor.putInt("Repeat",1);
+                    editor.commit();
                 }
-                else {
-                    context.playerService.isLooping=true;
+                else if(extrasettings.getInt("Repeat",0)==2) {
+                    b.setImageResource(R.drawable.ic_repeat_white_24dp);
+                    b.setColorFilter(null);
+                    SharedPreferences.Editor editor = extrasettings.edit();
+                    editor.remove("Repeat");
+                    editor.putInt("Repeat",0);
+                    editor.commit();
+                }
+                else if(extrasettings.getInt("Repeat",0)==1){
+                    SharedPreferences.Editor editor = extrasettings.edit();
+                    editor.remove("Repeat");
+                    editor.putInt("Repeat",2);
+                    editor.commit();
+                    b.setImageResource(R.drawable.ic_repeat_one_white_24dp);
                     b.setColorFilter(ContextCompat.getColor(b.getContext(),R.color.colorAccent));
                     //DrawableCompat.setTint(b.getDrawable(), ContextCompat.getColor(context, R.color.colorAccent));
                 }
@@ -899,7 +920,13 @@ class core{
 
             if(context.playerService.currentIndex!= queue.size()-1){
                 nextNo.setText(String.valueOf(context.playerService.currentIndex+1));
-                nextName.setText(context.playerService.queue.get(context.playerService.currentIndex+1).getName());
+                try {
+                    nextName.setText(context.playerService.queue.get(context.playerService.currentIndex+1).getName());
+
+                }
+                catch (Exception e){
+
+                }
             }
             else {
                 nextNo.setText("");
@@ -964,7 +991,13 @@ class core{
 
 
             Sno.setText(String.valueOf(i-activity.playerService.currentIndex));
-            SongName.setText(queue.get(i).getName());
+            try {
+                SongName.setText(queue.get(i).getName());
+            }
+            catch (Exception e){
+                e.printStackTrace();
+                queue.remove(i);
+            }
         }
 
 

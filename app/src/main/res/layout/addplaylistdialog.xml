@@ -11,6 +11,5 @@
         android:hint="Playlist Name"
         android:inputType="textCapCharacters"
         android:singleLine="true"
-        android:digits="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"/>
-
+    />
 </LinearLayout>

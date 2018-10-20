@@ -35,6 +35,7 @@ import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SearchView;
+import android.support.v7.widget.helper.ItemTouchHelper;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.ContextMenu;
@@ -48,6 +49,7 @@ import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -192,6 +194,7 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
             SearchManager searchManager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);
             searchView.setSearchableInfo(searchManager.getSearchableInfo(getComponentName()));
             searchView.setSubmitButtonEnabled(true);
+            searchView.setQueryRefinementEnabled(true);
 
         }
         return super.onCreateOptionsMenu(menu);
@@ -207,6 +210,8 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
+            Intent i = new Intent(this,SettingsActivity.class);
+            startActivity(i);
             return true;
         }
 
@@ -372,6 +377,21 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
                 SongsListAdaptor mAdapter=new SongsListAdaptor(songs,(Activity)rootView.getContext(),R.layout.resultlist,true);
                 recyclerView.setAdapter(mAdapter);
 
+                ItemTouchHelper itemTouchHelper = new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
+                    @Override
+                    public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder viewHolder1) {
+                        return false;
+                    }
+
+                    @Override
+                    public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int i) {
+                        SongsListAdaptor.MyViewHolder myViewHolder = (SongsListAdaptor.MyViewHolder)viewHolder;
+                        int index = myViewHolder.getLayoutPosition();
+                        dbManager.removeSong(myViewHolder.streamInfo.getUrl());
+                        self.mSectionsPagerAdapter.refresh();
+                    }
+                });
+                itemTouchHelper.attachToRecyclerView(recyclerView);
                 main2Activity.playlistrecycler=recyclerView;
             }
             if(getArguments().getInt(ARG_SECTION_NUMBER)==3){
@@ -381,7 +401,7 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
 
                 RecyclerView recyclerView=(RecyclerView)rootView.findViewById(R.id.ArtistRecycler);
                 recyclerView.setHasFixedSize(true);
-                RecyclerView.LayoutManager mLayoutManager=new GridLayoutManager(main2Activity,2);
+                RecyclerView.LayoutManager mLayoutManager=new GridLayoutManager(main2Activity,3);
                 recyclerView.setOverScrollMode(View.OVER_SCROLL_ALWAYS);
                 recyclerView.setLayoutManager(mLayoutManager);
 
@@ -412,6 +432,13 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
                     @Override
                     public void onClick(View v) {
                         main2Activity.dialogmaker.onCreateDialog(null).show();
+                    }
+                });
+                FloatingActionButton ImportPlaylistFAB = rootView.findViewById(R.id.importPlaylist);
+                ImportPlaylistFAB.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        main2Activity.dialogmaker.importDialog(null).show();
                     }
                 });
             }
@@ -503,7 +530,37 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
             }
         }
     }
+    public void setProgressInvisible() {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                View progressOverlay = findViewById(R.id.progress_overlay);
+                progressOverlay.setVisibility(View.INVISIBLE);
+            }
+        });
+    }
 
+    public void setProgressVisible() {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                View progressOverlay = findViewById(R.id.progress_overlay);
+                progressOverlay.setVisibility(View.VISIBLE);
+            }
+        });
+    }
+    public void setProgressIndicator(int pr){
+        ProgressBar p = findViewById(R.id.progress_wheel);
+
+        if(pr>0) {
+            p.setIndeterminate(false);
+            p.setMax(100);
+            p.setProgress(pr);
+        }
+        else{
+            p.setIndeterminate(true);
+        }
+    }
 }
 
 
