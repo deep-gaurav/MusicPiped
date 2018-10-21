@@ -4,6 +4,8 @@ import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
+import org.schabi.newpipe.extractor.stream.StreamInfoItem;
+
 public class DatabasHelper extends SQLiteOpenHelper {
     // Table Name
     public static final String TABLE_NAME = "ALL_SONGS";
@@ -86,7 +88,9 @@ public class DatabasHelper extends SQLiteOpenHelper {
         }
         else if(newVersion>oldVersion && oldVersion>4){
 
+
         }
     }
+
 }
 

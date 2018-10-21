@@ -28,13 +28,15 @@ public class DBManager {
     }
 
     public DBManager open() throws SQLException {
-        databasHelper = new DatabasHelper(context);
-        database = databasHelper.getWritableDatabase();
+        if(database==null) {
+            databasHelper = new DatabasHelper(context);
+            database = databasHelper.getWritableDatabase();
+        }
+
         return this;
     }
 
     public void close() {
-        databasHelper.close();
     }
 
     public void insert(String title, String url, String artist, String artist_url, String thumburl, String artist_thumb, String played_times, String audio_stream_ulr_1) {
