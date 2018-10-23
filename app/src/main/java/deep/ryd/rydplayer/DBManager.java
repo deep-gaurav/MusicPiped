@@ -328,6 +328,7 @@ public class DBManager {
                 DatabasHelper.STREAM_URL_1,
                 DatabasHelper.PLAYLISTS
         };
+        Log.i("ryd","ARTIST URL = "+artistURL);
         Cursor cursor = database.query(DatabasHelper.TABLE_NAME, colums, DatabasHelper.ARTIST_URL + "=?", new String[]{artistURL}, null, null, null, null);
         if (cursor != null && cursor.getCount()!=0) {
             cursor.moveToFirst();

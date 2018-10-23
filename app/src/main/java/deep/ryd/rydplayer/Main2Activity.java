@@ -441,6 +441,22 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
                         main2Activity.dialogmaker.importDialog(null).show();
                     }
                 });
+
+                ItemTouchHelper itemTouchHelper = new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP | ItemTouchHelper.DOWN, ItemTouchHelper.LEFT ) {
+                    @Override
+                    public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder viewHolder1) {
+                        return false;
+                    }
+
+                    @Override
+                    public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int i) {
+                        int index = viewHolder.getLayoutPosition();
+                        PlayListMainAdapter.MyViewHolder myViewHolder = (PlayListMainAdapter.MyViewHolder)viewHolder;
+                        myViewHolder.playlistinfo.remove(main2Activity);
+                    }
+                });
+                itemTouchHelper.attachToRecyclerView(recyclerView);
+
             }
             return rootView;
         }

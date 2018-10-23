@@ -58,6 +58,8 @@ import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import static java.lang.Math.abs;
+
 public class PlayerService extends Service {
 
     public MediaPlayer umP;
@@ -169,11 +171,19 @@ public class PlayerService extends Service {
         Log.i("ryd","Old Index "+currentIndex);
         Log.i("ryd","Old streamurl "+streamInfo.getAudioStreams().get(0).getUrl());
         if(currentIndex!=queue.size()-1) {
-                currentIndex++;
+                if(getSharedPreferences("InternalSettings",Context.MODE_PRIVATE).getInt("Shuffle",0)==1)
+                    currentIndex=new Random().nextInt()%queue.size();
+                else
+                    currentIndex++;
                 playfromQueue(true);
         }
-        else if(getSharedPreferences("InternalSettings",Context.MODE_PRIVATE).getInt("Repeat",0)==1){
-            currentIndex=0;
+        else if(getSharedPreferences("InternalSettings",Context.MODE_PRIVATE).getInt("Repeat",0)==1 ||
+                (getSharedPreferences("InternalSettings",Context.MODE_PRIVATE).getInt("Repeat",0)==2) ||
+                (getSharedPreferences("InternalSettings",Context.MODE_PRIVATE).getInt("Shuffle",0)==1)){
+            if(getSharedPreferences("InternalSettings",Context.MODE_PRIVATE).getInt("Shuffle",0)==1)
+                currentIndex=abs(new Random().nextInt())%queue.size();
+            else
+                currentIndex=0;
             playfromQueue(true);
         }
     }
@@ -290,6 +300,7 @@ public class PlayerService extends Service {
             thumbStore=new ImageView(this);
         if(audioManager==null) {
             audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+            if(getSharedPreferences("Settings",Context.MODE_PRIVATE).getBoolean("respectAudioFocus",true))
             audioManager.requestAudioFocus(new AudioManager.OnAudioFocusChangeListener() {
                 @Override
                 public void onAudioFocusChange(int focusChange) {

@@ -23,13 +23,16 @@ import java.util.Set;
 
 public class Playlist {
     public String playlistname;
+    public static String SKIPSTRING="SKIPTHESESTRINGSPLAYLIST";
     public int playlistid;
     public int playlistnumber;
+    public String from;
 
     public static int totalplaylists=0;
     public static int playlistlastid=0;
 
     public Playlist(String from){
+        this.from=from;
         totalplaylists++;
         String parts[]=from.split(" ");
         playlistnumber=Integer.parseInt(parts[0]);
@@ -49,7 +52,12 @@ public class Playlist {
         Log.i("ryd","PLAYLISTS FOUND "+playlistset.size());
         main2Activity.playlists.clear();
         for(String x: playlistset){
-            main2Activity.playlists.add(new Playlist(x));
+            if(!x.contains(SKIPSTRING)) {
+                Playlist s = new Playlist(x);
+                if(!s.playlistname.isEmpty()) {
+                    main2Activity.playlists.add(new Playlist(x));
+                }
+            }
         }
         return main2Activity.playlists;
     }
@@ -132,5 +140,18 @@ public class Playlist {
     @Override
     public String toString() {
         return playlistnumber+" "+playlistid+" "+playlistname;
+    }
+
+    public void remove(Main2Activity main2Activity){
+        SharedPreferences sharedPreferences = main2Activity.getPreferences( Context.MODE_PRIVATE);
+        Set<String> oldplaylists= sharedPreferences.getStringSet("playlists",new ArraySet<String>());
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        String newf=String.valueOf(playlistnumber)+" "+String.valueOf(playlistid)+"";
+        oldplaylists.remove(from);
+        oldplaylists.add(newf);
+        editor.remove("playlists");
+        editor.putStringSet("playlists",oldplaylists);
+        editor.commit();
+        main2Activity.mSectionsPagerAdapter.refresh();
     }
 }

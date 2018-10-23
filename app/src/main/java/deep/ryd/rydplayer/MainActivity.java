@@ -378,10 +378,12 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
             else if(intent.hasExtra("playListid")){
-                if(intent.getIntExtra("playListid",0)>0)
-                    playerService.queue=dbManager.songinList(intent.getIntExtra("playListid",0));
-                else if(intent.getStringExtra("playlisttype").equals("artist"))
+                if(intent.getStringExtra("playlisttype").equals("artist"))
                     playerService.queue=dbManager.artistlists(intent.getStringExtra("channelurl"));
+                else{
+                    playerService.queue.clear();
+                    playerService.queue.addAll(dbManager.songinList(intent.getIntExtra("playListid", 0)));
+                }
                 playerService.currentIndex = intent.getIntExtra("songindex",0);
                 playerService.playfromQueue(true);
             }
@@ -733,8 +735,30 @@ class core{
             start();
         }
         final ImageButton repeat=context.findViewById(R.id.repeatButton);
-        if(context.getSharedPreferences("InternalSettings",Context.MODE_PRIVATE).getInt("Repeat",0)>0){
-            DrawableCompat.setTint(repeat.getDrawable(), ContextCompat.getColor(context, R.color.colorAccent));
+        SharedPreferences extrasettings=context.getSharedPreferences("InternalSettings",Context.MODE_PRIVATE);
+        if(extrasettings.getInt("Repeat",0)==1){
+            repeat.setImageResource(R.drawable.ic_repeat_white_24dp);
+            repeat.setColorFilter(ContextCompat.getColor(repeat.getContext(),R.color.colorAccent));
+
+        }
+        else if(extrasettings.getInt("Repeat",0)==0) {
+            repeat.setImageResource(R.drawable.ic_repeat_white_24dp);
+            repeat.setColorFilter(null);
+        }
+        else if(extrasettings.getInt("Repeat",0)==2){
+            repeat.setImageResource(R.drawable.ic_repeat_one_white_24dp);
+            repeat.setColorFilter(ContextCompat.getColor(repeat.getContext(),R.color.colorAccent));
+            //DrawableCompat.setTint(b.getDrawable(), ContextCompat.getColor(context, R.color.colorAccent));
+        }
+        final ImageButton shuffle=context.findViewById(R.id.shuffleButton);
+        if(extrasettings.getInt("Shuffle",0)==0){
+            shuffle.setImageResource(R.drawable.ic_shuffle_white_24dp);
+            shuffle.setColorFilter(null);
+        }
+        else if(extrasettings.getInt("Shuffle",0)==1){
+            shuffle.setImageResource(R.drawable.ic_shuffle_white_24dp);
+            shuffle.setColorFilter(ContextCompat.getColor(repeat.getContext(),R.color.colorAccent));
+            //DrawableCompat.setTint(b.getDrawable(), ContextCompat.getColor(context, R.color.colorAccent));
         }
         Timer timer = new Timer(false);
         timer.scheduleAtFixedRate(new TimerTask() {
@@ -786,6 +810,29 @@ class core{
                     b.setImageResource(R.drawable.ic_repeat_one_white_24dp);
                     b.setColorFilter(ContextCompat.getColor(b.getContext(),R.color.colorAccent));
                     //DrawableCompat.setTint(b.getDrawable(), ContextCompat.getColor(context, R.color.colorAccent));
+                }
+            }
+        });
+        shuffle.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                SharedPreferences extrasettings=context.getSharedPreferences("InternalSettings",Context.MODE_PRIVATE);
+                ImageButton b= (ImageButton)v;
+                if(extrasettings.getInt("Shuffle",0)==0){
+                    b.setImageResource(R.drawable.ic_shuffle_white_24dp);
+                    b.setColorFilter(ContextCompat.getColor(b.getContext(),R.color.colorAccent));
+                    SharedPreferences.Editor editor = extrasettings.edit();
+                    editor.remove("Shuffle");
+                    editor.putInt("Shuffle",1);
+                    editor.commit();
+                }
+                else if(extrasettings.getInt("Shuffle",0)==1) {
+                    b.setImageResource(R.drawable.ic_shuffle_white_24dp);
+                    b.setColorFilter(null);
+                    SharedPreferences.Editor editor = extrasettings.edit();
+                    editor.remove("Shuffle");
+                    editor.putInt("Shuffle",0);
+                    editor.commit();
                 }
             }
         });

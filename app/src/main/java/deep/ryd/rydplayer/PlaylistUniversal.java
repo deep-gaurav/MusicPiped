@@ -254,7 +254,7 @@ class UniversalPlaylistAdapter extends RecyclerView.Adapter<UniversalPlaylistAda
             public void onClick(View v) {
                 //TODO on click of playlist song
                 Intent intent = new Intent();
-                if(((PlaylistUniversal)cardView.getContext()).playlistid > 0){
+                if(((PlaylistUniversal)cardView.getContext()).artisturl==null){
                     intent.putExtra("playlisttype", "playlist");
                     intent.putExtra("playListid", ((PlaylistUniversal) cardView.getContext()).playlistid);
                     intent.putExtra("songindex", i);
