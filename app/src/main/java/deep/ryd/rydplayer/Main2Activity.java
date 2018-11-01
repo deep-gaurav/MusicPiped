@@ -214,6 +214,11 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
             startActivity(i);
             return true;
         }
+        else if(id == R.id.action_donate){
+            Intent i = new Intent(this,About.class);
+            startActivity(i);
+            return true;
+        }
 
         return super.onOptionsItemSelected(item);
     }

@@ -172,7 +172,7 @@ public class PlayerService extends Service {
         Log.i("ryd","Old streamurl "+streamInfo.getAudioStreams().get(0).getUrl());
         if(currentIndex!=queue.size()-1) {
                 if(getSharedPreferences("InternalSettings",Context.MODE_PRIVATE).getInt("Shuffle",0)==1)
-                    currentIndex=new Random().nextInt()%queue.size();
+                    currentIndex=abs(new Random().nextInt())%queue.size();
                 else
                     currentIndex++;
                 playfromQueue(true);
@@ -510,7 +510,8 @@ public class PlayerService extends Service {
                 intent1.setAction(MainActivity.MAINACTIVITYTBROADCASTACTION);
                 mainobj.sendBroadcast(intent1);
 
-                mainobj.stopForeground(true);
+                //mainobj.stopForeground(true);
+
                 mainobj.stopSelf();
                 mainobj.stopForeground(true);
             }
