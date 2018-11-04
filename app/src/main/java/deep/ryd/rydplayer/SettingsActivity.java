@@ -22,9 +22,12 @@ import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.Switch;
+import android.widget.Toast;
 
 import com.danikula.videocache.HttpProxyCacheServer;
 import com.squareup.picasso.Picasso;
@@ -40,7 +43,9 @@ public class SettingsActivity extends AppCompatActivity {
 
     @Override
     public void onCreate(Bundle savedInstanceState){
+
         super.onCreate(savedInstanceState);
+        setTheme(this);
         setContentView(R.layout.settings_layout);
 
         audiofocus=findViewById(R.id.audioFocus);
@@ -111,6 +116,42 @@ public class SettingsActivity extends AppCompatActivity {
             }
         });
 
+
+
+
+        //THEME SETTER
+        Button dark = findViewById(R.id.dark);
+        Button blue = findViewById(R.id.blue);
+
+        dark.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                SharedPreferences.Editor editor =getSharedPreferences("Settings",Context.MODE_PRIVATE).edit() ;
+                editor.remove("THEME");
+                editor.putString("THEME","dark");
+                editor.commit();
+
+                Toast.makeText(SettingsActivity.this, "Restart App to see changes", Toast.LENGTH_SHORT).show();
+            }
+        });
+        blue.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                SharedPreferences.Editor editor =getSharedPreferences("Settings",Context.MODE_PRIVATE).edit() ;
+                editor.remove("THEME");
+                editor.putString("THEME","blue");
+                editor.commit();
+
+                Toast.makeText(SettingsActivity.this, "Restart App to see changes", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
+    public static void setTheme(Context context){
+        String theme=context.getSharedPreferences("Settings",context.MODE_PRIVATE).getString("THEME","dark");
+        if(theme.equals("dark"))
+            context.setTheme(R.style.AppTheme);
+        else if(theme.equals("blue"))
+            context.setTheme(R.style.AppThemeDefaultBlue);
+    }
 }

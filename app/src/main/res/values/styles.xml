@@ -12,8 +12,20 @@
 
         <item name="android:navigationBarColor">@color/colorPrimaryDark</item>
 
+    </style>
+    <style name="AppThemeDefaultBlue" parent="Base.Theme.AppCompat.Light.DarkActionBar">
+        <!-- Customize your theme here. -->
+        <item name="colorPrimary">@color/BluePrimary</item>
+        <item name="colorPrimaryDark">@color/BluePrimaryDark</item>
+        <item name="colorAccent">@color/BluecolorAccent</item>
+
+        <item name="autoCompleteTextViewStyle">@style/myAutoCompleteTextViewStyle</item>
+        <item name="textAppearanceSearchResultTitle">@style/mySearchResult</item>
+
+        <item name="android:navigationBarColor">@color/BluePrimary</item>
 
     </style>
+
     <style name="NoActionBarTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
         <!-- Customize your theme here. -->
         <item name="colorPrimary">@color/colorPrimary</item>

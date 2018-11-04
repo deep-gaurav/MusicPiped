@@ -72,4 +72,38 @@
         app:layout_constraintTop_toBottomOf="@+id/audioFocus"
         app:layout_constraintVertical_bias="0.526" />
 
+    <TextView
+        android:id="@+id/textView3"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:text="Select Theme"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/updateCheck" />
+
+    <Button
+        android:id="@+id/dark"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:background="@color/colorPrimary"
+        android:text="Dark"
+        android:textColor="@color/background"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textView3" />
+
+    <Button
+        android:id="@+id/blue"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:background="@color/BluePrimary"
+        android:text="Blue"
+        android:textColor="@color/background"
+        app:layout_constraintBottom_toBottomOf="@+id/dark"
+        app:layout_constraintStart_toEndOf="@+id/dark"
+        app:layout_constraintTop_toTopOf="@+id/dark" />
+
 </android.support.constraint.ConstraintLayout>
