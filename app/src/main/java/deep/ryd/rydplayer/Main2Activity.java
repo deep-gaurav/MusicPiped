@@ -53,6 +53,10 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.AdSize;
+import com.google.android.gms.ads.AdView;
+import com.google.android.gms.ads.MobileAds;
 import com.squareup.picasso.Picasso;
 
 import org.mozilla.javascript.ast.ForInLoop;
@@ -86,6 +90,7 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
      * The {@link ViewPager} that will host the section contents.
      */
     private ViewPager mViewPager;
+    private AdView adView;
 
     public ContextMenuRecyclerView toptracksrecycler;
     public ContextMenuRecyclerView tracksRecycler;
@@ -138,6 +143,14 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
         dialogmaker.activity=this;
 
         ready();
+
+
+        //ADS
+        MobileAds.initialize(this, "ca-app-pub-3290942482576912~4025719850");
+        adView = findViewById(R.id.adView);
+
+        AdRequest adRequest = new AdRequest.Builder().build();
+        adView.loadAd(adRequest);
     }
 
 

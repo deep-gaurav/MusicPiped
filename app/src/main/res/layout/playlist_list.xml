@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:layout_marginBottom="0dp"
-    android:paddingBottom="70dp">
+    android:paddingBottom="120dp">
 
     <android.support.design.widget.FloatingActionButton
         android:id="@+id/addNewPlaylistFAB"
