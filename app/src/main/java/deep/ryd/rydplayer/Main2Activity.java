@@ -146,11 +146,13 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
 
 
         //ADS
-        MobileAds.initialize(this, "ca-app-pub-3290942482576912~4025719850");
-        adView = findViewById(R.id.adView);
+        if(getSharedPreferences("SETTINGS",MODE_PRIVATE).getBoolean("ShowAds",true)) {
+            MobileAds.initialize(this, "ca-app-pub-3290942482576912~4025719850");
+            adView = findViewById(R.id.adView);
 
-        AdRequest adRequest = new AdRequest.Builder().build();
-        adView.loadAd(adRequest);
+            AdRequest adRequest = new AdRequest.Builder().build();
+            adView.loadAd(adRequest);
+        }
     }
 
 

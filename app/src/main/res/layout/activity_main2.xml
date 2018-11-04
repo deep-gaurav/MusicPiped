@@ -33,7 +33,7 @@
         ads:adSize="BANNER"
         ads:adUnitId="ca-app-pub-3290942482576912/3405529487"
 
-        ads:layout_anchorGravity="top|center_horizontal|clip_vertical"
+        ads:layout_anchorGravity="top|center"
         app:layout_anchor="@+id/nestedScrollBottomSheet"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
