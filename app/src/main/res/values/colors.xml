@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#3F51B5</color>
-    <color name="colorPrimaryDark">#303F9F</color>
-    <color name="colorAccent">#FF4C43</color>
+    <color name="colorPrimary">#161F22</color>
+    <color name="colorPrimaryDark">#000000</color>
+    <color name="colorAccent">#8A8383</color>
     <color name="background">#FFFFFF</color>
     <color name="DarkText">#000000</color>
     <color name="LigthGray">#888888</color>
@@ -11,4 +11,10 @@
     <color name="twenty_percent_black_overlay" />
     <color name="fifty_percent_black_overlay" />
     <color name="white">#FFFFFFFF</color>
+
+
+    <color name= "BluePrimary">#3F51B5</color>
+    <color name= "BluePrimaryDark">#2A367E</color>
+    <color name= "BluecolorAccent">#F44336</color>
+
 </resources>

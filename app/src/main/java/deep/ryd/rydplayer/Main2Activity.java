@@ -49,6 +49,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 
+import android.widget.AbsListView;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -63,6 +64,7 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
+
 import com.squareup.picasso.Picasso;
 
 import org.mozilla.javascript.ast.ForInLoop;
@@ -107,6 +109,7 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
 
         self=this;
 
+        SettingsActivity.setTheme(this);
         setContentView(R.layout.activity_main2);
         // Create the adapter that will return a fragment for each of the three
         // primary sections of the activity.
@@ -428,7 +431,7 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
                 Main2Activity main2Activity = (Main2Activity)getActivity();
 
                 main2Activity.tracksRecycler=rootView.findViewById(R.id.listRecycler);
-                ContextMenuRecyclerView recyclerView=main2Activity.tracksRecycler;
+                final ContextMenuRecyclerView recyclerView=main2Activity.tracksRecycler;
 
                 main2Activity.registerForContextMenu(main2Activity.tracksRecycler);
                 recyclerView.setLongClickable(true);
@@ -441,7 +444,7 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
                 List<StreamInfo> songs = loadInfofromDB(false,false);
 
 
-                SongsListAdaptor mAdapter=new SongsListAdaptor(songs,(Activity)rootView.getContext(),R.layout.resultlist,true);
+                final SongsListAdaptor mAdapter=new SongsListAdaptor(songs,(Activity)rootView.getContext(),R.layout.resultlist,true);
                 recyclerView.setAdapter(mAdapter);
 
                 ItemTouchHelper itemTouchHelper = new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
@@ -452,8 +455,12 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
 
                     @Override
                     public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int i) {
+
                         SongsListAdaptor.MyViewHolder myViewHolder = (SongsListAdaptor.MyViewHolder)viewHolder;
                         int index = myViewHolder.getLayoutPosition();
+                        if(mAdapter.getItemViewType(index)==mAdapter.AD_TYPE){
+                            return;
+                        }
                         dbManager.removeSong(myViewHolder.streamInfo.getUrl());
                         self.mSectionsPagerAdapter.refresh();
                     }
@@ -649,6 +656,10 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
 
 class SongsListAdaptor extends RecyclerView.Adapter<SongsListAdaptor.MyViewHolder>{
 
+    public static int AD_TYPE=0;
+    public static int CONTENT_TYPE=1;
+
+
     public static boolean returner=false;
     List<StreamInfo> infoItems;
     Activity activity;
@@ -668,10 +679,21 @@ class SongsListAdaptor extends RecyclerView.Adapter<SongsListAdaptor.MyViewHolde
     }
 
 
+    @Override
+    public int getItemViewType(int position) {
+        if(!isAdEnabled())
+            return CONTENT_TYPE;
+        if (position>0 && position%5 ==  0){
+            return  AD_TYPE;
+        }
+        else
+            return CONTENT_TYPE;
+    }
 
     @NonNull
     @Override
     public MyViewHolder onCreateViewHolder(@NonNull ViewGroup viewGroup, int i) {
+
         CardView view= new CardView(viewGroup.getContext());
         ViewGroup.MarginLayoutParams params;
         if(artist_thumb){
@@ -706,71 +728,102 @@ class SongsListAdaptor extends RecyclerView.Adapter<SongsListAdaptor.MyViewHolde
         return vh;
     }
 
+    public boolean isAd(int pos){
+        if(pos%5 == 0 && (activity.getSharedPreferences("Settings",activity.MODE_PRIVATE).getBoolean("ShowAds",true)) && false && vertical){
+            return true;
+        }
+        else
+            return false;
+    }
     @Override
-    public void onBindViewHolder(@NonNull MyViewHolder myViewHolder, final int i) {
+    public void onBindViewHolder(@NonNull MyViewHolder myViewHolder, int pos) {
 
-        myViewHolder.itemView.setLongClickable(true);
-        myViewHolder.streamInfo=(StreamInfo)infoItems.get(i);
-        CardView cardView=myViewHolder.cardView;
-        View constraintLayout= cardView.getChildAt(0);
-        ImageView img=(ImageView)constraintLayout.findViewById(R.id.thumbHolder);
-        TextView title=(TextView)constraintLayout.findViewById(R.id.queueContent);
+        if(getItemViewType(pos)==AD_TYPE)
+            return;
+        else if(getItemViewType(pos)==CONTENT_TYPE) {
+            final int i = getSongPos(pos);
+            myViewHolder.itemView.setLongClickable(true);
+            myViewHolder.streamInfo = (StreamInfo) infoItems.get(i);
+            CardView cardView = myViewHolder.cardView;
+            View constraintLayout = cardView.getChildAt(0);
+            ImageView img = (ImageView) constraintLayout.findViewById(R.id.thumbHolder);
+            TextView title = (TextView) constraintLayout.findViewById(R.id.queueContent);
 
-        //CachedImageDownloader cachedImageDownloader;
-        if(artist_thumb) {
-            //cachedImageDownloader = new CachedImageDownloader(infoItems.get(i).getUploaderAvatarUrl(), img);
-            title.setText(infoItems.get(i).getUploaderName());
-            Picasso.get()
-                    .load(infoItems.get(i).getUploaderAvatarUrl())
-                    .transform(new CircleTransform())
-                    .into(img);
-            cardView.setCardElevation(0);
-            cardView.setCardBackgroundColor(Color.TRANSPARENT);
-            //img.setLayoutParams(new ConstraintLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,200));
-        }
-        else {
-            //cachedImageDownloader = new CachedImageDownloader(infoItems.get(i).getThumbnailUrl(), img);
-            title.setText(infoItems.get(i).getName());
-            Picasso.get()
-                    .load(infoItems.get(i).getThumbnailUrl())
-                    .into(img);
-        }
-        //title.setText("TEST CARD "+new Integer(i).toString());
-        //t.setText(new Integer(i).toString());
-        //cachedImageDownloader.execute();
-
-
-        cardView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                MainActivity ma=(MainActivity)activity;
-                if(artist_thumb){
-                    Intent intent = new Intent(ma,PlaylistUniversal.class);
-                    intent.putExtra("name",infoItems.get(i).getUploaderName());
-                    //List<StreamInfo> playliststreaminfos=((MainActivity) activity).playerService.dbManager.songinList(playlists.get(i).playlistid);
-                    intent.putExtra("playlisttype","artist");
-                    intent.putExtra("channelurl",infoItems.get(i).getUploaderUrl());
-                    activity.startActivity(intent);
-                }
-                else {
-                    ma.playStream(infoItems, i);
-                }
+            //CachedImageDownloader cachedImageDownloader;
+            if (artist_thumb) {
+                //cachedImageDownloader = new CachedImageDownloader(infoItems.get(i).getUploaderAvatarUrl(), img);
+                title.setText(infoItems.get(i).getUploaderName());
+                Picasso.get()
+                        .load(infoItems.get(i).getUploaderAvatarUrl())
+                        .transform(new CircleTransform())
+                        .into(img);
+                cardView.setCardElevation(0);
+                cardView.setCardBackgroundColor(Color.TRANSPARENT);
+                //img.setLayoutParams(new ConstraintLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,200));
+            } else {
+                //cachedImageDownloader = new CachedImageDownloader(infoItems.get(i).getThumbnailUrl(), img);
+                title.setText(infoItems.get(i).getName());
+                Picasso.get()
+                        .load(infoItems.get(i).getThumbnailUrl())
+                        .into(img);
             }
-        });
+            //title.setText("TEST CARD "+new Integer(i).toString());
+            //t.setText(new Integer(i).toString());
+            //cachedImageDownloader.execute();
 
+
+            cardView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    MainActivity ma = (MainActivity) activity;
+                    if (artist_thumb) {
+                        Intent intent = new Intent(ma, PlaylistUniversal.class);
+                        intent.putExtra("name", infoItems.get(i).getUploaderName());
+                        //List<StreamInfo> playliststreaminfos=((MainActivity) activity).playerService.dbManager.songinList(playlists.get(i).playlistid);
+                        intent.putExtra("playlisttype", "artist");
+                        intent.putExtra("channelurl", infoItems.get(i).getUploaderUrl());
+                        activity.startActivity(intent);
+                    } else {
+                        ma.playStream(infoItems, i);
+                    }
+                }
+            });
+        }
+    }
+
+    public boolean isAdEnabled(){
+        if(!((false && activity.getSharedPreferences("Settings",activity.MODE_PRIVATE).getBoolean("ShowAds",true)) && vertical && !artist_thumb))
+            return false;
+        else
+            return true;
     }
 
     @Override
     public int getItemCount() {
-        return infoItems.size();
+        if(!isAdEnabled())
+            return infoItems.size();
+
+        return infoItems.size()+infoItems.size()/5;
     }
 
+    public int getSongPos(int i){
+        Log.i("ryd","got i "+i);
+        if(!((activity.getSharedPreferences("Settings",activity.MODE_PRIVATE).getBoolean("ShowAds",true)) && vertical))
+            return i;
+        else
+            return i-(i/5);
+    }
     public static class MyViewHolder extends RecyclerView.ViewHolder{
         public StreamInfo streamInfo;
         public CardView cardView;
-        public  MyViewHolder(CardView cardView){
+        public  MyViewHolder(View cardView){
             super(cardView);
-            this.cardView=cardView;
+            try{
+                this.cardView=(CardView)cardView;
+            }
+            catch (Exception e){
+
+            }
 
             }
 
@@ -859,7 +912,7 @@ class PlayListMainAdapter extends RecyclerView.Adapter<PlayListMainAdapter.MyVie
 
     @Override
     public int getItemCount() {
-        return playlists.size();
+            return playlists.size();
     }
 
     public static class MyViewHolder extends RecyclerView.ViewHolder{
