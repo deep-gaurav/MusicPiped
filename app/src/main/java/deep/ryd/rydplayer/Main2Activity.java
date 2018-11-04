@@ -4,8 +4,11 @@ package deep.ryd.rydplayer;
 import android.app.Activity;
 import android.app.ActionBar;
 
+import android.app.AlertDialog;
+import android.app.Dialog;
 import android.app.SearchManager;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
@@ -53,6 +56,12 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdSize;
 import com.google.android.gms.ads.AdView;
@@ -146,13 +155,64 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
 
 
         //ADS
-        if(getSharedPreferences("SETTINGS",MODE_PRIVATE).getBoolean("ShowAds",true)) {
+        if(getSharedPreferences("Settings",MODE_PRIVATE).getBoolean("ShowAds",true)) {
             MobileAds.initialize(this, "ca-app-pub-3290942482576912~4025719850");
             adView = findViewById(R.id.adView);
 
             AdRequest adRequest = new AdRequest.Builder().build();
             adView.loadAd(adRequest);
         }
+
+        if(getSharedPreferences("Settings",MODE_PRIVATE).getBoolean("CheckUpdate",true))
+            UpdateChecker();
+    }
+
+    public void UpdateChecker(){
+
+        RequestQueue queue = Volley.newRequestQueue(this);
+
+        String updateCheckURL ="https://raw.githubusercontent.com/deep-gaurav/MusicPiped/master/app/build.gradle";
+        StringRequest stringRequest = new StringRequest(Request.Method.GET, updateCheckURL, new Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {
+                Log.d("ryd", response);
+                int versionlineIndex= response.indexOf("versionCode");
+                int versionNameIndex= response.indexOf("versionName");
+                String versionline = response.substring(response.indexOf(" ",versionlineIndex),response.indexOf('\n',versionlineIndex)).trim();
+                String versionName = response.substring(response.indexOf("\"",versionNameIndex)+1,response.indexOf('\n',versionNameIndex)-1).trim();
+                Log.d("ryd","Version Found  = "+versionline);
+                int foundversion=Integer.parseInt(versionline);
+                if(foundversion>BuildConfig.VERSION_CODE){
+
+                    AlertDialog.Builder builder = new AlertDialog.Builder(Main2Activity.this);
+                    Dialog dialog = builder.setTitle("Update Available")
+                            .setMessage("Update available to version "+versionName)
+                            .setPositiveButton("Update", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    Intent intent = new Intent(Intent.ACTION_VIEW,
+                                            Uri.parse("https://musicpiped.devsilver.me/download/music-piped"));
+                                    startActivity(intent);
+                                }
+                            })
+                            .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    dialog.dismiss();
+                                }
+                            })
+                            .create();
+                    dialog.show();
+                }
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Log.d("ryd","Could not check update");
+            }
+        });
+        queue.add(stringRequest);
+
     }
 
 
