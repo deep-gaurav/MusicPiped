@@ -34,6 +34,8 @@ import java.util.List;
 public class SettingsActivity extends AppCompatActivity {
 
     Switch audiofocus;
+    Switch updateCheck;
+    Switch showAds;
     EditText cacheSize;
 
     @Override
@@ -43,7 +45,12 @@ public class SettingsActivity extends AppCompatActivity {
 
         audiofocus=findViewById(R.id.audioFocus);
         cacheSize=findViewById(R.id.cacheS);
+        updateCheck = findViewById(R.id.updateCheck);
+        showAds = findViewById(R.id.showAds);
 
+
+        updateCheck.setChecked(getSharedPreferences("Settings",MODE_PRIVATE).getBoolean("CheckUpdate",true));
+        showAds.setChecked(getSharedPreferences("Settings",MODE_PRIVATE).getBoolean("ShowAds",true));
         cacheSize.setText(String.valueOf(getSharedPreferences("Settings",Context.MODE_PRIVATE).getInt("cacheSize",100)));
         audiofocus.setChecked(getSharedPreferences("Settings",Context.MODE_PRIVATE).getBoolean("respectAudioFocus",true));
         audiofocus.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -52,6 +59,24 @@ public class SettingsActivity extends AppCompatActivity {
                 SharedPreferences.Editor editor =getSharedPreferences("Settings",Context.MODE_PRIVATE).edit() ;
                 editor.remove("respectAudioFocus");
                 editor.putBoolean("respectAudioFocus",isChecked);
+                editor.commit();
+            }
+        });
+        showAds.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                SharedPreferences.Editor editor =getSharedPreferences("Settings",Context.MODE_PRIVATE).edit() ;
+                editor.remove("ShowAds");
+                editor.putBoolean("ShowAds",isChecked);
+                editor.commit();
+            }
+        });
+        updateCheck.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                SharedPreferences.Editor editor =getSharedPreferences("Settings",Context.MODE_PRIVATE).edit() ;
+                editor.remove("CheckUpdate");
+                editor.putBoolean("CheckUpdate",isChecked);
                 editor.commit();
             }
         });
