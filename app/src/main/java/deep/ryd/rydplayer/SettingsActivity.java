@@ -53,7 +53,6 @@ public class SettingsActivity extends AppCompatActivity {
         updateCheck = findViewById(R.id.updateCheck);
         showAds = findViewById(R.id.showAds);
 
-
         updateCheck.setChecked(getSharedPreferences("Settings",MODE_PRIVATE).getBoolean("CheckUpdate",true));
         showAds.setChecked(getSharedPreferences("Settings",MODE_PRIVATE).getBoolean("ShowAds",true));
         cacheSize.setText(String.valueOf(getSharedPreferences("Settings",Context.MODE_PRIVATE).getInt("cacheSize",100)));

@@ -57,16 +57,14 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
-import com.google.android.gms.ads.AdRequest;
-import com.google.android.gms.ads.AdSize;
-import com.google.android.gms.ads.AdView;
-import com.google.android.gms.ads.MobileAds;
+
 import com.squareup.picasso.Picasso;
 
 import org.mozilla.javascript.ast.ForInLoop;
@@ -100,7 +98,6 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
      * The {@link ViewPager} that will host the section contents.
      */
     private ViewPager mViewPager;
-    private AdView adView;
 
     public ContextMenuRecyclerView toptracksrecycler;
     public ContextMenuRecyclerView tracksRecycler;
@@ -156,8 +153,6 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
         ready();
 
 
-        if(getSharedPreferences("Settings",MODE_PRIVATE).getBoolean("ShowAds",true))
-            MobileAds.initialize(this, "ca-app-pub-3290942482576912~4025719850");
         if(getSharedPreferences("Settings",MODE_PRIVATE).getBoolean("CheckUpdate",true))
             UpdateChecker();
     }
@@ -698,20 +693,7 @@ class SongsListAdaptor extends RecyclerView.Adapter<SongsListAdaptor.MyViewHolde
     @NonNull
     @Override
     public MyViewHolder onCreateViewHolder(@NonNull ViewGroup viewGroup, int i) {
-        if(i==AD_TYPE && isAdEnabled()){
-            //ADS
-            AdView v;
-            v = new AdView(activity);
-            v.setAdSize(AdSize.LARGE_BANNER);
-            v.setAdUnitId("ca-app-pub-3290942482576912/3405529487");
-            ViewGroup.MarginLayoutParams params;
 
-            params = new ViewGroup.MarginLayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-            v.setLayoutParams(params);
-            ((AdView)v).loadAd(new AdRequest.Builder().build());
-
-            return  new MyViewHolder(v);
-        }
         CardView view= new CardView(viewGroup.getContext());
         ViewGroup.MarginLayoutParams params;
         if(artist_thumb){
@@ -747,7 +729,7 @@ class SongsListAdaptor extends RecyclerView.Adapter<SongsListAdaptor.MyViewHolde
     }
 
     public boolean isAd(int pos){
-        if(pos%5 == 0 && (activity.getSharedPreferences("Settings",activity.MODE_PRIVATE).getBoolean("ShowAds",true)) && vertical){
+        if(pos%5 == 0 && (activity.getSharedPreferences("Settings",activity.MODE_PRIVATE).getBoolean("ShowAds",true)) && false && vertical){
             return true;
         }
         else
@@ -810,7 +792,7 @@ class SongsListAdaptor extends RecyclerView.Adapter<SongsListAdaptor.MyViewHolde
     }
 
     public boolean isAdEnabled(){
-        if(!((activity.getSharedPreferences("Settings",activity.MODE_PRIVATE).getBoolean("ShowAds",true)) && vertical && !artist_thumb))
+        if(!((false && activity.getSharedPreferences("Settings",activity.MODE_PRIVATE).getBoolean("ShowAds",true)) && vertical && !artist_thumb))
             return false;
         else
             return true;
