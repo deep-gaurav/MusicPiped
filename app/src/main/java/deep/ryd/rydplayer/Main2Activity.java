@@ -5,12 +5,17 @@ import android.app.Activity;
 import android.app.ActionBar;
 
 import android.app.AlertDialog;
+import android.app.Application;
 import android.app.Dialog;
 import android.app.SearchManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageItemInfo;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -155,6 +160,22 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
 
         if(getSharedPreferences("Settings",MODE_PRIVATE).getBoolean("CheckUpdate",true))
             UpdateChecker();
+
+        try{
+            ApplicationInfo applicationInfo = getPackageManager().getApplicationInfo(getPackageName(), PackageManager.GET_META_DATA);
+            if (applicationInfo!=null){
+                if(applicationInfo.metaData.getBoolean("FDroidVersion",false)){
+                    SharedPreferences.Editor editor =getSharedPreferences("Settings",Context.MODE_PRIVATE).edit() ;
+                    editor.remove("ShowAds");
+                    editor.putBoolean("ShowAds",false);
+                    editor.commit();
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
     }
 
     public void UpdateChecker(){
