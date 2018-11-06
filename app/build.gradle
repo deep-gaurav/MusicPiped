@@ -4,10 +4,10 @@ android {
     compileSdkVersion 28
     defaultConfig {
         applicationId "deep.ryd.rydplayer"
-        minSdkVersion 21
+        minSdkVersion 14
         targetSdkVersion 28
-        versionCode 14
-        versionName "0.2.0-beta"
+        versionCode 15
+        versionName "0.2.1-beta"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {

@@ -21,6 +21,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
@@ -30,6 +31,11 @@ import android.widget.Switch;
 import android.widget.Toast;
 
 import com.danikula.videocache.HttpProxyCacheServer;
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.MobileAds;
+import com.google.android.gms.ads.reward.RewardItem;
+import com.google.android.gms.ads.reward.RewardedVideoAd;
+import com.google.android.gms.ads.reward.RewardedVideoAdListener;
 import com.squareup.picasso.Picasso;
 
 import java.util.List;
@@ -41,8 +47,13 @@ public class SettingsActivity extends AppCompatActivity {
     Switch showAds;
     EditText cacheSize;
 
+    private RewardedVideoAd rewardedVideoAd;
+
     @Override
     public void onCreate(Bundle savedInstanceState){
+
+        rewardedVideoAd= MobileAds.getRewardedVideoAdInstance(this);
+
 
         super.onCreate(savedInstanceState);
         setTheme(this);
@@ -55,7 +66,10 @@ public class SettingsActivity extends AppCompatActivity {
 
 
         updateCheck.setChecked(getSharedPreferences("Settings",MODE_PRIVATE).getBoolean("CheckUpdate",true));
-        showAds.setChecked(getSharedPreferences("Settings",MODE_PRIVATE).getBoolean("ShowAds",true));
+        if(getSharedPreferences("Settings",MODE_PRIVATE).getLong("ShowAds",0)<System.currentTimeMillis())
+            showAds.setChecked(true);
+        else
+            showAds.setChecked(false);
         cacheSize.setText(String.valueOf(getSharedPreferences("Settings",Context.MODE_PRIVATE).getInt("cacheSize",100)));
         audiofocus.setChecked(getSharedPreferences("Settings",Context.MODE_PRIVATE).getBoolean("respectAudioFocus",true));
         audiofocus.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -70,10 +84,70 @@ public class SettingsActivity extends AppCompatActivity {
         showAds.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                SharedPreferences.Editor editor =getSharedPreferences("Settings",Context.MODE_PRIVATE).edit() ;
-                editor.remove("ShowAds");
-                editor.putBoolean("ShowAds",isChecked);
-                editor.commit();
+                rewardedVideoAd.setRewardedVideoAdListener(new RewardedVideoAdListener() {
+                    @Override
+                    public void onRewardedVideoAdLoaded() {
+                        rewardedVideoAd.show();
+                    }
+
+                    @Override
+                    public void onRewardedVideoAdOpened() {
+
+                    }
+
+                    @Override
+                    public void onRewardedVideoStarted() {
+                    }
+
+                    @Override
+                    public void onRewardedVideoAdClosed() {
+                    }
+
+                    @Override
+                    public void onRewarded(RewardItem rewardItem) {
+                        SharedPreferences.Editor editor =getSharedPreferences("Settings",Context.MODE_PRIVATE).edit() ;
+                        editor.remove("ShowAds");
+                        editor.putLong("ShowAds",System.currentTimeMillis()+1000*60*60*24*2);
+                        editor.commit();
+                        Toast.makeText(SettingsActivity.this, "Ads wont show for next 2 days now", Toast.LENGTH_SHORT).show();
+                        SettingsActivity.this.runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                showAds.setChecked(false);
+                            }
+                        });
+
+                    }
+
+                    @Override
+                    public void onRewardedVideoAdLeftApplication() {
+
+                    }
+
+                    @Override
+                    public void onRewardedVideoAdFailedToLoad(int i) {
+                        Log.i("ryd","ERROR in reward video "+i);
+                        Toast.makeText(SettingsActivity.this, "Failed to load reward, try again in a few minutes", Toast.LENGTH_SHORT).show();
+                    }
+
+                    @Override
+                    public void onRewardedVideoCompleted() {
+
+                    }
+                });
+                if(!isChecked){
+                    if(getSharedPreferences("Settings",MODE_PRIVATE).getLong("ShowAds",0)<System.currentTimeMillis()) {
+                        Toast.makeText(SettingsActivity.this, "Loading reward", Toast.LENGTH_LONG).show();
+                        showAds.setChecked(true);
+                        rewardedVideoAd.loadAd("ca-app-pub-3290942482576912/9991560079", new AdRequest.Builder().build());
+                    }
+                }
+                else{
+                    SharedPreferences.Editor editor =getSharedPreferences("Settings",Context.MODE_PRIVATE).edit() ;
+                    editor.remove("ShowAds");
+                    editor.putLong("ShowAds",0);
+                    editor.commit();
+                }
             }
         });
         updateCheck.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {

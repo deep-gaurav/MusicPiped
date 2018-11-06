@@ -156,8 +156,17 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
         ready();
 
 
-        if(getSharedPreferences("Settings",MODE_PRIVATE).getBoolean("ShowAds",true))
-            MobileAds.initialize(this, "ca-app-pub-3290942482576912~4025719850");
+        try {
+            if (getSharedPreferences("Settings", MODE_PRIVATE).getLong("ShowAds", 0) < System.currentTimeMillis())
+                MobileAds.initialize(this, "ca-app-pub-3290942482576912~4025719850");
+        }
+        catch (Exception e){
+            SharedPreferences sharedPreferences = getSharedPreferences("Settings",MODE_PRIVATE);
+            SharedPreferences.Editor editor = sharedPreferences.edit();
+            editor.remove("ShowAds");
+            editor.putLong("ShowAds",0);
+            editor.commit();
+        }
         if(getSharedPreferences("Settings",MODE_PRIVATE).getBoolean("CheckUpdate",true))
             UpdateChecker();
     }
@@ -426,6 +435,21 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
                     SongsListAdaptor mAdapter=new SongsListAdaptor(songs,(Activity)rootView.getContext(),R.layout.top_artists,false);
                     mAdapter.artist_thumb=true;
                     recyclerView.setAdapter(mAdapter);
+                }
+                {//HOME ADS
+                    try {
+                        if (rootView.getContext().getSharedPreferences("Settings", getActivity().MODE_PRIVATE).getLong("ShowAds", 0) < System.currentTimeMillis()) {
+                            AdView v;
+                            v = rootView.findViewById(R.id.adView);
+                            ((AdView) v).loadAd(new AdRequest.Builder().build());
+                        } else {
+                            rootView.findViewById(R.id.adView).setVisibility(View.GONE);
+                        }
+                    }
+                    catch (Exception e){
+                        e.printStackTrace();
+                        rootView.findViewById(R.id.adView).setVisibility(View.GONE);
+                    }
                 }
             }
 
@@ -717,16 +741,15 @@ class SongsListAdaptor extends RecyclerView.Adapter<SongsListAdaptor.MyViewHolde
         if(artist_thumb){
             if(vertical) {
                 params = new ViewGroup.MarginLayoutParams(ViewGroup.LayoutParams.FILL_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-                params.setMargins(100,100,100,100);
             }
             else
-                params = new ViewGroup.MarginLayoutParams(300, ViewGroup.LayoutParams.FILL_PARENT);
+                params = new ViewGroup.MarginLayoutParams(300, ViewGroup.LayoutParams.WRAP_CONTENT);
         }
         else {
             if (vertical)
                 params = new ViewGroup.MarginLayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
             else
-                params = new ViewGroup.MarginLayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT);
+                params = new ViewGroup.MarginLayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.FILL_PARENT);
         }
         params.setMargins(10,10,10,10);
         view.setLayoutParams(params);
@@ -735,7 +758,9 @@ class SongsListAdaptor extends RecyclerView.Adapter<SongsListAdaptor.MyViewHolde
         TypedValue outValue = new TypedValue();
         view.getContext().getTheme().resolveAttribute(R.attr.selectableItemBackground, outValue, true);
         //view.setBackgroundResource(outValue.resourceId);
-        view.setForeground(view.getContext().getDrawable(outValue.resourceId));
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            view.setForeground(view.getContext().getDrawable(outValue.resourceId));
+        }
 
         view.addView( LayoutInflater.from(viewGroup.getContext())
                 .inflate(fragmentID,viewGroup,false));
@@ -747,7 +772,7 @@ class SongsListAdaptor extends RecyclerView.Adapter<SongsListAdaptor.MyViewHolde
     }
 
     public boolean isAd(int pos){
-        if(pos%5 == 0 && (activity.getSharedPreferences("Settings",activity.MODE_PRIVATE).getBoolean("ShowAds",true)) && vertical){
+        if(pos%5 == 0 && (activity.getSharedPreferences("Settings",activity.MODE_PRIVATE).getLong("ShowAds",0) < System.currentTimeMillis()) && vertical){
             return true;
         }
         else
@@ -810,7 +835,7 @@ class SongsListAdaptor extends RecyclerView.Adapter<SongsListAdaptor.MyViewHolde
     }
 
     public boolean isAdEnabled(){
-        if(!((activity.getSharedPreferences("Settings",activity.MODE_PRIVATE).getBoolean("ShowAds",true)) && vertical && !artist_thumb))
+        if(!((activity.getSharedPreferences("Settings",activity.MODE_PRIVATE).getLong("ShowAds",0)<System.currentTimeMillis()) && vertical && !artist_thumb))
             return false;
         else
             return true;
@@ -826,7 +851,7 @@ class SongsListAdaptor extends RecyclerView.Adapter<SongsListAdaptor.MyViewHolde
 
     public int getSongPos(int i){
         Log.i("ryd","got i "+i);
-        if(!((activity.getSharedPreferences("Settings",activity.MODE_PRIVATE).getBoolean("ShowAds",true)) && vertical))
+        if(!((activity.getSharedPreferences("Settings",activity.MODE_PRIVATE).getLong("ShowAds",0)<System.currentTimeMillis()) && vertical))
             return i;
         else
             return i-(i/5);
@@ -886,7 +911,9 @@ class PlayListMainAdapter extends RecyclerView.Adapter<PlayListMainAdapter.MyVie
         TypedValue outValue = new TypedValue();
         view.getContext().getTheme().resolveAttribute(R.attr.selectableItemBackground, outValue, true);
         //view.setBackgroundResource(outValue.resourceId);
-        view.setForeground(view.getContext().getDrawable(outValue.resourceId));
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            view.setForeground(view.getContext().getDrawable(outValue.resourceId));
+        }
 
         view.addView( LayoutInflater.from(viewGroup.getContext())
                 .inflate(fragmentID,viewGroup,false));
