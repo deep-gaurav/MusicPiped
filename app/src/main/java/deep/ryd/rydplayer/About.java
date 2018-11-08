@@ -22,7 +22,7 @@ public class About extends AppCompatActivity {
             public void onClick(View v) {
 
                 Intent intent = new Intent(Intent.ACTION_VIEW,
-                Uri.parse("https://en.liberapay.com/deepgaurav/"));
+                Uri.parse("https://www.paypal.me/deepgaurav"));
                 startActivity(intent);
             }
         });
