@@ -6,6 +6,7 @@ import android.database.Cursor;
 import android.graphics.Color;
 import android.media.Image;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.support.annotation.NonNull;
 import android.support.design.widget.CollapsingToolbarLayout;
 import android.support.v7.app.AppCompatActivity;
@@ -205,7 +206,9 @@ class UniversalPlaylistAdapter extends RecyclerView.Adapter<UniversalPlaylistAda
         TypedValue outValue = new TypedValue();
         view.getContext().getTheme().resolveAttribute(R.attr.selectableItemBackground, outValue, true);
         //view.setBackgroundResource(outValue.resourceId);
-        view.setForeground(view.getContext().getDrawable(outValue.resourceId));
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            view.setForeground(view.getContext().getDrawable(outValue.resourceId));
+        }
 
         view.addView( LayoutInflater.from(viewGroup.getContext())
                 .inflate(itemlayoutid,viewGroup,false));

@@ -157,8 +157,10 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
 
 
         try {
-            if (getSharedPreferences("Settings", MODE_PRIVATE).getLong("ShowAds", 0) < System.currentTimeMillis())
+            if (getSharedPreferences("Settings", MODE_PRIVATE).getLong("ShowAds", 0) < System.currentTimeMillis()) {
                 MobileAds.initialize(this, "ca-app-pub-3290942482576912~4025719850");
+                //MediationTestSuite.launch(this, "ca-app-pub-3290942482576912~4025719850");
+            }
         }
         catch (Exception e){
             SharedPreferences sharedPreferences = getSharedPreferences("Settings",MODE_PRIVATE);
@@ -169,6 +171,8 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
         }
         if(getSharedPreferences("Settings",MODE_PRIVATE).getBoolean("CheckUpdate",true))
             UpdateChecker();
+
+
     }
 
     public void UpdateChecker(){

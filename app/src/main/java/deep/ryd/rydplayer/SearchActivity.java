@@ -8,6 +8,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Rect;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.provider.SearchRecentSuggestions;
 import android.support.annotation.NonNull;
 import android.support.constraint.ConstraintLayout;
@@ -251,7 +252,9 @@ class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder>{
         TypedValue outValue = new TypedValue();
         view.getContext().getTheme().resolveAttribute(R.attr.selectableItemBackground, outValue, true);
         //view.setBackgroundResource(outValue.resourceId);
-        view.setForeground(view.getContext().getDrawable(outValue.resourceId));
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            view.setForeground(view.getContext().getDrawable(outValue.resourceId));
+        }
         title.setText(infoItems.get(i).getName());
         //title.setText("TEST CARD "+new Integer(i).toString());
         //t.setText(new Integer(i).toString());

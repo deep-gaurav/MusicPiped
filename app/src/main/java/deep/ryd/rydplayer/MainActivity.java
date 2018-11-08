@@ -16,9 +16,9 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
-import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -91,6 +91,8 @@ import java.util.TimerTask;
 import android.support.design.widget.Snackbar;
 
 
+import com.devbrackets.android.exomedia.listener.OnBufferUpdateListener;
+import com.devbrackets.android.exomedia.listener.OnPreparedListener;
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.Target;
 import com.squareup.picasso.Transformation;
@@ -445,9 +447,10 @@ class core{
         //context.playerService.umP.prepareAsync();
         new PlayerService.UpdateSongStream().execute();
         context.playerService.isuMPready=false;
-        context.playerService.umP.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+        context.playerService.umP.setOnPreparedListener(new OnPreparedListener() {
             @Override
-            public void onPrepared(MediaPlayer mp) {
+            public void onPrepared() {
+
                 context.playerService.isuMPready=true;
 
 
@@ -455,9 +458,9 @@ class core{
                 toggle();
                 setLoadingCircle1(false);
                 setLoadingCircle2(false);
-
             }
         });
+        /*
         context.playerService.umP.setOnInfoListener(new MediaPlayer.OnInfoListener() {
             @Override
             public boolean onInfo(MediaPlayer mp, int what, int extra) {
@@ -474,7 +477,13 @@ class core{
                 return false;
             }
         });
+        */
+        context.playerService.umP.setOnBufferUpdateListener(new OnBufferUpdateListener() {
+            @Override
+            public void onBufferingUpdate(int percent) {
 
+            }
+        });
 
         start();
     }
@@ -769,7 +778,7 @@ class core{
                     public void run() {
                         if(context.playerService.umP.isPlaying()) {
                             currentTime.setText(sectotime(context.playerService.umP.getCurrentPosition(), true));
-                            seekBar.setProgress(context.playerService.umP.getCurrentPosition()/1000);
+                            seekBar.setProgress((int)context.playerService.umP.getCurrentPosition()/1000);
 
 
                             totalTime.setText(sectotime(context.playerService.umP.getDuration(),true));
@@ -901,9 +910,11 @@ class core{
             public void onStateChanged(@NonNull View view, int i) {
                 if(i==BottomSheetBehavior.STATE_EXPANDED ){
                     context.nextinqueue.setVisibility(View.GONE);
+                    context.findViewById(R.id.queueRecycler).setVisibility(View.VISIBLE);
                     queuelayoutmanager.scrollToPositionWithOffset(context.playerService.currentIndex,0);
                 }
                 else if(i==BottomSheetBehavior.STATE_COLLAPSED) {
+                    context.findViewById(R.id.queueRecycler).setVisibility(View.GONE);
                     context.nextinqueue.setVisibility(View.VISIBLE);
                 }
 
@@ -930,12 +941,14 @@ class core{
         if(context.playerService.isuMPready){
             if(context.playerService.umP.isPlaying()){
                 context.playerService.umP.pause();
+                PlayerService.scrobble(context,context.playerService.streamInfo,2);
                 playButton.setImageResource(android.R.drawable.ic_media_play);
                 playButton2.setImageResource(android.R.drawable.ic_media_play);
                 context.playerService.buildNotification(context.playerService.ID);
             }
             else{
                 context.playerService.umP.start();
+                PlayerService.scrobble(context,context.playerService.streamInfo,1);
                 playButton.setImageResource(android.R.drawable.ic_media_pause);
                 playButton2.setImageResource(android.R.drawable.ic_media_pause);
                 context.playerService.buildNotification(context.playerService.ID);
@@ -1002,7 +1015,7 @@ class core{
         }
         @NonNull
         @Override
-        public QueueListAdaptor.QueViewHolder onCreateViewHolder(@NonNull ViewGroup viewGroup, int i) {
+        public QueViewHolder onCreateViewHolder(@NonNull ViewGroup viewGroup, int i) {
             ViewGroup.LayoutParams params;
             params=new ViewGroup.MarginLayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
             //viewGroup.setLayoutParams(params);
@@ -1012,7 +1025,9 @@ class core{
 
             TypedValue outValue = new TypedValue();
             cardView.getContext().getTheme().resolveAttribute(R.attr.selectableItemBackground, outValue, true);
-            cardView.setForeground(cardView.getContext().getDrawable(outValue.resourceId));
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                cardView.setForeground(cardView.getContext().getDrawable(outValue.resourceId));
+            }
 
 
             cardView.addView( LayoutInflater.from(viewGroup.getContext()).inflate(R.layout.queueelement,viewGroup,false));
