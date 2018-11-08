@@ -63,10 +63,10 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
-import com.google.android.gms.ads.AdRequest;
-import com.google.android.gms.ads.AdSize;
-import com.google.android.gms.ads.AdView;
-import com.google.android.gms.ads.MobileAds;
+//import com.google.android.gms.ads.AdRequest;
+//import com.google.android.gms.ads.AdSize;
+//import com.google.android.gms.ads.AdView;
+//import com.google.android.gms.ads.MobileAds;
 import com.squareup.picasso.Picasso;
 
 import org.mozilla.javascript.ast.ForInLoop;
@@ -100,7 +100,7 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
      * The {@link ViewPager} that will host the section contents.
      */
     private ViewPager mViewPager;
-    private AdView adView;
+    //private AdView adView;
 
     public ContextMenuRecyclerView toptracksrecycler;
     public ContextMenuRecyclerView tracksRecycler;
@@ -158,7 +158,7 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
 
         try {
             if (getSharedPreferences("Settings", MODE_PRIVATE).getLong("ShowAds", 0) < System.currentTimeMillis()) {
-                MobileAds.initialize(this, "ca-app-pub-3290942482576912~4025719850");
+                //MobileAds.initialize(this, "ca-app-pub-3290942482576912~4025719850");
                 //MediationTestSuite.launch(this, "ca-app-pub-3290942482576912~4025719850");
             }
         }
@@ -441,6 +441,7 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
                     recyclerView.setAdapter(mAdapter);
                 }
                 {//HOME ADS
+                    /*
                     try {
                         if (rootView.getContext().getSharedPreferences("Settings", getActivity().MODE_PRIVATE).getLong("ShowAds", 0) < System.currentTimeMillis()) {
                             AdView v;
@@ -454,6 +455,7 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
                         e.printStackTrace();
                         rootView.findViewById(R.id.adView).setVisibility(View.GONE);
                     }
+                    */
                 }
             }
 
@@ -726,7 +728,9 @@ class SongsListAdaptor extends RecyclerView.Adapter<SongsListAdaptor.MyViewHolde
     @NonNull
     @Override
     public MyViewHolder onCreateViewHolder(@NonNull ViewGroup viewGroup, int i) {
+        /*
         if(i==AD_TYPE && isAdEnabled()){
+
             //ADS
             AdView v;
             v = new AdView(activity);
@@ -740,6 +744,8 @@ class SongsListAdaptor extends RecyclerView.Adapter<SongsListAdaptor.MyViewHolde
 
             return  new MyViewHolder(v);
         }
+        */
+
         CardView view= new CardView(viewGroup.getContext());
         ViewGroup.MarginLayoutParams params;
         if(artist_thumb){
