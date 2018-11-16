@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#161F22</color>
+    <color name="colorPrimaryDark">#000000</color>
+    <color name="colorAccent">#8A8383</color>
+    <color name="background">#FFFFFF</color>
+    <color name="DarkText">#000000</color>
+    <color name="LigthGray">#888888</color>
+    <color name="ate_control_normal_light" >#DDDDDD</color>
+    <color name="ate_control_normal_dark" />
+    <color name="twenty_percent_black_overlay" />
+    <color name="fifty_percent_black_overlay" />
+    <color name="white">#FFFFFFFF</color>
+
+
+    <color name= "BluePrimary">#3F51B5</color>
+    <color name= "BluePrimaryDark">#2A367E</color>
+    <color name= "BluecolorAccent">#F44336</color>
+
+
+    <color name="RedPrimary">#860000</color>
+    <color name="RedPrimaryDark">#940000</color>
+    <color name="RedcolorAccent">#B6003C</color>
+
+
+    <color name="Green">#015501</color>
+</resources>

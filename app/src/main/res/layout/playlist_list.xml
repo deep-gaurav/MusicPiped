@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_marginBottom="0dp"
+    android:paddingBottom="120dp">
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/addNewPlaylistFAB"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="28dp"
+        android:layout_marginBottom="28dp"
+        android:clickable="true"
+        app:backgroundTint="?colorAccent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:srcCompat="@drawable/ic_library_add_white_24dp" />
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/importPlaylist"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:clickable="true"
+        app:layout_constraintBottom_toTopOf="@+id/addNewPlaylistFAB"
+        app:layout_constraintEnd_toEndOf="@+id/addNewPlaylistFAB"
+        app:layout_constraintStart_toStartOf="@+id/addNewPlaylistFAB"
+        app:srcCompat="@drawable/ic_open_in_browser_white_24dp" />
+
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/playlist_list_recycler"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        tools:layout_editor_absoluteX="8dp"
+        tools:layout_editor_absoluteY="8dp" />
+
+</android.support.constraint.ConstraintLayout>
