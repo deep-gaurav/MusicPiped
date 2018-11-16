@@ -31,11 +31,11 @@ import android.widget.Switch;
 import android.widget.Toast;
 
 import com.danikula.videocache.HttpProxyCacheServer;
-import com.google.android.gms.ads.AdRequest;
-import com.google.android.gms.ads.MobileAds;
-import com.google.android.gms.ads.reward.RewardItem;
-import com.google.android.gms.ads.reward.RewardedVideoAd;
-import com.google.android.gms.ads.reward.RewardedVideoAdListener;
+//import com.google.android.gms.ads.AdRequest;
+//import com.google.android.gms.ads.MobileAds;
+//import com.google.android.gms.ads.reward.RewardItem;
+//import com.google.android.gms.ads.reward.RewardedVideoAd;
+//import com.google.android.gms.ads.reward.RewardedVideoAdListener;
 import com.squareup.picasso.Picasso;
 
 import java.util.List;
@@ -47,12 +47,12 @@ public class SettingsActivity extends AppCompatActivity {
     Switch showAds;
     EditText cacheSize;
 
-    private RewardedVideoAd rewardedVideoAd;
+    //private RewardedVideoAd rewardedVideoAd;
 
     @Override
     public void onCreate(Bundle savedInstanceState){
 
-        rewardedVideoAd= MobileAds.getRewardedVideoAdInstance(this);
+        //rewardedVideoAd= MobileAds.getRewardedVideoAdInstance(this);
 
 
         super.onCreate(savedInstanceState);
@@ -81,6 +81,7 @@ public class SettingsActivity extends AppCompatActivity {
                 editor.commit();
             }
         });
+        /*
         showAds.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
@@ -150,6 +151,7 @@ public class SettingsActivity extends AppCompatActivity {
                 }
             }
         });
+        */
         updateCheck.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {

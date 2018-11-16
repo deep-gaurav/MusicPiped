@@ -19,9 +19,6 @@
         <activity android:name=".Equaliser"
             android:theme="@style/NoActionBarTheme"></activity>
 
-        <meta-data
-            android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3290942482576912~4025719850" />
 
         <activity android:name=".About" />
         <activity

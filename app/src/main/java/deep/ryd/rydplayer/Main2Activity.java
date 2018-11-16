@@ -11,6 +11,8 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -63,10 +65,10 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
-import com.google.android.gms.ads.AdRequest;
-import com.google.android.gms.ads.AdSize;
-import com.google.android.gms.ads.AdView;
-import com.google.android.gms.ads.MobileAds;
+//import com.google.android.gms.ads.AdRequest;
+//import com.google.android.gms.ads.AdSize;
+//import com.google.android.gms.ads.AdView;
+//import com.google.android.gms.ads.MobileAds;
 import com.squareup.picasso.Picasso;
 
 import org.mozilla.javascript.ast.ForInLoop;
@@ -100,7 +102,7 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
      * The {@link ViewPager} that will host the section contents.
      */
     private ViewPager mViewPager;
-    private AdView adView;
+    //private AdView adView;
 
     public ContextMenuRecyclerView toptracksrecycler;
     public ContextMenuRecyclerView tracksRecycler;
@@ -157,8 +159,15 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
 
 
         try {
+            ApplicationInfo app = getPackageManager().getApplicationInfo(this.getPackageName(), PackageManager.GET_META_DATA);
+            if(!app.metaData.containsKey("com.google.android.gms.ads.APPLICATION_ID")){
+                SharedPreferences.Editor editor = getSharedPreferences("Settings",MODE_PRIVATE).edit();
+                editor.remove("ShowAds");
+                editor.putLong("ShowAds",Long.MAX_VALUE);
+                editor.commit();
+            }
             if (getSharedPreferences("Settings", MODE_PRIVATE).getLong("ShowAds", 0) < System.currentTimeMillis()) {
-                MobileAds.initialize(this, "ca-app-pub-3290942482576912~4025719850");
+                //MobileAds.initialize(this, "ca-app-pub-3290942482576912~4025719850");
                 //MediationTestSuite.launch(this, "ca-app-pub-3290942482576912~4025719850");
             }
         }
@@ -464,6 +473,7 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
                     mAdapter.artist_thumb=true;
                     recyclerView.setAdapter(mAdapter);
                 }
+                /*
                 {//HOME ADS
                     try {
                         if (rootView.getContext().getSharedPreferences("Settings", getActivity().MODE_PRIVATE).getLong("ShowAds", 0) < System.currentTimeMillis()) {
@@ -479,6 +489,7 @@ public class Main2Activity extends MainActivity implements android.support.v7.ap
                         rootView.findViewById(R.id.adView).setVisibility(View.GONE);
                     }
                 }
+                */
             }
 
 
@@ -756,6 +767,7 @@ class SongsListAdaptor extends RecyclerView.Adapter<SongsListAdaptor.MyViewHolde
     @NonNull
     @Override
     public MyViewHolder onCreateViewHolder(@NonNull ViewGroup viewGroup, int i) {
+        /*
         if(i==AD_TYPE && isAdEnabled()){
             //ADS
             AdView v;
@@ -770,6 +782,7 @@ class SongsListAdaptor extends RecyclerView.Adapter<SongsListAdaptor.MyViewHolde
 
             return  new MyViewHolder(v);
         }
+        */
         CardView view= new CardView(viewGroup.getContext());
         ViewGroup.MarginLayoutParams params;
         if(artist_thumb){
