@@ -4,12 +4,11 @@ MusicPiped is an copylefted libre music player that plays streams from various p
 
 ## Screenshots
 
-![screenshot_20181016_222507](https://user-images.githubusercontent.com/28472450/47061255-54cddf80-d1ee-11e8-8005-cf612cd9f09c.png)
-![screenshot_20181016_222800](https://user-images.githubusercontent.com/28472450/47061256-54cddf80-d1ee-11e8-8dd8-051ce9f928cd.png)
-![screenshot_20181016_222839](https://user-images.githubusercontent.com/28472450/47061257-55667600-d1ee-11e8-92ce-16ef119d1554.png)
-![screenshot_20181016_223403](https://user-images.githubusercontent.com/28472450/47061259-55667600-d1ee-11e8-9c2d-7b5217f33243.png)
-![screenshot_20181016_223451](https://user-images.githubusercontent.com/28472450/47061260-55667600-d1ee-11e8-8d86-a1e57bc2acb1.png)
-![screenshot_20181016_223510](https://user-images.githubusercontent.com/28472450/47061261-55ff0c80-d1ee-11e8-89ef-5aa7a28686cd.png)
+![nexus 6p-screenshot1](https://user-images.githubusercontent.com/28472450/50723381-f6d0da00-1102-11e9-93e6-a12c845975a2.png)
+![nexus 6p-screenshot2](https://user-images.githubusercontent.com/28472450/50723382-f6d0da00-1102-11e9-8155-4f6fe2798116.png)
+![nexus 6p-screenshot3](https://user-images.githubusercontent.com/28472450/50723383-f6d0da00-1102-11e9-8650-422b365c9f66.png)
+![nexus 6p-screenshot4](https://user-images.githubusercontent.com/28472450/50723384-f7697080-1102-11e9-8913-6e96540de850.png)
+![nexus 6p-screenshot5](https://user-images.githubusercontent.com/28472450/50723385-f7697080-1102-11e9-9dcd-582d7d4ee66b.png)
 
 ## Features
 - [x] Stream from YouTube
