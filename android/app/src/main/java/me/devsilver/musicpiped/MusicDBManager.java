@@ -66,28 +66,7 @@ public class MusicDBManager {
     public static Migration Migration5_6 = new Migration(5,6) {
         @Override
         public void migrate(@NonNull SupportSQLiteDatabase database) {
-            Cursor c = database.query("SELECT * FROM MusicEntity");
-            if(c!=null){
-                c.moveToFirst();
-                for(int i=0;i<c.getCount();i++){
-                    for (String x:c.getColumnNames())
-                        System.out.println(x);
-                    String title = c.getString(0);
-                    String detailJSON = c.getString(c.getColumnIndex("detailJSON"));
 
-                    byte[] arrtitle = title.getBytes(ISO_8859_1);
-                    String newtitle = new String(arrtitle,UTF_8);
-
-                    byte[] arrJSON = detailJSON.getBytes(ISO_8859_1);
-                    String newJSON = new String(arrJSON,UTF_8);
-
-                    ContentValues cv  = new ContentValues();
-                    cv.put("detailJSON",newJSON);
-                    cv.put("title",newtitle);
-                    database.update("MusicEntity",SQLiteDatabase.CONFLICT_REPLACE,cv,"title= '"+title+"'",null);
-                    c.moveToNext();
-                }
-            }
         }
     };
     MusicDBManager(Context context){
