@@ -40,9 +40,9 @@ android {
 
     defaultConfig {
         applicationId "deep.ryd.rydplayer"
-        minSdkVersion 16
+        minSdkVersion 19
         targetSdkVersion 27
-        versionCode 32
+        versionCode 34
         versionName flutterVersionName
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }

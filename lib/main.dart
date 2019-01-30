@@ -19,6 +19,7 @@ import 'tracks.dart';
 import 'artists.dart';
 import 'playlists.dart';
 
+
 void main(){
   runApp(MyApp());
 }
@@ -43,7 +44,6 @@ class _AppState extends State<MyApp> {
 
   /// Sets the primary color of the example app.
   void setPrimaryColor(MaterialColor swatch,Brightness brigth) {
-    print("COLOR CHANGE");
     setState(() {
       _primaryColor = swatch!=null?swatch:_primaryColor;
       _brightness = brigth;
@@ -107,8 +107,6 @@ class _MyHomePageState extends State<MyHomePage>
   Artists artists;
   Playlists playlists;
 
-  bool adloaded =true;
-
   Future topTrackfuture;
   Future topArtistfuture;
   Future allTrackfuture;
@@ -138,6 +136,10 @@ class _MyHomePageState extends State<MyHomePage>
   StreamController streamController;
   bool shown=false;
   BuildContext popupcontext;
+
+  bool adloaded=false;
+
+  bool tried=false;
 
   _MyHomePageState() {
     platform.setMethodCallHandler(methodHandler);
@@ -266,6 +268,7 @@ class _MyHomePageState extends State<MyHomePage>
 
 
 
+
     home = Home((result) {
       if (result['addtoexisting'] == false) {
         setState(() {
@@ -324,6 +327,7 @@ class _MyHomePageState extends State<MyHomePage>
 
   @override
   Widget build(BuildContext context) {
+    
     double value;
     if (playingTrackQueue == null) {
       playingTrack = "NOT PLAYING";
@@ -477,6 +481,7 @@ class _MyHomePageState extends State<MyHomePage>
               ],
             ),
 
+
             currentScreen,
           ],
         ),
@@ -501,13 +506,14 @@ class _MyHomePageState extends State<MyHomePage>
                           IconButton(
                             icon: Icon(Icons.arrow_upward),
                             onPressed: () {
-                              setState(() {
+                              setState(() async{
                                 fullPlayer = true;
-                                Navigator.push(
+                                await Navigator.push(
                                     context,
                                     MaterialPageRoute(
                                         builder: (context) =>
                                             PlayerScreen(Key("player"))));
+                                    pendingUpdate=true;
                               });
                             },
                           ),

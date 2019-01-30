@@ -3,7 +3,10 @@ package me.devsilver.musicpiped;
 import android.arch.persistence.db.SupportSQLiteDatabase;
 import android.arch.persistence.room.Room;
 import android.arch.persistence.room.migration.Migration;
+import android.content.ContentValues;
 import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.AsyncTask;
 import android.support.annotation.NonNull;
 
@@ -15,6 +18,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
+import static java.nio.charset.StandardCharsets.ISO_8859_1;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class MusicDBManager {
     public static AppDatabase database;
@@ -37,10 +42,58 @@ public class MusicDBManager {
 
         }
     };
+    public static Migration Migration4_5 = new Migration(4,5) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            Cursor c = database.query("SELECT * FROM MusicEntity");
+            if(c!=null){
+                c.moveToFirst();
+                for(int i=0;i<c.getCount();i++){
+                    for (String x:c.getColumnNames())
+                        System.out.println(x);
+                    String title = c.getString(0);
+
+                    byte[] arrtitle = title.getBytes(ISO_8859_1);
+                    String newtitle = new String(arrtitle,UTF_8);
+                    ContentValues cv  = new ContentValues();
+                    cv.put("title",newtitle);
+                    database.update("MusicEntity",SQLiteDatabase.CONFLICT_REPLACE,cv,"title= '"+title+"'",null);
+                    c.moveToNext();
+                }
+            }
+        }
+    };
+    public static Migration Migration5_6 = new Migration(5,6) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            Cursor c = database.query("SELECT * FROM MusicEntity");
+            if(c!=null){
+                c.moveToFirst();
+                for(int i=0;i<c.getCount();i++){
+                    for (String x:c.getColumnNames())
+                        System.out.println(x);
+                    String title = c.getString(0);
+                    String detailJSON = c.getString(c.getColumnIndex("detailJSON"));
+
+                    byte[] arrtitle = title.getBytes(ISO_8859_1);
+                    String newtitle = new String(arrtitle,UTF_8);
+
+                    byte[] arrJSON = detailJSON.getBytes(ISO_8859_1);
+                    String newJSON = new String(arrJSON,UTF_8);
+
+                    ContentValues cv  = new ContentValues();
+                    cv.put("detailJSON",newJSON);
+                    cv.put("title",newtitle);
+                    database.update("MusicEntity",SQLiteDatabase.CONFLICT_REPLACE,cv,"title= '"+title+"'",null);
+                    c.moveToNext();
+                }
+            }
+        }
+    };
     MusicDBManager(Context context){
         if(database==null){
             database= Room.databaseBuilder(context,AppDatabase.class,"MusicDB")
-                    .addMigrations(Migration2_3,Migration3_4)
+                    .addMigrations(Migration2_3,Migration3_4,Migration4_5,Migration5_6)
                     .build();
             musicDao=database.musicDao();
             playlistDao=database.playlistDao();

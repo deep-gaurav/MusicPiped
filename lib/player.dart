@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:collection/collection.dart';
 import 'main.dart' as main;
+import 'dart:convert';
 
 import 'queue.dart';
 
@@ -288,7 +289,7 @@ class PlayerState extends State<PlayerScreen> with SingleTickerProviderStateMixi
                           Hero(
                             tag: "trackName",
                             child: Text(
-                              l.elementAt(index)["title"],
+                              utf8.decode(utf8.encode(l.elementAt(index)["title"])),
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 25,

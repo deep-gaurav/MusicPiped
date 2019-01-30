@@ -144,7 +144,7 @@ Future<dynamic> searchVid(searchquery) async {
 
     if (response.statusCode == 200) {
       // If server returns an OK response, parse the JSON
-      dynamic js = json.decode(response.body);
+      dynamic js = json.decode(utf8.decode(response.bodyBytes));
       setState(() {
               results=js;
               isSearching=false;
@@ -175,7 +175,7 @@ Future<List<dynamic>> resultSearchtoVideoHash(List vidlist) async {
     print("received");
     if (response.statusCode == 200) {
       // If server returns an OK response, parse the JSON
-      Map<String,dynamic> js = json.decode(response.body);
+      Map<String,dynamic> js = json.decode(utf8.decode(response.bodyBytes));
       
       return js;
     } else {
