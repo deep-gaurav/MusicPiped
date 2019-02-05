@@ -1,21 +1,22 @@
 package me.devsilver.musicpiped;
 
-        import android.support.annotation.Nullable;
-        import android.text.TextUtils;
+import android.support.annotation.Nullable;
+import android.text.TextUtils;
 
-        import org.schabi.newpipe.extractor.exceptions.ReCaptchaException;
+import org.schabi.newpipe.extractor.exceptions.ReCaptchaException;
+import org.schabi.newpipe.extractor.utils.Localization;
 
-        import java.io.IOException;
-        import java.io.InputStream;
-        import java.util.Collections;
-        import java.util.HashMap;
-        import java.util.Map;
-        import java.util.concurrent.TimeUnit;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
-        import okhttp3.OkHttpClient;
-        import okhttp3.Request;
-        import okhttp3.Response;
-        import okhttp3.ResponseBody;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
 
 
 /*
@@ -88,7 +89,8 @@ public class Downloader implements org.schabi.newpipe.extractor.Downloader {
                     .build();
             response = client.newCall(request).execute();
 
-            return Long.parseLong(response.header("Content-Length"));
+            String contentLength = response.header("Content-Length");
+            return contentLength == null ? -1 : Long.parseLong(contentLength);
         } catch (NumberFormatException e) {
             throw new IOException("Invalid content length", e);
         } finally {
@@ -103,13 +105,13 @@ public class Downloader implements org.schabi.newpipe.extractor.Downloader {
      * but set the HTTP header field "Accept-Language" to the supplied string.
      *
      * @param siteUrl  the URL of the text file to return the contents of
-     * @param language the language (usually a 2-character code) to set as the preferred language
+     * @param localization the language and country (usually a 2-character code) to set
      * @return the contents of the specified text file
      */
     @Override
-    public String download(String siteUrl, String language) throws IOException, ReCaptchaException {
+    public String download(String siteUrl, Localization localization) throws IOException, ReCaptchaException {
         Map<String, String> requestProperties = new HashMap<>();
-        requestProperties.put("Accept-Language", language);
+        requestProperties.put("Accept-Language", localization.getLanguage());
         return download(siteUrl, requestProperties);
     }
 
@@ -173,6 +175,6 @@ public class Downloader implements org.schabi.newpipe.extractor.Downloader {
      */
     @Override
     public String download(String siteUrl) throws IOException, ReCaptchaException {
-        return download(siteUrl, Collections.<String, String>emptyMap());
+        return download(siteUrl, (Localization) Collections.emptyMap());
     }
 }

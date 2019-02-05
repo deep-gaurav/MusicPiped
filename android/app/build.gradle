@@ -42,7 +42,7 @@ android {
         applicationId "deep.ryd.rydplayer"
         minSdkVersion 19
         targetSdkVersion 27
-        versionCode 34
+        versionCode 35
         versionName flutterVersionName
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
@@ -85,5 +85,5 @@ dependencies {
     testImplementation "android.arch.persistence.room:testing:$room_version"
     implementation 'org.apache.directory.studio:org.apache.commons.io:2.4'
 
-    implementation 'com.github.TeamNewPipe:NewPipeExtractor:v0.14.1'
+    implementation 'com.github.TeamNewPipe:NewPipeExtractor:99915e4527c0a7ea264f952c182871b73f7bbbe8'
 }

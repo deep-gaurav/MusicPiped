@@ -39,6 +39,7 @@ import org.schabi.newpipe.extractor.NewPipe;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
 import org.schabi.newpipe.extractor.services.youtube.YoutubeService;
 import org.schabi.newpipe.extractor.stream.StreamInfo;
+import org.schabi.newpipe.extractor.utils.Localization;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -108,6 +109,7 @@ public class PlayerService extends Service {
     BroadcastReceiver broadcastReceiver;
 
     private AsyncTask refresher;
+    private boolean focusOn;
 
     @Override
     public void onCreate() {
@@ -284,23 +286,41 @@ public class PlayerService extends Service {
                             Playerstate=1;
                             final int curI = currentIndex;
                             AbstractMap music=(AbstractMap)queue.get(currentIndex);
-                            audioManager.requestAudioFocus(new AudioManager.OnAudioFocusChangeListener() {
-                                @Override
-                                public void onAudioFocusChange(int i) {
+                            if(!focusOn){
+                                audioManager.requestAudioFocus(new AudioManager.OnAudioFocusChangeListener() {
+                                    @Override
+                                    public void onAudioFocusChange(int i) {
 
-                                    if(i==AudioManager.AUDIOFOCUS_LOSS ){
-                                        try {
-                                            UMP.pause();
-                                        } catch (Exception e){
-                                            e.printStackTrace();
+                                        if(i==AudioManager.AUDIOFOCUS_LOSS ){
+                                            focusOn=false;
+                                            try {
+                                                UMP.pause();
+                                                scrobble(
+                                                        PlayerService.this,
+                                                        ((AbstractMap)queue.get(currentIndex)).get("author").toString(),
+                                                        ((AbstractMap)queue.get(currentIndex)).get("title").toString(),
+                                                        Integer.parseInt(((AbstractMap)queue.get(currentIndex)).get("lengthSeconds").toString()),
+                                                        2
+                                                );
+                                            } catch (Exception e){
+                                                e.printStackTrace();
+                                            }
                                         }
                                     }
-                                }
-                            },AudioManager.STREAM_MUSIC,AudioManager.AUDIOFOCUS_GAIN);
+                                },AudioManager.STREAM_MUSIC,AudioManager.AUDIOFOCUS_GAIN);
+                                focusOn=true;
+                            }
                             if(music!=null)
                                 musicDBManager.AddMusic(music);
-                            
+                            scrobble(
+                                    PlayerService.this,
+                                    abstractMap.get("author").toString(),
+                                    abstractMap.get("title").toString(),
+                                    Integer.parseInt(abstractMap.get("lengthSeconds").toString()),
+                                    0
+                            );
                             mp.start();
+
                             BroadcastUpdate(true);
 
                         }
@@ -308,6 +328,13 @@ public class PlayerService extends Service {
                     UMP.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
                         @Override
                         public void onCompletion(MediaPlayer mp) {
+                            scrobble(
+                                    PlayerService.this,
+                                    ((AbstractMap)queue.get(currentIndex)).get("author").toString(),
+                                    ((AbstractMap)queue.get(currentIndex)).get("title").toString(),
+                                    Integer.parseInt(((AbstractMap)queue.get(currentIndex)).get("lengthSeconds").toString()),
+                                    3
+                            );
                             if(Playerstate!=0)
                                 handleNext();
                             
@@ -349,7 +376,7 @@ public class PlayerService extends Service {
 
                                     if (responseCode != 200) {
                                         Downloader.init(null);
-                                        NewPipe.init(Downloader.getInstance());
+                                        NewPipe.init(Downloader.getInstance(),new Localization("US","IN"));
                                         int sid =NewPipe.getIdOfService("YouTube");
                                         YoutubeService ys = (YoutubeService) NewPipe.getService(sid);
                                         String youtubeURL="https://www.youtube.com/watch?v=";
@@ -439,7 +466,17 @@ public class PlayerService extends Service {
                 if(intent.getIntExtra(Intent.ACTION_MAIN,0)==ACTION_PLAY){
                     try{
                         if(Playerstate==1)
+                        {
                             UMP.start();
+                            scrobble(
+                                    PlayerService.this,
+                                    ((AbstractMap)queue.get(currentIndex)).get("author").toString(),
+                                    ((AbstractMap)queue.get(currentIndex)).get("title").toString(),
+                                    Integer.parseInt(((AbstractMap)queue.get(currentIndex)).get("lengthSeconds").toString()),
+                                    1
+                            );
+                        }
+
                         else {
                             playFromQueue();
                         }
@@ -452,6 +489,13 @@ public class PlayerService extends Service {
                 else if(intent.getIntExtra(Intent.ACTION_MAIN,0)==ACTION_PAUSE){
                     try{
                         UMP.pause();
+                        scrobble(
+                                PlayerService.this,
+                                ((AbstractMap)queue.get(currentIndex)).get("author").toString(),
+                                ((AbstractMap)queue.get(currentIndex)).get("title").toString(),
+                                Integer.parseInt(((AbstractMap)queue.get(currentIndex)).get("lengthSeconds").toString()),
+                                2
+                        );
                     } catch (Exception e){
                         e.printStackTrace();
                     }
@@ -570,10 +614,24 @@ public class PlayerService extends Service {
                 if(action.equals("Pause")){
                     if(UMP.isPlaying()){
                         UMP.pause();
+                        scrobble(
+                                PlayerService.this,
+                                ((AbstractMap)queue.get(currentIndex)).get("author").toString(),
+                                ((AbstractMap)queue.get(currentIndex)).get("title").toString(),
+                                Integer.parseInt(((AbstractMap)queue.get(currentIndex)).get("lengthSeconds").toString()),
+                                2
+                        );
                     } else {
                         try {
                             if(Playerstate==1){
                                 UMP.start();
+                                scrobble(
+                                        PlayerService.this,
+                                        ((AbstractMap)queue.get(currentIndex)).get("author").toString(),
+                                        ((AbstractMap)queue.get(currentIndex)).get("title").toString(),
+                                        Integer.parseInt(((AbstractMap)queue.get(currentIndex)).get("lengthSeconds").toString()),
+                                        1
+                                );
                             } else {
                                 playFromQueue();
                             }
@@ -742,5 +800,21 @@ public class PlayerService extends Service {
 
         return result;
     }
+    public static void scrobble(Context context, String uploadername, String name,int duration, int type) {
+        int START = 0;
+        int RESUME = 1;
+        int PAUSE = 2;
+        int COMPLETE = 3;
 
+        Intent bCast = new Intent("com.adam.aslfms.notify.playstatechanged");
+        bCast.putExtra("state", type);
+        bCast.putExtra("app-name", "Music Piped");
+        bCast.putExtra("app-package", "deep.ryd.rydplayer");
+        bCast.putExtra("artist", uploadername);
+        bCast.putExtra("track", name);
+        bCast.putExtra("duration", duration);
+        context.sendBroadcast(bCast);
+
+
+    }
 }
