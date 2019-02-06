@@ -22,6 +22,10 @@ MusicPiped is an copylefted libre music player that plays streams from various p
 Get latest version from [GitHub release](https://github.com/deep-gaurav/MusicPiped/releases/)
 or from the [Website](https://musicpiped.devsilver.me/) 
 
+[<img src="https://f-droid.org/badge/get-it-on.svg"
+      alt="Get it on F-Droid"
+      height="80">](https://f-droid.org/packages/deep.ryd.rydplayer/)
+
 ## Credits
 
 Thanks to [NewPipe Team](https://github.com/TeamNewPipe),
