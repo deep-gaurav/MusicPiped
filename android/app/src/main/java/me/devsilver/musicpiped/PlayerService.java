@@ -299,7 +299,7 @@ public class PlayerService extends Service {
                                                         PlayerService.this,
                                                         ((AbstractMap)queue.get(currentIndex)).get("author").toString(),
                                                         ((AbstractMap)queue.get(currentIndex)).get("title").toString(),
-                                                        Integer.parseInt(((AbstractMap)queue.get(currentIndex)).get("lengthSeconds").toString()),
+                                                        UMP.getDuration(),
                                                         2
                                                 );
                                             } catch (Exception e){
@@ -312,13 +312,19 @@ public class PlayerService extends Service {
                             }
                             if(music!=null)
                                 musicDBManager.AddMusic(music);
-                            scrobble(
+                            try{
+
+                                scrobble(
                                     PlayerService.this,
                                     abstractMap.get("author").toString(),
                                     abstractMap.get("title").toString(),
-                                    Integer.parseInt(abstractMap.get("lengthSeconds").toString()),
+                                    UMP.getDuration(),
                                     0
-                            );
+                                );
+                            }
+                            catch (Exception e){
+                                e.printStackTrace();
+                            }
                             mp.start();
 
                             BroadcastUpdate(true);
@@ -328,13 +334,18 @@ public class PlayerService extends Service {
                     UMP.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
                         @Override
                         public void onCompletion(MediaPlayer mp) {
-                            scrobble(
+                            try{
+                                scrobble(
                                     PlayerService.this,
                                     ((AbstractMap)queue.get(currentIndex)).get("author").toString(),
                                     ((AbstractMap)queue.get(currentIndex)).get("title").toString(),
-                                    Integer.parseInt(((AbstractMap)queue.get(currentIndex)).get("lengthSeconds").toString()),
+                                    UMP.getDuration(),
                                     3
-                            );
+                                );
+                            }
+                            catch(Exception e){
+                                e.printStackTrace();
+                            }
                             if(Playerstate!=0)
                                 handleNext();
                             
@@ -472,7 +483,7 @@ public class PlayerService extends Service {
                                     PlayerService.this,
                                     ((AbstractMap)queue.get(currentIndex)).get("author").toString(),
                                     ((AbstractMap)queue.get(currentIndex)).get("title").toString(),
-                                    Integer.parseInt(((AbstractMap)queue.get(currentIndex)).get("lengthSeconds").toString()),
+                                    UMP.getDuration(),
                                     1
                             );
                         }
@@ -493,7 +504,7 @@ public class PlayerService extends Service {
                                 PlayerService.this,
                                 ((AbstractMap)queue.get(currentIndex)).get("author").toString(),
                                 ((AbstractMap)queue.get(currentIndex)).get("title").toString(),
-                                Integer.parseInt(((AbstractMap)queue.get(currentIndex)).get("lengthSeconds").toString()),
+                                UMP.getDuration(),
                                 2
                         );
                     } catch (Exception e){
@@ -614,13 +625,18 @@ public class PlayerService extends Service {
                 if(action.equals("Pause")){
                     if(UMP.isPlaying()){
                         UMP.pause();
-                        scrobble(
-                                PlayerService.this,
-                                ((AbstractMap)queue.get(currentIndex)).get("author").toString(),
-                                ((AbstractMap)queue.get(currentIndex)).get("title").toString(),
-                                Integer.parseInt(((AbstractMap)queue.get(currentIndex)).get("lengthSeconds").toString()),
-                                2
-                        );
+                        try{
+                            scrobble(
+                                    PlayerService.this,
+                                    ((AbstractMap)queue.get(currentIndex)).get("author").toString(),
+                                    ((AbstractMap)queue.get(currentIndex)).get("title").toString(),
+                                    UMP.getDuration(),
+                                    2
+                            );
+                        }
+                        catch(Exception e){
+                            e.printStackTrace();
+                        }
                     } else {
                         try {
                             if(Playerstate==1){
@@ -629,7 +645,7 @@ public class PlayerService extends Service {
                                         PlayerService.this,
                                         ((AbstractMap)queue.get(currentIndex)).get("author").toString(),
                                         ((AbstractMap)queue.get(currentIndex)).get("title").toString(),
-                                        Integer.parseInt(((AbstractMap)queue.get(currentIndex)).get("lengthSeconds").toString()),
+                                        UMP.getDuration(),
                                         1
                                 );
                             } else {
