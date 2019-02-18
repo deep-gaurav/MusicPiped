@@ -175,6 +175,6 @@ public class Downloader implements org.schabi.newpipe.extractor.Downloader {
      */
     @Override
     public String download(String siteUrl) throws IOException, ReCaptchaException {
-        return download(siteUrl, (Localization) Collections.emptyMap());
+        return download(siteUrl, (Map)Collections.emptyMap());
     }
 }
