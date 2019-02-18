@@ -25,8 +25,8 @@ MusicPiped is an copylefted libre music player that plays streams from various p
 
 ## Credits
 
-Thanks to [NewPipe Team](https://github.com/TeamNewPipe),
-MusicPiped uses [NewPipe Extractor](https://github.com/TeamNewPipe/NewPipeExtractor) at its core for fetching YouTube streams.
+Thanks to [NewPipe Team](https://github.com/TeamNewPipe), and [Invidious](https://github.com/omarroth/invidious)
+MusicPiped uses [NewPipe Extractor](https://github.com/TeamNewPipe/NewPipeExtractor) and [Invidious](https://github.com/omarroth/invidious)  at its core for fetching YouTube streams.
 
 ## License
 MusicPiped is Distributed under [GNU GPL v3+](https://www.gnu.org/licenses/gpl-3.0.en.html) 
