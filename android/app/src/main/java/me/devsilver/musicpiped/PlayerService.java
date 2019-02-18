@@ -291,7 +291,7 @@ public class PlayerService extends Service {
                                     @Override
                                     public void onAudioFocusChange(int i) {
 
-                                        if(i==AudioManager.AUDIOFOCUS_LOSS ){
+                                        if(i==AudioManager.AUDIOFOCUS_LOSS || i==AudioManager.AUDIOFOCUS_LOSS_TRANSIENT){
                                             focusOn=false;
                                             try {
                                                 UMP.pause();
