@@ -42,7 +42,9 @@ import org.schabi.newpipe.extractor.stream.StreamInfo;
 import org.schabi.newpipe.extractor.utils.Localization;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.io.Serializable;
+import java.io.StringWriter;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -111,8 +113,31 @@ public class PlayerService extends Service {
     private AsyncTask refresher;
     private boolean focusOn;
 
+    private Thread.UncaughtExceptionHandler handleAppCrash =
+            new Thread.UncaughtExceptionHandler() {
+                @Override
+                public void uncaughtException(Thread thread, Throwable ex) {
+                    StringWriter sw = new StringWriter();
+                    PrintWriter pw = new PrintWriter(sw);
+                    ex.printStackTrace(pw);
+                    String sStackTrace = sw.toString();
+                    //send email here
+                    Intent intent = new Intent(Intent.ACTION_SEND);
+                    intent.setType("text/plain");
+                    intent.putExtra(Intent.EXTRA_EMAIL, "deepgauravraj@gmail.com");
+                    intent.putExtra(Intent.EXTRA_SUBJECT, "MusicPipe App Crash Report");
+                    intent.putExtra(Intent.EXTRA_TEXT, "///////////\n"+sStackTrace);
+
+
+                    startActivity(Intent.createChooser(intent, "Email CrashLogs"));
+                }
+            };
+
+
     @Override
     public void onCreate() {
+
+        Thread.setDefaultUncaughtExceptionHandler(handleAppCrash);
         if(UMP!=null){
             stopSelf();
         }
@@ -287,6 +312,7 @@ public class PlayerService extends Service {
                             final int curI = currentIndex;
                             AbstractMap music=(AbstractMap)queue.get(currentIndex);
                             if(!focusOn){
+                                focusOn=true;
                                 audioManager.requestAudioFocus(new AudioManager.OnAudioFocusChangeListener() {
                                     @Override
                                     public void onAudioFocusChange(int i) {
@@ -308,7 +334,6 @@ public class PlayerService extends Service {
                                         }
                                     }
                                 },AudioManager.STREAM_MUSIC,AudioManager.AUDIOFOCUS_GAIN);
-                                focusOn=true;
                             }
                             if(music!=null)
                                 musicDBManager.AddMusic(music);
@@ -682,12 +707,16 @@ public class PlayerService extends Service {
 
         NotificationCompat.Builder builder = null;
 
-        builder = notifbuilder();
-        if (builder != null)
-            startForeground(id, builder.build());
+        try {
+            builder = notifbuilder();
+            if (builder != null)
+                startForeground(id, builder.build());
+        }catch (Exception e){
+            e.printStackTrace();
+        }
     }
 
-    public NotificationCompat.Builder notifbuilder()  {
+    public NotificationCompat.Builder notifbuilder() {
 
         Context context = this;
         Random generator = new Random();
@@ -714,9 +743,9 @@ public class PlayerService extends Service {
         RemoteViews contentView = new RemoteViews(getPackageName(), R.layout.notification_layout);
 
 
-        contentView.setImageViewResource(R.id.prevButton, R.drawable.previous);
-        contentView.setImageViewResource(R.id.nextButton, R.drawable.next);
-        contentView.setImageViewResource(R.id.closeButton, R.drawable.power);
+        contentView.setImageViewResource(R.id.prevButton, R.drawable.ic_skip_previous_white_24dp);
+        contentView.setImageViewResource(R.id.nextButton, R.drawable.ic_skip_next_white_24dp);
+        contentView.setImageViewResource(R.id.closeButton, R.drawable.ic_close_white_24dp);
         if (thumbstore != null && thumbstore.getDrawable() != null) {
             BitmapDrawable bitmapDrawable = (BitmapDrawable) thumbstore.getDrawable();
             notificationImage = bitmapDrawable.getBitmap();
@@ -752,11 +781,11 @@ public class PlayerService extends Service {
         if (UMP.isPlaying()) {
 
             intent1.putExtra(Intent.ACTION_MAIN,PlayerService.ACTION_PAUSE);
-            contentView.setImageViewResource(R.id.play_pause_notif, R.drawable.pause);
+            contentView.setImageViewResource(R.id.play_pause_notif, R.drawable.ic_pause_white_24dp);
         } else {
 
             intent1.putExtra(Intent.ACTION_MAIN,PlayerService.ACTION_PLAY);
-            contentView.setImageViewResource(R.id.play_pause_notif, R.drawable.play);
+            contentView.setImageViewResource(R.id.play_pause_notif, R.drawable.ic_play_arrow_white_24dp);
         }
 
         PendingIntent pauseIntent = PendingIntent.getBroadcast(context, generator.nextInt(), intent1, PendingIntent.FLAG_UPDATE_CURRENT);

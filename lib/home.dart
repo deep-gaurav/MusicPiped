@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'searchScreen.dart';
 import 'package:flutter/cupertino.dart';
@@ -8,10 +10,9 @@ import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'playlistSpcl.dart';
-import 'main.dart';
 
 
-class Home extends Container{
+class Home extends StatelessWidget{
 
   final ValueSetter onreturn;
   final Future toptrackfuture;

@@ -27,6 +27,7 @@ void main(){
 Map bCast;
 bool pendingUpdate=false;
 SharedPreferences preferences;
+StreamController mainStreamController = StreamController.broadcast(); 
 
 class MyApp extends StatefulWidget {
   const MyApp({Key key}) : super(key: key);
@@ -88,7 +89,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage>
-    with TickerProviderStateMixin {
+     {
   String trackName = "NO track";
   String thumbnailURL = "";
   static const platform =
@@ -122,7 +123,7 @@ class _MyHomePageState extends State<MyHomePage>
 
   List<Color> navColors = [Colors.blue, Colors.pink, Colors.teal, Colors.grey];
 
-  final _scaffoldKey = GlobalKey<ScaffoldState>();
+  final _scaffoldKey = LabeledGlobalKey<ScaffoldState>("scaffold");
 
   Map<String, dynamic> currentdata;
   List<dynamic> playingTrackQueue;
@@ -133,29 +134,19 @@ class _MyHomePageState extends State<MyHomePage>
 
   int _currentBottomNavPage = 0;
 
-  StreamController streamController;
+  StreamController _streamController;
+
+  StreamController get loadingStreamController => _streamController;
+
+  set loadingStreamController(StreamController streamController) {
+    _streamController = streamController;
+  }
   bool shown=false;
   BuildContext popupcontext;
-
-  bool adloaded=false;
-
   bool tried=false;
 
   _MyHomePageState() {
     platform.setMethodCallHandler(methodHandler);
-  }
-
-  Future<void> playURLinJava(String url) async {
-    int result = 0;
-    try {
-      print("Play url in java $url");
-      result = await platform.invokeMethod('playURL', {'url': url});
-      setState(() {
-        playingStatus = result;
-      });
-    } on PlatformException {
-      result = 1;
-    }
   }
 
   Future<void> updateQueue(List queue) async {
@@ -212,12 +203,14 @@ class _MyHomePageState extends State<MyHomePage>
           _totalTrackLength = totalTrackLength;
           _currentPlayingTime = currentPlayingTime;
         });
+
+        mainStreamController.add({"newB":bCast});
         break;
       case "loading":
         bool loading = methodCall.arguments;
         if(loading){
           setState(() {
-            streamController=StreamController.broadcast();
+            loadingStreamController=StreamController.broadcast();
           });
 
         }else{
@@ -227,12 +220,6 @@ class _MyHomePageState extends State<MyHomePage>
         }
 
     }
-  }
-
-  Future<void> testJSONCodec() async {
-    try {
-      JSONmessagechannel.send("test");
-    } catch (e) {}
   }
 
   void refresh() {
@@ -285,9 +272,6 @@ class _MyHomePageState extends State<MyHomePage>
     playlists = Playlists(playlistfuture,refresh);
 
     bottomNavigationBar = createBottomNav();
-    animationController = AnimationController(
-      vsync: this,
-    );
     //invokeOnPlatform("play", null);
     super.initState();
   }
@@ -352,7 +336,7 @@ class _MyHomePageState extends State<MyHomePage>
     }
 
     //LOADING
-    if(streamController!=null  && !shown){
+    if(loadingStreamController!=null  && !shown){
       shown=true;
       showDialog(context: context,
         barrierDismissible: false,
@@ -361,7 +345,7 @@ class _MyHomePageState extends State<MyHomePage>
           return AlertDialog(
             title: Text("Upgrading.. Please Wait"),
             content: StreamBuilder(
-              stream: streamController.stream,
+              stream: loadingStreamController.stream,
               builder: (context, ass){
                 if(ass.connectionState==ConnectionState.done){
                   Navigator.pop(dialogContext);
@@ -608,8 +592,6 @@ class _MyHomePageState extends State<MyHomePage>
                   barrierDismissible: false,
                   builder: (BuildContext dialogcontext){
                     String youtubeplaylisturl="";
-                    final c = Completer();
-                    bool running=false;
                     return AlertDialog(
                       title: Text("Import Playlist"),
                       
@@ -672,7 +654,6 @@ class _MyHomePageState extends State<MyHomePage>
                           onPressed: ()async{
                             String pid = youtubeplaylisturl.split("list=")[1];
                             String url = "https://invidio.us/api/v1/playlists/"+pid;
-                            running=true;
 
                             Future work() async{
                               streamController.add(0);
@@ -724,12 +705,5 @@ class _MyHomePageState extends State<MyHomePage>
       fullPlayer = false;
       dragNewPos = 0;
     }
-  }
-}
-
-class ExpansionFlap extends AnimatedWidget {
-  @override
-  Widget build(BuildContext context) {
-    return null;
   }
 }

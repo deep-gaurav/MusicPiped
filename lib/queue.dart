@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
 import 'package:flutter_slidable/flutter_slidable.dart';
-import 'package:flutter_list_drag_and_drop/drag_and_drop_list.dart';
 import 'package:flutter_reorderable_list/flutter_reorderable_list.dart';
 import 'main.dart' as main;
 
@@ -41,6 +40,7 @@ class QueueState extends State<QueueScreen>{
         return i;
       }
     }
+    return 0;
   }
 
   rebuildQ(){

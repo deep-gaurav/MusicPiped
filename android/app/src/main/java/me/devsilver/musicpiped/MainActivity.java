@@ -24,7 +24,9 @@ import com.google.gson.Gson;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.io.Serializable;
+import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
@@ -44,6 +46,28 @@ public class MainActivity extends FlutterActivity {
   public static final int ACTION_CLOSE=2;
   public Gson gson;
 
+
+  private Thread.UncaughtExceptionHandler handleAppCrash =
+          new Thread.UncaughtExceptionHandler() {
+            @Override
+            public void uncaughtException(Thread thread, Throwable ex) {
+              StringWriter sw = new StringWriter();
+              PrintWriter pw = new PrintWriter(sw);
+              ex.printStackTrace(pw);
+              String sStackTrace = sw.toString();
+              //send email here
+              Intent intent = new Intent(Intent.ACTION_SEND);
+              intent.setType("text/plain");
+              intent.putExtra(Intent.EXTRA_EMAIL, "deepgauravraj@gmail.com");
+              intent.putExtra(Intent.EXTRA_SUBJECT, "MusicPipe App Crash Report");
+              intent.putExtra(Intent.EXTRA_TEXT, "///////////\n"+sStackTrace);
+
+
+              startActivity(Intent.createChooser(intent, "Email CrashLogs"));
+            }
+          };
+
+
   private ServiceConnection serviceConnection = new ServiceConnection(){
 
     @Override
@@ -62,7 +86,11 @@ public class MainActivity extends FlutterActivity {
     super.onCreate(savedInstanceState);
     GeneratedPluginRegistrant.registerWith(this);
 
+
+    Thread.setDefaultUncaughtExceptionHandler(handleAppCrash);
+
     Intent intent = new Intent(this,PlayerService.class);
+
 
     getApplicationContext().startService(intent);
     PlayerService.isBound=true;
