@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-
+import 'player.dart';
 
 class SearchScreen extends StatefulWidget{
 
@@ -114,15 +114,31 @@ class SearchScreenState extends State<SearchScreen>{
                           Container(
                             padding: EdgeInsets.all(8),
                             child: Text(results[index]["title"],
-                            style: TextStyle(
-                              fontSize: 18,
-                            ),
+                            style: Theme.of(context).textTheme.title,
                             overflow: TextOverflow.ellipsis,
                             maxLines: 2,
                             ),
                           )
-                      )
+                      ),
                     ],
+                  ),
+                  
+                  Container(
+                    padding: EdgeInsets.all(10),
+                    child: Row(
+                      children: <Widget>[
+                        Expanded(
+                          child: Text(
+                            results[index]["author"],
+                            style: Theme.of(context).textTheme.subtitle,
+                          ),
+                        ),
+                        Text(
+                          formatDuration(Duration(seconds: results[index]["lengthSeconds"])),
+                          style: Theme.of(context).textTheme.subtitle,
+                        )
+                      ],
+                    ),
                   )
                 ],
               ),
