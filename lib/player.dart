@@ -11,6 +11,7 @@ import 'package:fluttery_seekbar/fluttery_seekbar.dart';
 
 import 'queue.dart';
 import 'searchScreen.dart';
+import 'package:http/http.dart' as http;
 
 const platform = const MethodChannel("me.devsilver.musicpiped/PlayerChannel");
 
@@ -35,8 +36,11 @@ class PlayerScreenState extends State<PlayerScreen>{
   bool isDragging = false;
   double newPos =0;
 
+  Map subtt = {"id":"","sub":[]};
+
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
       body: Container(
         child: StreamBuilder(
@@ -47,6 +51,11 @@ class PlayerScreenState extends State<PlayerScreen>{
               Map data = ass.data["newB"];
               String thumbURL = 
                   getThumbnaillink(data["queue"], data["currentIndex"], "videoThumbnails", "medium","quality");
+              
+              if(subtt["id"]!=data["queue"][data["currentIndex"]]["videoId"]){
+                updateSubtitle(data["queue"][data["currentIndex"]]);
+              }
+              
               return Container(
                 decoration: BoxDecoration(
                   image: DecorationImage(
@@ -92,6 +101,8 @@ class PlayerScreenState extends State<PlayerScreen>{
                               )
                             ],
                           ),
+                          Text(getSubtt(Duration(milliseconds: data["currentplayingtime"]))),
+
                           Stack(
                             alignment: AlignmentDirectional.center,
                             children: <Widget>[
@@ -261,6 +272,41 @@ class PlayerScreenState extends State<PlayerScreen>{
         ),
       ),
     );
+  }
+
+  Future updateSubtitle (Map song)async{
+    print("Requesting subtitle");
+    subtt["id"]=song["videoId"];
+    var id =subtt["id"];
+    var response = await http.get("https://invidio.us/api/v1/captions/$id?label=English");
+    var regex=RegExp(r'(\d{2}):(\d{2}):(\d{2}).\d{3} --> (\d{2}):(\d{2}):(\d{2}).\d{3}\n(.+)');
+    var caption=response.body;
+    var sub=[];
+    for (var x in regex.allMatches(caption)){
+      sub.add(
+        {
+          "start":Duration(hours: int.parse(x.group(1)),minutes: int.parse(x.group(2)),seconds: int.parse(x.group(3))),
+          "end":Duration(hours: int.parse(x.group(4)),minutes: int.parse(x.group(5)),seconds: int.parse(x.group(6))),
+          "sub":x.group(7)
+        }
+      );
+    }
+    subtt["sub"]=sub;
+    
+    //print("Subtitle received for $id "+response.body);
+  }
+  String getSubtt(Duration dur){
+    var time=dur.inHours.toString().padLeft(2,'0')+":"+dur.inMinutes.toString().padLeft(2,'0')+':'+dur.inSeconds.toString().padLeft(2,'0');
+    for(Map x in subtt["sub"]){
+      Duration start = x["start"];
+      Duration end = x["end"];
+      String sub = x["sub"];
+
+      if(start<dur && end>dur){
+        return sub;
+      }
+    }
+    return '';
   }
 
 }
