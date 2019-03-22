@@ -78,6 +78,7 @@ public class PlayerService extends Service {
     public static int ACTION_REMOVE_INDEX=8;
     public static int ACTION_TOGGLE_SHUFFLE=9;
     public static int ACTION_SEEK=10;
+    public static int ACTION_SET_SLEEP=11;
 
     public static String PLAYER_ACTION_FILTER="me.devsilver.musicpiped.playerservice.mainAction";
 
@@ -112,6 +113,8 @@ public class PlayerService extends Service {
 
     private AsyncTask refresher;
     private boolean focusOn;
+
+    long sleeptime=-1;
 
     private Thread.UncaughtExceptionHandler handleAppCrash =
             new Thread.UncaughtExceptionHandler() {
@@ -218,9 +221,11 @@ public class PlayerService extends Service {
     }
 
     private void BroadcastUpdate(Boolean full){
+
         if(!isBound){
             return;
         }
+
         //SEND BROADCAST
         Intent intent1 = new Intent();
         intent1.setAction(MainActivity.ACTIVITY_ACTION_FILTER);
@@ -244,8 +249,23 @@ public class PlayerService extends Service {
         intent1.putExtra("currentIndex",currentIndex);
         intent1.putExtra("repeatMode",repeatMode);
         intent1.putExtra("shuffle",shuffle);
+        intent1.putExtra("sleeptime",sleeptime);
 
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent1);
+
+        if(sleeptime!=-1){
+            if(sleeptime<=System.currentTimeMillis()){
+                sleeptime=-1;
+                Intent i = new Intent();
+                i.setAction(MainActivity.ACTIVITY_ACTION_FILTER);
+                i.putExtra(Intent.ACTION_MAIN,MainActivity.ACTION_CLOSE);
+                LocalBroadcastManager.getInstance(PlayerService.this).sendBroadcast(i);
+
+                stopForeground(true);
+                musicDBManager.close();
+                stopSelf();
+            }
+        }
     }
 
     @Override
@@ -564,6 +584,13 @@ public class PlayerService extends Service {
                     try {
                         UMP.seekTo((int)intent.getLongExtra("msec",UMP.getCurrentPosition()));
                     } catch (Exception e){
+                        e.printStackTrace();
+                    }
+                }
+                else if(intent.getIntExtra(Intent.ACTION_MAIN,0)==ACTION_SET_SLEEP){
+                    try{
+                        sleeptime=intent.getLongExtra("sleeptime",-1);
+                    } catch(Exception e){
                         e.printStackTrace();
                     }
                 }

@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'main.dart' as main;
 import 'package:fluttery_seekbar/fluttery_seekbar.dart';
+import 'package:flutter_duration_picker/flutter_duration_picker.dart';
 
 import 'queue.dart';
 import 'searchScreen.dart';
@@ -91,14 +92,52 @@ class PlayerScreenState extends State<PlayerScreen>{
                               Text(
                                 ""
                               ),
-                              IconButton(
-                                icon: Icon(Icons.playlist_play),
-                                onPressed: (){
-                                  Navigator.push(context, MaterialPageRoute(
-                                    builder: (context)=>(QueueScreen(data["queue"], data["currentIndex"]))
-                                  ));
-                                },
-                              )
+                              Row(
+                                children: <Widget>[
+                                  IconButton(
+                                    icon: Icon(data["sleeptime"]==-1?Icons.alarm_add:Icons.alarm_off),
+                                    onPressed: ()async{
+                                      if(data["sleeptime"]>1){
+                                        invokeOnPlatform("setSleepTimer", {});
+                                        Scaffold.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text("Sleep Timer Canceled"),
+                                          )
+                                        );
+                                      }
+                                      else{
+                                        var time = await showDurationPicker(
+                                          initialTime: Duration(),
+                                          context: context,
+                                          snapToMins: 1
+                                        );
+                                        if(time != null){
+                                          var sleeptime=DateTime.now().add(time);
+                                          invokeOnPlatform("setSleepTimer", {"sleeptime":sleeptime.millisecondsSinceEpoch});
+                                          Scaffold.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                "Sleep Timer set to "+(sleeptime.hour%12).toString()+":"+sleeptime.minute.toString()+
+                                                ":"+sleeptime.second.toString()+" "+(sleeptime.hour>11?"PM":"AM")
+                                              ),
+                                            )
+                                          );
+                                        }
+                                        
+                                      }
+                                    },
+                                  ),
+
+                                  IconButton(
+                                    icon: Icon(Icons.playlist_play),
+                                    onPressed: (){
+                                      Navigator.push(context, MaterialPageRoute(
+                                        builder: (context)=>(QueueScreen(data["queue"], data["currentIndex"]))
+                                      ));
+                                    },
+                                  )
+                                ],
+                              ),
                             ],
                           ),
                           Text(getSubtt(Duration(milliseconds: data["currentplayingtime"]))),
@@ -275,7 +314,6 @@ class PlayerScreenState extends State<PlayerScreen>{
   }
 
   Future updateSubtitle (Map song)async{
-    print("Requesting subtitle");
     subtt["id"]=song["videoId"];
     var id =subtt["id"];
     var response = await http.get("https://invidio.us/api/v1/captions/$id?label=English");
@@ -317,7 +355,6 @@ Future<dynamic> invokeOnPlatform(String method,dynamic arg) async {
   } on PlatformException catch(e){
       print(e);
   }
-
 }
 String formatDuration(Duration d){
   int mins = d.inMinutes;

@@ -207,6 +207,18 @@ public class MainActivity extends FlutterActivity {
                     LocalBroadcastManager.getInstance(MainActivity.this).sendBroadcast(i);
                   }
                 }
+                else if(methodCall.method.equals("setSleepTimer")){
+                  long sleeptime=-1;
+                  if(methodCall.hasArgument("sleeptime")){
+                    sleeptime = (long)methodCall.argument("sleeptime");
+                  }
+                    Intent i = new Intent();
+                    i.setAction(PlayerService.PLAYER_ACTION_FILTER);
+                    i.putExtra(Intent.ACTION_MAIN,PlayerService.ACTION_SET_SLEEP);
+                    i.putExtra("sleeptime",sleeptime);
+                    LocalBroadcastManager.getInstance(MainActivity.this).sendBroadcast(i);
+                  
+                }
                 else if(methodCall.method.equals("seekTo")){
                     if(methodCall.hasArgument("msec")){
                         long msec = ((Double) methodCall.argument("msec")).longValue();
@@ -498,6 +510,7 @@ public class MainActivity extends FlutterActivity {
         int currentIndex = intent.getIntExtra("currentIndex",0);
         int repeatStatus = intent.getIntExtra("repeatMode",0);
         boolean shuffle = intent.getBooleanExtra("shuffle",false);
+        long sleeptime = intent.getLongExtra("sleeptime",-1);
 
         try {
           jsonObject.put("isplaying",isplaying);
@@ -506,6 +519,7 @@ public class MainActivity extends FlutterActivity {
           jsonObject.put("currentIndex",currentIndex);
           jsonObject.put("repeatMode",repeatStatus);
           jsonObject.put("shuffle",shuffle);
+          jsonObject.put("sleeptime", sleeptime);
         } catch (Exception e) {
           e.printStackTrace();
         }
