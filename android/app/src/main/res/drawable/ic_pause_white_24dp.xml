@@ -8,5 +8,8 @@
     <path
 
         android:fillColor="#000"
+
+        android:strokeColor="#CCA"
+        android:strokeWidth="0.5"
         android:pathData="M17 6H15V18H17V6ZM15 4H13V6V18V20H15H17H19V18V6V4H17H15ZM8 6H6V18H8V6ZM6 4H4V6V18V20H6H8H10V18V6V4H8H6Z" />
 </vector>
