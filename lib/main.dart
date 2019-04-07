@@ -18,6 +18,7 @@ import 'home.dart';
 import 'tracks.dart';
 import 'artists.dart';
 import 'playlists.dart';
+import 'equaliser.dart';
 
 
 void main(){
@@ -447,6 +448,12 @@ class _MyHomePageState extends State<MyHomePage>
                                             bottomNavigationBar=createBottomNav();
                                            });
                                           setBottomSheetState(() { });
+                                        },
+                                      ),
+                                      ListTile(
+                                        title: Text("Equaliser"),
+                                        onTap: (){
+                                          Navigator.of(context).push(MaterialPageRoute(builder: (context)=>Equalizer()));
                                         },
                                       )
                                       
