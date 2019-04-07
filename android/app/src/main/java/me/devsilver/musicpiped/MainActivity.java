@@ -214,10 +214,32 @@ public class MainActivity extends FlutterActivity {
                   }
                     Intent i = new Intent();
                     i.setAction(PlayerService.PLAYER_ACTION_FILTER);
-                    i.putExtra(Intent.ACTION_MAIN,PlayerService.ACTION_SET_SLEEP);
+                    i.putExtra(Intent.ACTION_MAIN,PlayerService.ACTION_EQ_USE_PRESET);
                     i.putExtra("sleeptime",sleeptime);
                     LocalBroadcastManager.getInstance(MainActivity.this).sendBroadcast(i);
                   
+                }
+                else if(methodCall.method.equals("setEQPreset")){
+                  if(methodCall.hasArgument("preset")){
+                    Integer p = methodCall.argument("preset");
+                    Intent i = new Intent();
+                    i.setAction(PlayerService.PLAYER_ACTION_FILTER);
+                    i.putExtra(Intent.ACTION_MAIN,PlayerService.ACTION_EQ_USE_PRESET);
+                    i.putExtra("preset",p.shortValue());
+                    LocalBroadcastManager.getInstance(MainActivity.this).sendBroadcast(i);
+
+                  }
+                }
+                else if(methodCall.method.equals("setEQ")){
+                  if(methodCall.hasArgument("eqSetting")){
+                    Map setting = methodCall.argument("eqSetting");
+
+                    Intent i = new Intent();
+                    i.setAction(PlayerService.PLAYER_ACTION_FILTER);
+                    i.putExtra(Intent.ACTION_MAIN,PlayerService.ACTION_SET_EQ);
+                    i.putExtra("eqSetting", (Serializable) setting);
+                    LocalBroadcastManager.getInstance(MainActivity.this).sendBroadcast(i);
+                  }
                 }
                 else if(methodCall.method.equals("seekTo")){
                     if(methodCall.hasArgument("msec")){
@@ -511,6 +533,9 @@ public class MainActivity extends FlutterActivity {
         int repeatStatus = intent.getIntExtra("repeatMode",0);
         boolean shuffle = intent.getBooleanExtra("shuffle",false);
         long sleeptime = intent.getLongExtra("sleeptime",-1);
+        short preset = intent.getShortExtra("preset",(short)0);
+
+        Map<String,Integer> eqSetting = (Map<String, Integer>) intent.getSerializableExtra("eqSetting");
 
         try {
           jsonObject.put("isplaying",isplaying);
@@ -520,6 +545,8 @@ public class MainActivity extends FlutterActivity {
           jsonObject.put("repeatMode",repeatStatus);
           jsonObject.put("shuffle",shuffle);
           jsonObject.put("sleeptime", sleeptime);
+          jsonObject.put("preset",preset);
+          jsonObject.put("eqSetting",eqSetting);
         } catch (Exception e) {
           e.printStackTrace();
         }

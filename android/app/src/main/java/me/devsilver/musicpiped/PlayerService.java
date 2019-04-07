@@ -21,12 +21,16 @@ import android.graphics.Shader;
 import android.graphics.drawable.BitmapDrawable;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.media.audiofx.BassBoost;
+import android.media.audiofx.Equalizer;
+import android.media.audiofx.Virtualizer;
 import android.os.AsyncTask;
 import android.os.Binder;
 import android.os.Build;
 import android.os.IBinder;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.util.ArraySet;
+import android.util.Log;
 import android.widget.ImageView;
 import android.widget.RemoteViews;
 
@@ -52,10 +56,12 @@ import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.lang.Math; 
 
 import com.android.volley.Request;
 import com.android.volley.Response;
@@ -79,12 +85,22 @@ public class PlayerService extends Service {
     public static int ACTION_TOGGLE_SHUFFLE=9;
     public static int ACTION_SEEK=10;
     public static int ACTION_SET_SLEEP=11;
+    public static int ACTION_EQ_USE_PRESET=12;
+    public static int ACTION_SET_EQ=13;
 
     public static String PLAYER_ACTION_FILTER="me.devsilver.musicpiped.playerservice.mainAction";
 
 
     private String CHANNEL_ID ="PLAYERNOTIFICATION";
     private static MediaPlayer UMP;
+    public static Equalizer equalizer;
+    public static Virtualizer virtualizer;
+    public static BassBoost bassBoost;
+
+
+
+    private short presets;
+    private Map<String,Integer> equaliserSetting=new HashMap<>();
 
     private List queue;
 
@@ -145,6 +161,41 @@ public class PlayerService extends Service {
             stopSelf();
         }
         UMP = new MediaPlayer();
+        equalizer = new Equalizer(200,UMP.getAudioSessionId());
+        virtualizer = new Virtualizer(300,UMP.getAudioSessionId());
+        bassBoost = new BassBoost(400,UMP.getAudioSessionId());
+
+        presets = equalizer.getNumberOfPresets();
+
+        equalizer.setParameterListener((equalizer, i0, i1, i2, i3) -> {
+            Log.d("eq","No. of presets : "+presets);
+            for(short i =0 ;i<presets;i++){
+                Log.d("eq","Preset Name "+i+" = "+equalizer.getPresetName(i));
+            }
+            Log.d("eq","Current Preset "+equalizer.getCurrentPreset());
+
+            for(short bandlvl:equalizer.getBandLevelRange()){
+                Log.d("eq","Band lvl "+bandlvl);
+            }
+            Log.d("eq","number of bands "+equalizer.getNumberOfBands());
+            for(short i=0;i<equalizer.getNumberOfBands();i++){
+                Log.d("eq","Center freq of Band "+i+" "+equalizer.getCenterFreq(i));
+                Log.d("eq","Band level "+equalizer.getBandLevel(i));
+            }
+        });
+
+
+        
+
+        Equalizer.Settings settings = equalizer.getProperties();
+
+        //TODO TEST VIRTUALISER
+        virtualizer.setStrength((short)10);
+        bassBoost.setStrength((short)10);
+        equalizer.setEnabled(true);
+        Log.d("eq","BASS BOOST SUPPORTED: "+bassBoost.getStrengthSupported());
+        Log.d("eq","EQ Enabled "+equalizer.getEnabled());
+
         thumbstore=new ImageView(this);
 
 
@@ -207,6 +258,21 @@ public class PlayerService extends Service {
             }
 
         }
+        if(preferences.contains("preset")){
+
+            presets=(short)preferences.getInt("preset",0);
+            Equalizer.Settings equaliserSetting = new Equalizer.Settings();
+            equaliserSetting.curPreset=(short)presets;
+            equaliserSetting.numBands=(short)preferences.getInt("numbands",0);
+
+            long bands=preferences.getLong("bands",0);
+            equaliserSetting.bandLevels=new short[equaliserSetting.numBands];
+            for(int i=0;i<equaliserSetting.numBands;i++){
+                equaliserSetting.bandLevels[i]=(short)(preferences.getInt("bandLvl"+i,0));
+            }
+            equalizer.setEnabled(preferences.getBoolean("eqEnabled",true));
+            equalizer.setProperties(equaliserSetting);
+        }
         BroadcastUpdate(true);
         super.onCreate();
 
@@ -246,10 +312,24 @@ public class PlayerService extends Service {
         catch (Exception e){
             e.printStackTrace();
         }
+
+        equaliserSetting.clear();
+        equaliserSetting.put("presetNumber", (int) equalizer.getNumberOfPresets());
+        equaliserSetting.put("currentPreset", (int) equalizer.getCurrentPreset());
+        equaliserSetting.put("bandMinRange", (int) equalizer.getBandLevelRange()[0]);
+        equaliserSetting.put("bandMaxRange", (int) equalizer.getBandLevelRange()[1]);
+        equaliserSetting.put("bandNum", (int) equalizer.getNumberOfBands());
+        for(short i=0;i<equalizer.getNumberOfBands();i++){
+            equaliserSetting.put("bandCenter"+i,equalizer.getCenterFreq(i));
+            equaliserSetting.put("bandLvl"+i, (int) equalizer.getBandLevel(i));
+        }
+
         intent1.putExtra("currentIndex",currentIndex);
         intent1.putExtra("repeatMode",repeatMode);
         intent1.putExtra("shuffle",shuffle);
         intent1.putExtra("sleeptime",sleeptime);
+        intent1.putExtra("preset",equalizer.getCurrentPreset());
+        intent1.putExtra("eqSetting", (Serializable) equaliserSetting);
 
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent1);
 
@@ -291,6 +371,13 @@ public class PlayerService extends Service {
         editor.putStringSet("queue",stringSet);
         editor.putBoolean("shuffle",shuffle);
         editor.putInt("repeatMode",repeatMode);
+        editor.putInt("preset",equalizer.getProperties().curPreset);
+        editor.putInt("numbands",equalizer.getProperties().numBands);
+        
+        for(int i=0;i<equalizer.getProperties().numBands;i++){
+            editor.putInt("bandLvl"+i,equalizer.getProperties().bandLevels[i]);
+        }
+        editor.putBoolean("eqEnabled",equalizer.getEnabled());
         editor.apply();
         super.onDestroy();
     }
@@ -591,6 +678,28 @@ public class PlayerService extends Service {
                     try{
                         sleeptime=intent.getLongExtra("sleeptime",-1);
                     } catch(Exception e){
+                        e.printStackTrace();
+                    }
+                }
+                else if(intent.getIntExtra(Intent.ACTION_MAIN,0)==ACTION_EQ_USE_PRESET){
+                    try {
+                        equalizer.usePreset(intent.getShortExtra("preset",(short)0));
+                        Log.d("eq","Preset set to "+equalizer.getCurrentPreset ());
+                    } catch (Exception e){
+                        e.printStackTrace();
+                    }
+                }
+                else if(intent.getIntExtra(Intent.ACTION_MAIN,0)==ACTION_SET_EQ){
+                    try {
+                        Map<String,Integer> equaliserSetting= (Map<String, Integer>) intent.getSerializableExtra("eqSetting");
+                        Equalizer.Settings settings = new Equalizer.Settings();
+                        settings.curPreset=equaliserSetting.get("currentPreset").shortValue();
+                        settings.numBands=equaliserSetting.get("bandNum").shortValue();
+                        short bands[]=new short[settings.numBands];
+                        for(short i=0;i<equalizer.getNumberOfBands();i++){
+                            equalizer.setBandLevel(i,equaliserSetting.get("bandLvl"+i).shortValue());
+                        }
+                    } catch (Exception e){
                         e.printStackTrace();
                     }
                 }
