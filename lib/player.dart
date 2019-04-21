@@ -9,6 +9,7 @@ import 'package:flutter/foundation.dart';
 import 'main.dart' as main;
 import 'package:fluttery_seekbar/fluttery_seekbar.dart';
 import 'package:flutter_duration_picker/flutter_duration_picker.dart';
+import 'dart:convert';
 
 import 'queue.dart';
 import 'searchScreen.dart';
@@ -94,38 +95,41 @@ class PlayerScreenState extends State<PlayerScreen>{
                               ),
                               Row(
                                 children: <Widget>[
-                                  IconButton(
-                                    icon: Icon(data["sleeptime"]==-1?Icons.alarm_add:Icons.alarm_off),
-                                    onPressed: ()async{
-                                      if(data["sleeptime"]>1){
-                                        invokeOnPlatform("setSleepTimer", {});
-                                        Scaffold.of(context).showSnackBar(
-                                          SnackBar(
-                                            content: Text("Sleep Timer Canceled"),
-                                          )
-                                        );
-                                      }
-                                      else{
-                                        var time = await showDurationPicker(
-                                          initialTime: Duration(),
-                                          context: context,
-                                          snapToMins: 1
-                                        );
-                                        if(time != null){
-                                          var sleeptime=DateTime.now().add(time);
-                                          invokeOnPlatform("setSleepTimer", {"sleeptime":sleeptime.millisecondsSinceEpoch});
+                                  Theme(
+                                    data: ThemeData.light(),
+                                    child: IconButton(
+                                      icon: Icon(data["sleeptime"]==-1?Icons.alarm_add:Icons.alarm_off),
+                                      onPressed: ()async{
+                                        if(data["sleeptime"]>1){
+                                          invokeOnPlatform("setSleepTimer", {});
                                           Scaffold.of(context).showSnackBar(
                                             SnackBar(
-                                              content: Text(
-                                                "Sleep Timer set to "+(sleeptime.hour%12).toString()+":"+sleeptime.minute.toString()+
-                                                ":"+sleeptime.second.toString()+" "+(sleeptime.hour>11?"PM":"AM")
-                                              ),
+                                              content: Text("Sleep Timer Canceled"),
                                             )
                                           );
                                         }
-                                        
-                                      }
-                                    },
+                                        else{
+                                          var time = await showDurationPicker(
+                                            initialTime: Duration(),
+                                            context: context,
+                                            snapToMins: 1
+                                          );
+                                          if(time != null){
+                                            var sleeptime=DateTime.now().add(time);
+                                            invokeOnPlatform("setSleepTimer", {"sleeptime":sleeptime.millisecondsSinceEpoch});
+                                            Scaffold.of(context).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  "Sleep Timer set to "+(sleeptime.hour%12).toString()+":"+sleeptime.minute.toString()+
+                                                  ":"+sleeptime.second.toString()+" "+(sleeptime.hour>11?"PM":"AM")
+                                                ),
+                                              )
+                                            );
+                                          }
+                                          
+                                        }
+                                      },
+                                    ),
                                   ),
 
                                   IconButton(
@@ -318,7 +322,7 @@ class PlayerScreenState extends State<PlayerScreen>{
     var id =subtt["id"];
     var response = await http.get("https://invidio.us/api/v1/captions/$id?label=English");
     var regex=RegExp(r'(\d{2}):(\d{2}):(\d{2}).\d{3} --> (\d{2}):(\d{2}):(\d{2}).\d{3}\n(.+)');
-    var caption=response.body;
+    var caption=utf8.decode(response.bodyBytes);
     var sub=[];
     for (var x in regex.allMatches(caption)){
       sub.add(
