@@ -96,6 +96,14 @@ class PlayerScreenState extends State<PlayerScreen>{
                               Row(
                                 children: <Widget>[
                                   IconButton(
+                                    icon: Icon(Icons.sync),
+                                    tooltip: "AutoPlay",
+                                    color: data["autoplay"]?Theme.of(context).iconTheme.color:Theme.of(context).disabledColor,
+                                    onPressed: (){
+                                      invokeOnPlatform("setAutoPlay", {"autoplay":!data["autoplay"]});
+                                    },
+                                  ),
+                                  IconButton(
                                     icon: Icon(data["sleeptime"]==-1?Icons.alarm_add:Icons.alarm_off),
                                     onPressed: ()async{
                                       

@@ -28,6 +28,7 @@ import android.os.AsyncTask;
 import android.os.Binder;
 import android.os.Build;
 import android.os.IBinder;
+import android.support.annotation.Nullable;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.util.ArraySet;
 import android.util.Log;
@@ -49,6 +50,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Serializable;
 import java.io.StringWriter;
+import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -61,11 +63,14 @@ import java.util.Random;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.lang.Math; 
+import java.lang.Math;
 
+import com.android.volley.NetworkResponse;
+import com.android.volley.ParseError;
 import com.android.volley.Request;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
+import com.android.volley.toolbox.HttpHeaderParser;
 import com.android.volley.toolbox.StringRequest;
 import com.danikula.videocache.HttpProxyCacheServer;
 import com.google.gson.Gson;
@@ -87,6 +92,7 @@ public class PlayerService extends Service {
     public static int ACTION_SET_SLEEP=11;
     public static int ACTION_EQ_USE_PRESET=12;
     public static int ACTION_SET_EQ=13;
+    public static int ACTION_SET_AUTOPLAY=14;
 
     public static String PLAYER_ACTION_FILTER="me.devsilver.musicpiped.playerservice.mainAction";
 
@@ -131,6 +137,10 @@ public class PlayerService extends Service {
     private boolean focusOn;
 
     long sleeptime=-1;
+
+    boolean AUTOPLAY=false;
+
+    String invidiousInstance = "https://invidio.us/api/v1/";
 
     private Thread.UncaughtExceptionHandler handleAppCrash =
             new Thread.UncaughtExceptionHandler() {
@@ -330,6 +340,7 @@ public class PlayerService extends Service {
         intent1.putExtra("sleeptime",sleeptime);
         intent1.putExtra("preset",equalizer.getCurrentPreset());
         intent1.putExtra("eqSetting", (Serializable) equaliserSetting);
+        intent1.putExtra("autoplay",AUTOPLAY);
 
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent1);
 
@@ -405,6 +416,9 @@ public class PlayerService extends Service {
 
     private void playFromQueue(){
         try {
+            if(AUTOPLAY){
+                setRecommended();
+            }
             final AbstractMap abstractMap =(AbstractMap) queue.get(currentIndex);
             final List formats = (List)abstractMap.get("adaptiveFormats");
             List thummbnails= (List)abstractMap.get("videoThumbnails");
@@ -525,6 +539,7 @@ public class PlayerService extends Service {
                                         String youtubeURL="https://www.youtube.com/watch?v=";
                                         String vidId=(String) abstractMap.get("videoId");
                                         StreamInfo streamInfo = StreamInfo.getInfo(ys,youtubeURL+vidId);
+
                                         cf.put("url",streamInfo.getAudioStreams().get(0).getUrl());
                                         playFromQueue();
                                     } else {
@@ -571,6 +586,38 @@ public class PlayerService extends Service {
             }
         } catch (Exception e){
             e.printStackTrace();
+        }
+    }
+
+    public void setRecommended(){
+
+        Object current = queue.get(currentIndex);
+        queue = new ArrayList();
+        queue.add(current);
+        currentIndex=0;
+
+        List<AbstractMap> recommendations = (List<AbstractMap>) ((AbstractMap)queue.get(currentIndex)).get("recommendedVideos");
+        for(AbstractMap recommendation:recommendations){
+
+            String queryURL = invidiousInstance+"videos/"+recommendation.get("videoId");
+            VolleySingleton.getInstance(this).addtoRequestQueue(
+                    new UTF8StringRequest(
+                            queryURL,
+                            new Response.Listener<String>() {
+                                @Override
+                                public void onResponse(String s) {
+                                    queue.add(gson.fromJson(s,HashMap.class));
+                                    BroadcastUpdate(true);
+                                }
+                            },
+                            new Response.ErrorListener() {
+                                @Override
+                                public void onErrorResponse(VolleyError volleyError) {
+
+                                }
+                            }
+                    )
+            );
         }
     }
 
@@ -698,6 +745,16 @@ public class PlayerService extends Service {
                         short bands[]=new short[settings.numBands];
                         for(short i=0;i<equalizer.getNumberOfBands();i++){
                             equalizer.setBandLevel(i,equaliserSetting.get("bandLvl"+i).shortValue());
+                        }
+                    } catch (Exception e){
+                        e.printStackTrace();
+                    }
+                }
+                else if(intent.getIntExtra(Intent.ACTION_MAIN,0)==ACTION_SET_AUTOPLAY){
+                    try{
+                        AUTOPLAY = intent.getBooleanExtra("autoplay",false);
+                        if(AUTOPLAY){
+                            setRecommended();
                         }
                     } catch (Exception e){
                         e.printStackTrace();
@@ -997,5 +1054,24 @@ public class PlayerService extends Service {
         context.sendBroadcast(bCast);
 
 
+    }
+}
+
+class UTF8StringRequest extends StringRequest{
+
+    public UTF8StringRequest(String url, Response.Listener<String> listener, @Nullable Response.ErrorListener errorListener) {
+        super(url, listener, errorListener);
+    }
+
+    @Override
+    protected Response<String> parseNetworkResponse(NetworkResponse response) {
+        try {
+            String utf8string = new String(response.data,"UTF-8");
+            return  Response.success(utf8string, HttpHeaderParser.parseCacheHeaders(response));
+        } catch (UnsupportedEncodingException e){
+            return  Response.error(new ParseError(e));
+        } catch (Exception e){
+            return Response.error(new ParseError(e));
+        }
     }
 }

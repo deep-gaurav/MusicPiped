@@ -241,6 +241,17 @@ public class MainActivity extends FlutterActivity {
                     LocalBroadcastManager.getInstance(MainActivity.this).sendBroadcast(i);
                   }
                 }
+                else if(methodCall.method.equals("setAutoPlay")){
+                  if(methodCall.hasArgument("autoplay")){
+                    boolean autoplay = methodCall.argument("autoplay");
+
+                    Intent i = new Intent();
+                    i.setAction(PlayerService.PLAYER_ACTION_FILTER);
+                    i.putExtra(Intent.ACTION_MAIN,PlayerService.ACTION_SET_AUTOPLAY);
+                    i.putExtra("autoplay",autoplay);
+                    LocalBroadcastManager.getInstance(MainActivity.this).sendBroadcast(i);
+                  }
+                }
                 else if(methodCall.method.equals("seekTo")){
                     if(methodCall.hasArgument("msec")){
                         long msec = ((Double) methodCall.argument("msec")).longValue();
@@ -534,6 +545,7 @@ public class MainActivity extends FlutterActivity {
         boolean shuffle = intent.getBooleanExtra("shuffle",false);
         long sleeptime = intent.getLongExtra("sleeptime",-1);
         short preset = intent.getShortExtra("preset",(short)0);
+        boolean autoplay = intent.getBooleanExtra("autoplay",false);
 
         Map<String,Integer> eqSetting = (Map<String, Integer>) intent.getSerializableExtra("eqSetting");
 
@@ -547,6 +559,7 @@ public class MainActivity extends FlutterActivity {
           jsonObject.put("sleeptime", sleeptime);
           jsonObject.put("preset",preset);
           jsonObject.put("eqSetting",eqSetting);
+          jsonObject.put("autoplay",autoplay);
         } catch (Exception e) {
           e.printStackTrace();
         }
