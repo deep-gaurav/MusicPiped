@@ -73,7 +73,7 @@ class Home extends StatelessWidget{
                   String url = "http://suggestqueries.google.com/complete/search?client=firefox&ds=yt&q="+pattern;
                   final response = await http.get(url);
                   if(response.statusCode==200){
-                    List responseData = json.decode(utf8.decode(response.bodyBytes));
+                    List responseData = json.decode(response.body);
                     List result = responseData.elementAt(1);
                     return result;
                   }

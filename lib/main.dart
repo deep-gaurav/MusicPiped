@@ -25,6 +25,16 @@ void main(){
   runApp(MyApp());
 }
 
+List<String> invidiosInstances = [
+  "https://invidio.us/",
+  "https://invidious.snopyta.org/",
+  "https://vid.wxzm.sx/",
+  "https://invidious.kabi.tk/",
+  "https://invidiou.sh/",
+  "https://invidious.enkirton.net/",
+  "https://tube.poal.co/"
+];
+
 Map bCast;
 bool pendingUpdate=false;
 SharedPreferences preferences;
@@ -52,6 +62,7 @@ class _AppState extends State<MyApp> {
     });
   }
   _AppState(){
+    
     SharedPreferences.getInstance().then((val){
       preferences=val;
       setState(() {
@@ -455,6 +466,52 @@ class _MyHomePageState extends State<MyHomePage>
                                         onTap: (){
                                           Navigator.of(context).push(MaterialPageRoute(builder: (context)=>Equalizer()));
                                         },
+                                      ),
+                                      StatefulBuilder(
+                                        builder: (btcx,setst){
+                                          List<DropdownMenuItem> items = new List();
+                                          for(String i in invidiosInstances){
+                                            items.add(DropdownMenuItem(
+                                              value: i,
+                                              child:Text(i)
+                                            ));
+                                          }
+                                          int i =0;
+                                          try{
+                                            i=preferences.getInt("invidiousinstance");
+                                          }catch (e){
+
+                                          }
+                                          if(i==null || i<0){
+                                            i=0;
+                                          }
+                                          return ListTile(
+                                            leading: Text("Invidious Instance"),
+                                            title: SingleChildScrollView(
+                                              scrollDirection: Axis.horizontal,
+                                              child: DropdownButton(
+                                                value: items[i].value,
+                                                items: items,
+                                                onChanged: (i){
+                                                  Scaffold.of(btcx).showSnackBar(
+                                                    SnackBar(
+                                                      content: Text(
+                                                        "Invidios Instance set to "+i.toString()
+                                                      ),
+                                                    )
+                                                  );
+                                                  print("new invidious instance : $i ,"+invidiosInstances.indexOf(i).toString());
+                                                  preferences.setInt("invidiousinstance", invidiosInstances.indexOf(i)).then(
+                                                    (b){
+                                                      setst((){});
+                                                    }
+                                                  );
+                                                  
+                                                },
+                                              ),
+                                            ),
+                                          );
+                                        },
                                       )
                                       
                                     ],
@@ -660,21 +717,27 @@ class _MyHomePageState extends State<MyHomePage>
                           ),
                           onPressed: ()async{
                             String pid = youtubeplaylisturl.split("list=")[1];
-                            String url = "https://invidio.us/api/v1/playlists/"+pid;
+                            String invidiosApi = invidiosInstances[0];
+                            try{
+                              invidiosApi=invidiosInstances[preferences.getInt("invidiousinstance")];
+                            }catch (e){
+
+                            }
+                            String url = invidiosApi+"api/v1/playlists/"+pid;
 
                             Future work() async{
                               streamController.add(0);
                               var response = await http.get(url);
                               if(response.statusCode==200){
-                                var result = json.decode(response.body);
+                                var result = json.decode(utf8.decode(response.bodyBytes));
                                 List vids = result["videos"];
                                 List playlist = new List();
                                 for(int i=0;i<vids.length;i++){
                                   Map resultitem=vids[i];
                                   String vidId = resultitem["videoId"];
-                                  var newresponse = await http.get("https://invidio.us/api/v1/videos/"+vidId);
+                                  var newresponse = await http.get(invidiosApi+"api/v1/videos/"+vidId);
                                   if(newresponse.statusCode==200){
-                                    playlist.add(json.decode(newresponse.body));
+                                    playlist.add(json.decode(utf8.decode(newresponse.bodyBytes)));
                                     print("Imported $i");
                                     streamController.add((i+1).toDouble()/vids.length);
                                   }

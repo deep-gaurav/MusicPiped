@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'player.dart';
+import 'main.dart' as main;
 
 class SearchScreen extends StatefulWidget{
 
@@ -155,8 +156,13 @@ class SearchScreenState extends State<SearchScreen>{
 
 
 Future<dynamic> searchVid(searchquery) async {
+    String invidiosApi = main.invidiosInstances[0];
+    try{
+      invidiosApi=main.invidiosInstances[main.preferences.getInt("invidiousinstance")];
+    }catch (e){
 
-    String apiurl="https://invidio.us/api/v1/search?q=";
+    }
+    String apiurl=invidiosApi+"api/v1/search?q=";
     final response =
     await http.get(apiurl+ searchquery);
 
@@ -186,8 +192,13 @@ Future<List<dynamic>> resultSearchtoVideoHash(List vidlist) async {
 }
 
  Future<Map> fetchVid(id) async {
+    String invidiosApi = main.invidiosInstances[0];
+    try{
+      invidiosApi=main.invidiosInstances[main.preferences.getInt("invidiousinstance")];
+    }catch (e){
 
-    String apiurl="https://invidio.us/api/v1/videos/";
+    }
+    String apiurl=invidiosApi+"api/v1/videos/";
     String videoId=id;
     final response = await http.get(apiurl+videoId);
     print("received");

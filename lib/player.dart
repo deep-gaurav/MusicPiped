@@ -318,7 +318,13 @@ class PlayerScreenState extends State<PlayerScreen>{
   Future updateSubtitle (Map song)async{
     subtt["id"]=song["videoId"];
     var id =subtt["id"];
-    var response = await http.get("https://invidio.us/api/v1/captions/$id?label=English");
+    String invidiosApi = main.invidiosInstances[0];
+    try{
+      invidiosApi=main.invidiosInstances[main.preferences.getInt("invidiousinstance")];
+    }catch (e){
+
+    }
+    var response = await http.get(invidiosApi+"api/v1/captions/$id?label=English");
     var regex=RegExp(r'(\d{2}):(\d{2}):(\d{2}).\d{3} --> (\d{2}):(\d{2}):(\d{2}).\d{3}\n(.+)');
     var caption=utf8.decode(response.bodyBytes);
     var sub=[];
@@ -336,7 +342,6 @@ class PlayerScreenState extends State<PlayerScreen>{
     //print("Subtitle received for $id "+response.body);
   }
   String getSubtt(Duration dur){
-    var time=dur.inHours.toString().padLeft(2,'0')+":"+dur.inMinutes.toString().padLeft(2,'0')+':'+dur.inSeconds.toString().padLeft(2,'0');
     for(Map x in subtt["sub"]){
       Duration start = x["start"];
       Duration end = x["end"];
