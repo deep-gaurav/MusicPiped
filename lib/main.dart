@@ -9,6 +9,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_fab_dialer/flutter_fab_dialer.dart';
 import 'dart:ui';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -20,9 +21,28 @@ import 'artists.dart';
 import 'playlists.dart';
 import 'equaliser.dart';
 
+String privacyPolicy;
 
 void main(){
+  //LicenseRegistry.addLicense(getLicenses);
+  rootBundle.loadString("Privacy.md").then((onValue){
+    privacyPolicy=onValue;
+  });
   runApp(MyApp());
+}
+
+Stream<LicenseEntry> getLicenses(){
+  StreamController<LicenseEntry> sc = StreamController();
+
+  rootBundle.loadString("LICENSE").then(
+    (privacyString){
+      sc.add(
+        LicenseEntryWithLineBreaks(["musicpiped"], privacyString)
+      );
+      sc.close();
+    }
+  );
+  return sc.stream;
 }
 
 List<String> invidiosInstances = [
@@ -510,6 +530,30 @@ class _MyHomePageState extends State<MyHomePage>
                                                 },
                                               ),
                                             ),
+                                          );
+                                        },
+                                      ),
+                                      ListTile(
+                                        title: Text("Privacy Policy"),
+                                        onTap: (){
+                                          showDialog(
+                                            context: context,
+                                            builder: (btcx){
+
+                                              return Dialog(
+                                                child:Markdown(
+                                                  data: privacyPolicy,
+                                                )
+                                              );
+                                            }
+                                          );
+                                        },
+                                      ),
+                                      ListTile(
+                                        title: Text("Licences"),
+                                        onTap: (){
+                                          showLicensePage(
+                                            context: context
                                           );
                                         },
                                       )
