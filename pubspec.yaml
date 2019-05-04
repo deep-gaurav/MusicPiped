@@ -7,7 +7,7 @@ description: MusicPiped
 # Both the version and the builder number may be overridden in flutter
 # build by specifying --build-name and --build-number, respectively.
 # Read more about versioning at semver.org.
-version: 1.1.5
+version: 1.2.0
 
 environment:
   sdk: ">=2.0.0-dev.68.0 <3.0.0"
@@ -35,6 +35,8 @@ dependencies:
   flutter_xlider: ^2.1.0
   fluttery: ^0.0.8
   flutter_markdown: ^0.2.0
+  flutter_share_me: ^0.1.2
+  flutter_pagewise: ^1.2.3
 
 dev_dependencies:
   flutter_test:
