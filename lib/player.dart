@@ -9,6 +9,7 @@ import 'package:flutter/foundation.dart';
 import 'main.dart' as main;
 import 'package:fluttery_seekbar/fluttery_seekbar.dart';
 import 'package:flutter_duration_picker/flutter_duration_picker.dart';
+import 'package:flutter_share_me/flutter_share_me.dart';
 import 'dart:convert';
 
 import 'queue.dart';
@@ -49,8 +50,12 @@ class PlayerScreenState extends State<PlayerScreen>{
           stream: main.mainStreamController.stream,
           builder: (context,ass){
             if(ass.connectionState==ConnectionState.active){
+
+              
               
               Map data = ass.data["newB"];
+              print(data["currentIndex"]);
+              print(data["queue"]);
               String thumbURL = 
                   getThumbnaillink(data["queue"], data["currentIndex"], "videoThumbnails", "medium","quality");
               
@@ -96,6 +101,14 @@ class PlayerScreenState extends State<PlayerScreen>{
                               Row(
                                 children: <Widget>[
                                   IconButton(
+                                    icon: Icon(Icons.share),
+                                    onPressed: (){
+                                      FlutterShareMe().shareToSystem(
+                                        msg:"https://www.youtube.com/watch?v="+data["queue"][data["currentIndex"]]["videoId"]
+                                      );
+                                    },
+                                  ),
+                                  IconButton(
                                     icon: Icon(Icons.sync),
                                     tooltip: "AutoPlay",
                                     color: data["autoplay"]?Theme.of(context).iconTheme.color:Theme.of(context).disabledColor,
@@ -140,9 +153,10 @@ class PlayerScreenState extends State<PlayerScreen>{
 
                                   IconButton(
                                     icon: Icon(Icons.playlist_play),
-                                    onPressed: (){
+                                    onPressed: ()async{
+                                      List Q=await platform.invokeMethod("getQueue");
                                       Navigator.push(context, MaterialPageRoute(
-                                        builder: (context)=>(QueueScreen(data["queue"], data["currentIndex"]))
+                                        builder: (context)=>(QueueScreen(Q, data["currentIndex"]))
                                       ));
                                     },
                                   )

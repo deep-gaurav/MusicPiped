@@ -282,8 +282,8 @@ Future<List<dynamic>> resultSearchtoVideoHash(List vidlist) async {
             }
             else{
               setState(() {
-                              selected.clear();
-                            });
+                selected.clear();
+              });
             }
           },
           )
@@ -298,7 +298,12 @@ String getThumbnaillink(List list,int index,String type ,dynamic quality, String
     List result=list[index][type];
     for(int i=0;i<result.length;i++){
       if(result[i][finder]==quality){
-        return result[i]["url"];
+        String url= result[i]["url"];
+        if(url.startsWith("http")){
+          return url;
+        }else{
+          return "https:"+url;
+        }
       }
     }
     return null;

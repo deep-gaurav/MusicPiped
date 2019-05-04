@@ -140,11 +140,6 @@ class _MyHomePageState extends State<MyHomePage>
   Artists artists;
   Playlists playlists;
 
-  Future topTrackfuture;
-  Future topArtistfuture;
-  Future allTrackfuture;
-  Future playlistfuture;
-
   AnimationController animationController;
 
   BottomNavigationBar bottomNavigationBar;
@@ -255,38 +250,13 @@ class _MyHomePageState extends State<MyHomePage>
   }
 
   void refresh() {
-    topTrackfuture = platform.invokeMethod("requestTopTracks");
-    topArtistfuture = platform.invokeMethod("requestArtists");
-    allTrackfuture = platform.invokeMethod("requestAllTracks");
-    playlistfuture = platform.invokeMethod("getPlaylists");
 
     setState(() {
-      tracks = Tracks(allTrackfuture, refresh);
-      artists = Artists(topArtistfuture);
-      home = Home(((result) {
-        if (result['addtoexisting'] == false) {
-          setState(() {
-            playingTrackQueue = result['queue'];
-          });
-          updateQueue(result['queue']);
-        } else {
-          addtoExistingQueue(result['queue']);
-        }
-      }), topTrackfuture, topArtistfuture);
-
-      playlists = Playlists(playlistfuture,refresh);
     });
   }
 
   @override
   void initState() {
-    topTrackfuture = platform.invokeMethod("requestTopTracks");
-    topArtistfuture = platform.invokeMethod("requestArtists");
-    allTrackfuture = platform.invokeMethod("requestAllTracks");
-    playlistfuture = platform.invokeMethod("getPlaylists");
-
-
-
 
     home = Home((result) {
       if (result['addtoexisting'] == false) {
@@ -297,11 +267,11 @@ class _MyHomePageState extends State<MyHomePage>
       } else {
         addtoExistingQueue(result['queue']);
       }
-    }, topTrackfuture, topArtistfuture);
+    });
 
-    tracks = Tracks(allTrackfuture, refresh);
-    artists = Artists(topArtistfuture);
-    playlists = Playlists(playlistfuture,refresh);
+    tracks = Tracks();
+    artists = Artists();
+    playlists = Playlists();
 
     bottomNavigationBar = createBottomNav();
     //invokeOnPlatform("play", null);
@@ -669,7 +639,7 @@ class _MyHomePageState extends State<MyHomePage>
                         FlatButton(
                           child: Text("Cancel"),
                           onPressed: (){
-                            Navigator.pop(bdctx,playlistfuture);
+                            Navigator.pop(bdctx);
                           },
                         ),
                         FlatButton(
@@ -677,7 +647,6 @@ class _MyHomePageState extends State<MyHomePage>
                           onPressed: () async {
                             if(name.isNotEmpty){
                               invokeOnPlatform("addPlaylist", {"name":name});
-                              playlistfuture=platform.invokeMethod("getPlaylists");
                               Navigator.pop(bdctx,null);
                             }
                           },
@@ -687,7 +656,6 @@ class _MyHomePageState extends State<MyHomePage>
                   }
                 );
                 setState(() {
-                  playlists = Playlists(playlistfuture,refresh);
                 });
               } ,"New Playlist" , navColors[_currentBottomNavPage], Colors.black, true),
             FabMiniMenuItem.withText(
@@ -789,7 +757,6 @@ class _MyHomePageState extends State<MyHomePage>
                                 platform.invokeMethod("importPlaylist",{"playlistname":result["title"],"playlist":playlist});
                                 
                                 streamController.close();
-                                playlistfuture = platform.invokeMethod("getPlaylists");
                                 
 
                               }
@@ -806,7 +773,6 @@ class _MyHomePageState extends State<MyHomePage>
                 );
 
                 setState(() {
-                  playlists = Playlists(playlistfuture,refresh);
                 });
             } ,"Import Playlist" , navColors[_currentBottomNavPage], Colors.black, true),
           ], navColors[_currentBottomNavPage], Icon(Icons.more_horiz)):null,

@@ -108,7 +108,7 @@ public class PlayerService extends Service {
     private short presets;
     private Map<String,Integer> equaliserSetting=new HashMap<>();
 
-    private List queue;
+    public List queue;
 
     private int currentIndex=-1;
 
@@ -195,7 +195,6 @@ public class PlayerService extends Service {
         });
 
 
-        
 
         Equalizer.Settings settings = equalizer.getProperties();
 
@@ -244,10 +243,9 @@ public class PlayerService extends Service {
 
         audioManager=(AudioManager)getSystemService(AUDIO_SERVICE);
 
-
         if (preferences.contains("queue")){
             try {
-
+                AUTOPLAY = preferences.getBoolean("autoplay",false);
                 currentIndex = preferences.getInt("index",0);
                 shuffle=preferences.getBoolean("shuffle",false);
                 repeatMode = preferences.getInt("repeatMode",0);
@@ -308,8 +306,14 @@ public class PlayerService extends Service {
 
         intent1.putExtra(Intent.ACTION_MAIN,MainActivity.ACTION_STATUS_UPDATE);
         if(full){
-
-            intent1.putExtra("queue",(Serializable) queue);
+            List l = new ArrayList();
+            for(int i =0 ; i<queue.size();i++){
+                if(i==currentIndex){
+                    l.add(queue.get(currentIndex));
+                }
+                l.add(new HashMap<Object,Object>());
+            }
+            intent1.putExtra("queue",(Serializable) l);
             intent1.putExtra("queueupdate",true);
         }else{
             intent1.putExtra("queueupdate",false);
@@ -361,7 +365,13 @@ public class PlayerService extends Service {
 
     @Override
     public void onDestroy() {
+        close();
+        super.onDestroy();
+    }
+    private void close(){
+        Log.d("music_piped","CLOSING SERVICE");
 
+        stopForeground(true);
         musicDBManager.close();
         t.cancel();
         t.purge();
@@ -382,15 +392,19 @@ public class PlayerService extends Service {
         editor.putStringSet("queue",stringSet);
         editor.putBoolean("shuffle",shuffle);
         editor.putInt("repeatMode",repeatMode);
+        editor.putBoolean("autoplay",AUTOPLAY);
         editor.putInt("preset",equalizer.getProperties().curPreset);
         editor.putInt("numbands",equalizer.getProperties().numBands);
-        
+
         for(int i=0;i<equalizer.getProperties().numBands;i++){
             editor.putInt("bandLvl"+i,equalizer.getProperties().bandLevels[i]);
         }
         editor.putBoolean("eqEnabled",equalizer.getEnabled());
         editor.apply();
-        super.onDestroy();
+        editor.commit();
+        Intent i=new Intent(this,PlayerService.class);
+        getApplicationContext().stopService(i);
+        android.os.Process.killProcess(android.os.Process.myPid());
     }
 
     public class LocalBinder extends Binder{
@@ -510,7 +524,14 @@ public class PlayerService extends Service {
                         } catch (Exception e){
                             e.printStackTrace();
                         }
-                        UMP.setDataSource(proxyCacheServer.getProxyUrl(cf.get("url").toString()+"&videoId="+abstractMap.get("videoId").toString()));
+                        if((Boolean)abstractMap.get("liveNow")){
+                            Log.d("music_piped","Playing Live");
+                            UMP.setDataSource(cf.get("url").toString()+"&videoId="+abstractMap.get("videoId").toString());
+                        }
+                        else{
+                            Log.d("music_piped","Playing Offline");
+                            UMP.setDataSource(proxyCacheServer.getProxyUrl(cf.get("url").toString()+"&videoId="+abstractMap.get("videoId").toString()));
+                        }
                         UMP.prepareAsync();
                     }
                     else {
@@ -531,7 +552,7 @@ public class PlayerService extends Service {
 
                                     int responseCode = connection.getResponseCode();
 
-                                    if (responseCode != 200) {
+                                    if (responseCode != 200 || (Boolean)abstractMap.get("liveNow")) {
                                         Downloader.init(null);
                                         NewPipe.init(Downloader.getInstance(),new Localization("US","IN"));
                                         int sid =NewPipe.getIdOfService("YouTube");
@@ -549,7 +570,14 @@ public class PlayerService extends Service {
                                         } catch (Exception e){
                                             e.printStackTrace();
                                         }
-                                        UMP.setDataSource(proxyCacheServer.getProxyUrl(cf.get("url").toString()+"&videoId="+abstractMap.get("videoId").toString()));
+                                        if((Boolean)abstractMap.get("liveNow")){
+                                            Log.d("music_piped","Playing Live");
+                                            UMP.setDataSource(cf.get("url").toString()+"&videoId="+abstractMap.get("videoId").toString());
+                                        }
+                                        else{
+                                            Log.d("music_piped","Playing Offline");
+                                            UMP.setDataSource(proxyCacheServer.getProxyUrl(cf.get("url").toString()+"&videoId="+abstractMap.get("videoId").toString()));
+                                        }
                                         UMP.prepareAsync();
 
                                     }
@@ -571,7 +599,8 @@ public class PlayerService extends Service {
                                 super.onPostExecute(aVoid);
                             }
                         };
-                        refresher.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR,null);
+                        refresher.executeOnExecutor(AsyncTask.SERIAL_EXECUTOR,null
+                        );
                     }
 
                     break;
@@ -591,12 +620,9 @@ public class PlayerService extends Service {
 
     public void setRecommended(){
 
-        Object current = queue.get(currentIndex);
-        queue = new ArrayList();
-        queue.add(current);
-        currentIndex=0;
-
         List<AbstractMap> recommendations = (List<AbstractMap>) ((AbstractMap)queue.get(currentIndex)).get("recommendedVideos");
+
+        if(queue.size()<5)
         for(AbstractMap recommendation:recommendations){
 
             String queryURL = invidiousInstance+"videos/"+recommendation.get("videoId");
@@ -606,7 +632,30 @@ public class PlayerService extends Service {
                             new Response.Listener<String>() {
                                 @Override
                                 public void onResponse(String s) {
-                                    queue.add(gson.fromJson(s,HashMap.class));
+                                        queue.add(gson.fromJson(s,HashMap.class));
+                                        BroadcastUpdate(true);
+                                }
+                            },
+                            new Response.ErrorListener() {
+                                @Override
+                                public void onErrorResponse(VolleyError volleyError) {
+
+                                }
+                            }
+                    )
+            );
+        }
+        else{
+            AbstractMap recommendation = recommendations.get(0);
+            String queryURL = invidiousInstance+"videos/"+recommendation.get("videoId");
+            VolleySingleton.getInstance(this).addtoRequestQueue(
+                    new UTF8StringRequest(
+                            queryURL,
+                            new Response.Listener<String>() {
+                                @Override
+                                public void onResponse(String s) {
+                                    if(queue.get(queue.size()-1).equals(gson.fromJson(s,HashMap.class)))
+                                        queue.add(gson.fromJson(s,HashMap.class));
                                     BroadcastUpdate(true);
                                 }
                             },
@@ -886,9 +935,8 @@ public class PlayerService extends Service {
                     i.putExtra(Intent.ACTION_MAIN,MainActivity.ACTION_CLOSE);
                     LocalBroadcastManager.getInstance(PlayerService.this).sendBroadcast(i);
 
-                    stopForeground(true);
-                    musicDBManager.close();
-                    stopSelf();
+
+                    close();
                 }
             }
 
@@ -936,21 +984,22 @@ public class PlayerService extends Service {
         RemoteViews contentView = new RemoteViews(getPackageName(), R.layout.notification_layout);
 
 
-        contentView.setImageViewResource(R.id.prevButton, R.drawable.ic_skip_previous_white_24dp);
-        contentView.setImageViewResource(R.id.nextButton, R.drawable.ic_skip_next_white_24dp);
-        contentView.setImageViewResource(R.id.closeButton, R.drawable.ic_close_white_24dp);
+        contentView.setImageViewResource(R.id.prevButton, R.drawable.ic_navigate_before_black_24dp);
+        contentView.setImageViewResource(R.id.nextButton, R.drawable.ic_navigate_next_black_24dp);
+        contentView.setImageViewResource(R.id.closeButton, R.drawable.ic_power_settings_new_black_24dp);
         if (thumbstore != null && thumbstore.getDrawable() != null) {
             BitmapDrawable bitmapDrawable = (BitmapDrawable) thumbstore.getDrawable();
             notificationImage = bitmapDrawable.getBitmap();
-            notificationImage = addGradient(notificationImage,Color.WHITE,Color.BLACK);
+            notificationImage = addGradient(notificationImage,Color.parseColor("#44FFFFFF"),Color.parseColor("#44FFFFFF"));
+            notificationImage = fastblur(notificationImage,2,6);
         }
         contentView.setImageViewBitmap(R.id.notifThumb,notificationImage);
-        contentView.setTextColor(R.id.notifTimer, Color.LTGRAY);
+        contentView.setTextColor(R.id.notifTimer, Color.BLACK);
 
         contentView.setTextViewText(R.id.notifTitle, ((AbstractMap)queue.get(currentIndex)).get("title").toString());
-        contentView.setTextColor(R.id.notifTitle, Color.DKGRAY);
+        contentView.setTextColor(R.id.notifTitle, Color.BLACK);
         contentView.setTextViewText(R.id.notifText, ((AbstractMap)queue.get(currentIndex)).get("author").toString());
-        contentView.setTextColor(R.id.notifText, Color.LTGRAY);
+        contentView.setTextColor(R.id.notifText, Color.BLACK);
 
         contentView.setOnClickPendingIntent(R.id.closeButton, closepIntent);
         contentView.setOnClickPendingIntent(R.id.nextButton, nextIntent);
@@ -974,11 +1023,11 @@ public class PlayerService extends Service {
         if (UMP.isPlaying()) {
 
             intent1.putExtra(Intent.ACTION_MAIN,PlayerService.ACTION_PAUSE);
-            contentView.setImageViewResource(R.id.play_pause_notif, R.drawable.ic_pause_white_24dp);
+            contentView.setImageViewResource(R.id.play_pause_notif, R.drawable.ic_pause_circle_filled_black_24dp);
         } else {
 
             intent1.putExtra(Intent.ACTION_MAIN,PlayerService.ACTION_PLAY);
-            contentView.setImageViewResource(R.id.play_pause_notif, R.drawable.ic_play_arrow_white_24dp);
+            contentView.setImageViewResource(R.id.play_pause_notif, R.drawable.ic_play_circle_filled_black_24dp);
         }
 
         PendingIntent pauseIntent = PendingIntent.getBroadcast(context, generator.nextInt(), intent1, PendingIntent.FLAG_UPDATE_CURRENT);
@@ -1008,6 +1057,214 @@ public class PlayerService extends Service {
             manager.createNotificationChannel(chan);
         }
     }
+    public Bitmap fastblur(Bitmap sentBitmap, float scale, int radius) {
+
+        int width = Math.round(sentBitmap.getWidth() * scale);
+        int height = Math.round(sentBitmap.getHeight() * scale);
+        sentBitmap = Bitmap.createScaledBitmap(sentBitmap, width, height, false);
+
+        Bitmap bitmap = sentBitmap.copy(sentBitmap.getConfig(), true);
+
+        if (radius < 1) {
+            return (null);
+        }
+
+        int w = bitmap.getWidth();
+        int h = bitmap.getHeight();
+
+        int[] pix = new int[w * h];
+        Log.e("pix", w + " " + h + " " + pix.length);
+        bitmap.getPixels(pix, 0, w, 0, 0, w, h);
+
+        int wm = w - 1;
+        int hm = h - 1;
+        int wh = w * h;
+        int div = radius + radius + 1;
+
+        int r[] = new int[wh];
+        int g[] = new int[wh];
+        int b[] = new int[wh];
+        int rsum, gsum, bsum, x, y, i, p, yp, yi, yw;
+        int vmin[] = new int[Math.max(w, h)];
+
+        int divsum = (div + 1) >> 1;
+        divsum *= divsum;
+        int dv[] = new int[256 * divsum];
+        for (i = 0; i < 256 * divsum; i++) {
+            dv[i] = (i / divsum);
+        }
+
+        yw = yi = 0;
+
+        int[][] stack = new int[div][3];
+        int stackpointer;
+        int stackstart;
+        int[] sir;
+        int rbs;
+        int r1 = radius + 1;
+        int routsum, goutsum, boutsum;
+        int rinsum, ginsum, binsum;
+
+        for (y = 0; y < h; y++) {
+            rinsum = ginsum = binsum = routsum = goutsum = boutsum = rsum = gsum = bsum = 0;
+            for (i = -radius; i <= radius; i++) {
+                p = pix[yi + Math.min(wm, Math.max(i, 0))];
+                sir = stack[i + radius];
+                sir[0] = (p & 0xff0000) >> 16;
+                sir[1] = (p & 0x00ff00) >> 8;
+                sir[2] = (p & 0x0000ff);
+                rbs = r1 - Math.abs(i);
+                rsum += sir[0] * rbs;
+                gsum += sir[1] * rbs;
+                bsum += sir[2] * rbs;
+                if (i > 0) {
+                    rinsum += sir[0];
+                    ginsum += sir[1];
+                    binsum += sir[2];
+                } else {
+                    routsum += sir[0];
+                    goutsum += sir[1];
+                    boutsum += sir[2];
+                }
+            }
+            stackpointer = radius;
+
+            for (x = 0; x < w; x++) {
+
+                r[yi] = dv[rsum];
+                g[yi] = dv[gsum];
+                b[yi] = dv[bsum];
+
+                rsum -= routsum;
+                gsum -= goutsum;
+                bsum -= boutsum;
+
+                stackstart = stackpointer - radius + div;
+                sir = stack[stackstart % div];
+
+                routsum -= sir[0];
+                goutsum -= sir[1];
+                boutsum -= sir[2];
+
+                if (y == 0) {
+                    vmin[x] = Math.min(x + radius + 1, wm);
+                }
+                p = pix[yw + vmin[x]];
+
+                sir[0] = (p & 0xff0000) >> 16;
+                sir[1] = (p & 0x00ff00) >> 8;
+                sir[2] = (p & 0x0000ff);
+
+                rinsum += sir[0];
+                ginsum += sir[1];
+                binsum += sir[2];
+
+                rsum += rinsum;
+                gsum += ginsum;
+                bsum += binsum;
+
+                stackpointer = (stackpointer + 1) % div;
+                sir = stack[(stackpointer) % div];
+
+                routsum += sir[0];
+                goutsum += sir[1];
+                boutsum += sir[2];
+
+                rinsum -= sir[0];
+                ginsum -= sir[1];
+                binsum -= sir[2];
+
+                yi++;
+            }
+            yw += w;
+        }
+        for (x = 0; x < w; x++) {
+            rinsum = ginsum = binsum = routsum = goutsum = boutsum = rsum = gsum = bsum = 0;
+            yp = -radius * w;
+            for (i = -radius; i <= radius; i++) {
+                yi = Math.max(0, yp) + x;
+
+                sir = stack[i + radius];
+
+                sir[0] = r[yi];
+                sir[1] = g[yi];
+                sir[2] = b[yi];
+
+                rbs = r1 - Math.abs(i);
+
+                rsum += r[yi] * rbs;
+                gsum += g[yi] * rbs;
+                bsum += b[yi] * rbs;
+
+                if (i > 0) {
+                    rinsum += sir[0];
+                    ginsum += sir[1];
+                    binsum += sir[2];
+                } else {
+                    routsum += sir[0];
+                    goutsum += sir[1];
+                    boutsum += sir[2];
+                }
+
+                if (i < hm) {
+                    yp += w;
+                }
+            }
+            yi = x;
+            stackpointer = radius;
+            for (y = 0; y < h; y++) {
+                // Preserve alpha channel: ( 0xff000000 & pix[yi] )
+                pix[yi] = ( 0xff000000 & pix[yi] ) | ( dv[rsum] << 16 ) | ( dv[gsum] << 8 ) | dv[bsum];
+
+                rsum -= routsum;
+                gsum -= goutsum;
+                bsum -= boutsum;
+
+                stackstart = stackpointer - radius + div;
+                sir = stack[stackstart % div];
+
+                routsum -= sir[0];
+                goutsum -= sir[1];
+                boutsum -= sir[2];
+
+                if (x == 0) {
+                    vmin[y] = Math.min(y + r1, hm) * w;
+                }
+                p = x + vmin[y];
+
+                sir[0] = r[p];
+                sir[1] = g[p];
+                sir[2] = b[p];
+
+                rinsum += sir[0];
+                ginsum += sir[1];
+                binsum += sir[2];
+
+                rsum += rinsum;
+                gsum += ginsum;
+                bsum += binsum;
+
+                stackpointer = (stackpointer + 1) % div;
+                sir = stack[stackpointer];
+
+                routsum += sir[0];
+                goutsum += sir[1];
+                boutsum += sir[2];
+
+                rinsum -= sir[0];
+                ginsum -= sir[1];
+                binsum -= sir[2];
+
+                yi += w;
+            }
+        }
+
+        Log.e("pix", w + " " + h + " " + pix.length);
+        bitmap.setPixels(pix, 0, w, 0, 0, w, h);
+
+        return (bitmap);
+    }
+
     public String sectotime(int sec){
         sec=sec/1000;
         Integer minutes=(int)sec / 60;

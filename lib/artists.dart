@@ -1,27 +1,33 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'searchScreen.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'queue.dart' as queue;
+import 'package:flutter_pagewise/flutter_pagewise.dart';
+
 import 'playlistSpcl.dart';
+import 'queue.dart';
 
-class Artists extends StatelessWidget{
+class Artists extends StatefulWidget{
 
-  final Future artistfuture;
-  Artists(this.artistfuture);
 
   @override
+  _ArtistsState createState() => _ArtistsState();
+}
+
+class _ArtistsState extends State<Artists> {
+  @override
   Widget build(BuildContext context) {
-    return FutureBuilder(
-      future: artistfuture,
-      builder: (BuildContext btcx, AsyncSnapshot ass){
-        if(ass.connectionState==ConnectionState.done){
-          List tracks = ass.data;
-          List<Widget> wids=new List();
-          for(int i=0;i<tracks.length;i++){
-            wids.add(
-                Column(
+    return StatefulBuilder(
+      builder: (BuildContext btcx, setState){
+        
+        return PagewiseSliverGrid.count(
+          pageSize: 10,
+          pageFuture: (pageIndex){
+            return platform.invokeMethod("requestArtists",{"page":pageIndex});
+          },
+          crossAxisCount: 2,
+          itemBuilder: (context,entry,index){
+            print(entry);
+            return Column(
                   children: <Widget>[
                     Expanded(
                       child: Container(
@@ -38,11 +44,11 @@ class Artists extends StatelessWidget{
                             onTap: (){
                               Navigator.push(context, MaterialPageRoute(
                                     builder: (context)=>SpecialPlaylist(
-                                      Text(tracks[i]["author"]), Container(
+                                      Text(entry["author"]), Container(
                                         decoration: BoxDecoration(
                                           image: DecorationImage(
                                               image: CachedNetworkImageProvider(
-                                                getThumbnaillink(tracks, i,"authorThumbnails",176,"width"),
+                                                getThumbnaillink([entry], 0,"authorThumbnails",176,"width"),
                                               ),
                                               fit: BoxFit.cover),
                                           
@@ -51,7 +57,7 @@ class Artists extends StatelessWidget{
                                           color: Colors.black38
                                         ),
                                       ),
-                                      queue.platform.invokeMethod("requestArtistTrack",{"artistId":tracks[i]["authorId"]}) 
+                                      platform.invokeMethod("requestArtistTrack",{"artistId":entry["authorId"]}) 
                                       )
                                   ));
                             },
@@ -70,7 +76,7 @@ class Artists extends StatelessWidget{
                               child: ClipRRect(
                                 borderRadius: BorderRadius.all(Radius.circular(20)),
                                 child: CachedNetworkImage(
-                                  imageUrl:  getThumbnaillink(tracks,i, "authorThumbnails", 176,"width"),
+                                  imageUrl:  getThumbnaillink([entry],0, "authorThumbnails", 176,"width"),
                                 ),
                               ),
                             ),
@@ -80,7 +86,7 @@ class Artists extends StatelessWidget{
                     ),
 
                     Text(
-                      tracks[i]["author"],
+                      entry["author"],
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
@@ -90,22 +96,10 @@ class Artists extends StatelessWidget{
                         )]
                       ),)
                   ],
-                )
-            );
-          }
-
-          return SliverGrid.count(
-            crossAxisCount: 2,
-            children: wids,
-            
-          );
-        } else{
-          return SliverToBoxAdapter(
-            child: CircularProgressIndicator(),
-          );
-        }
+                );
+          },
+        );
       },
     );
   }
-
 }

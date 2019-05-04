@@ -46,6 +46,8 @@ public class MainActivity extends FlutterActivity {
   public static final int ACTION_CLOSE=2;
   public Gson gson;
 
+  public PlayerService service;
+
 
   private Thread.UncaughtExceptionHandler handleAppCrash =
           new Thread.UncaughtExceptionHandler() {
@@ -74,6 +76,8 @@ public class MainActivity extends FlutterActivity {
     public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
 
       PlayerService.isBound=true;
+      service = ((PlayerService.LocalBinder)iBinder).getService();
+
     }
 
     @Override
@@ -92,10 +96,10 @@ public class MainActivity extends FlutterActivity {
     Intent intent = new Intent(this,PlayerService.class);
 
 
-    getApplicationContext().startService(intent);
+    //getApplicationContext().startService(intent);
     PlayerService.isBound=true;
-    //getApplicationContext().bindService(intent, serviceConnection, BIND_AUTO_CREATE);
-
+    bindService(intent, serviceConnection, BIND_AUTO_CREATE);
+    startService(intent);
     //ADDFAVORITE
     try {
       List<PlaylistEntity> playlistEntities = new MusicDBManager(this).getPlaylists();
@@ -274,6 +278,9 @@ public class MainActivity extends FlutterActivity {
                     LocalBroadcastManager.getInstance(MainActivity.this).sendBroadcast(i);
                   }
                 }
+                else if(methodCall.method.equals("getQueue")){
+                  result.success(service.queue);
+                }
                 else if(methodCall.method.equals("requestTopTracks")){
                   List<MusicEntity> topTracks= null;
                   try {
@@ -284,9 +291,14 @@ public class MainActivity extends FlutterActivity {
                   } catch (InterruptedException e) {
                     e.printStackTrace();
                   }
+                  int size=0;
+                  if(methodCall.hasArgument("page")){
+                      size=methodCall.argument("page");
+                  }
                   List inQ=new ArrayList();
-                  for(MusicEntity musicEntity:topTracks){
-                    inQ.add(gson.fromJson(musicEntity.detailJSON,HashMap.class));
+                  for(int i=size*10;i<(size+1)*10 && i<topTracks.size();i++){
+
+                    inQ.add(gson.fromJson(topTracks.get(i).detailJSON,HashMap.class));
                   }
                   result.success(inQ);
                 }
@@ -300,11 +312,16 @@ public class MainActivity extends FlutterActivity {
                   } catch (InterruptedException e) {
                     e.printStackTrace();
                   }
-                  List inQ=new ArrayList();
-                  for(MusicEntity musicEntity:topTracks){
-                    inQ.add(gson.fromJson(musicEntity.detailJSON,HashMap.class));
-                  }
-                  result.success(inQ);
+                    int size=0;
+                    if(methodCall.hasArgument("page")){
+                        size=methodCall.argument("page");
+                    }
+                    List inQ=new ArrayList();
+                    for(int i=size*10;i<(size+1)*10 && i<topTracks.size();i++){
+
+                        inQ.add(gson.fromJson(topTracks.get(i).detailJSON,HashMap.class));
+                    }
+                    result.success(inQ);
                 }
                 else if(methodCall.method.equals("requestHistory")){
                   List<MusicEntity> topTracks= null;
@@ -316,11 +333,16 @@ public class MainActivity extends FlutterActivity {
                   } catch (InterruptedException e) {
                     e.printStackTrace();
                   }
-                  List inQ=new ArrayList();
-                  for(MusicEntity musicEntity:topTracks){
-                    inQ.add(gson.fromJson(musicEntity.detailJSON,HashMap.class));
-                  }
-                  result.success(inQ);
+                    int size=0;
+                    if(methodCall.hasArgument("page")){
+                        size=methodCall.argument("page");
+                    }
+                    List inQ=new ArrayList();
+                    for(int i=size*10;i<(size+1)*10 && i<topTracks.size();i++){
+
+                        inQ.add(gson.fromJson(topTracks.get(i).detailJSON,HashMap.class));
+                    }
+                    result.success(inQ);
                 }
                 else if(methodCall.method.equals("requestPopularTracks")){
                   List<MusicEntity> topTracks= null;
@@ -332,11 +354,16 @@ public class MainActivity extends FlutterActivity {
                   } catch (InterruptedException e) {
                     e.printStackTrace();
                   }
-                  List inQ=new ArrayList();
-                  for(MusicEntity musicEntity:topTracks){
-                    inQ.add(gson.fromJson(musicEntity.detailJSON,HashMap.class));
-                  }
-                  result.success(inQ);
+                    int size=0;
+                    if(methodCall.hasArgument("page")){
+                        size=methodCall.argument("page");
+                    }
+                    List inQ=new ArrayList();
+                    for(int i=size*10;i<(size+1)*10 && i<topTracks.size();i++){
+
+                        inQ.add(gson.fromJson(topTracks.get(i).detailJSON,HashMap.class));
+                    }
+                    result.success(inQ);
                 }
                 else if(methodCall.method.equals("requestArtistTrack")){
                   if(methodCall.hasArgument("artistId")){
@@ -351,11 +378,13 @@ public class MainActivity extends FlutterActivity {
                     } catch (InterruptedException e) {
                       e.printStackTrace();
                     }
-                    List inQ=new ArrayList();
-                    for(MusicEntity musicEntity:topTracks){
-                      inQ.add(gson.fromJson(musicEntity.detailJSON,HashMap.class));
-                    }
-                    result.success(inQ);
+                      
+                      List inQ=new ArrayList();
+                      for(int i=0; i<topTracks.size();i++){
+
+                          inQ.add(gson.fromJson(topTracks.get(i).detailJSON,HashMap.class));
+                      }
+                      result.success(inQ);
                   }
                 }
                 else if(methodCall.method.equals("requestShuffled")){
@@ -368,11 +397,16 @@ public class MainActivity extends FlutterActivity {
                   } catch (InterruptedException e) {
                     e.printStackTrace();
                   }
-                  List inQ=new ArrayList();
-                  for(MusicEntity musicEntity:topTracks){
-                    inQ.add(gson.fromJson(musicEntity.detailJSON,HashMap.class));
-                  }
-                  result.success(inQ);
+                    int size=0;
+                    if(methodCall.hasArgument("page")){
+                        size=methodCall.argument("page");
+                    }
+                    List inQ=new ArrayList();
+                    for(int i=size*10;i<(size+1)*10 && i<topTracks.size();i++){
+
+                        inQ.add(gson.fromJson(topTracks.get(i).detailJSON,HashMap.class));
+                    }
+                    result.success(inQ);
                 }
                 else if(methodCall.method.equals("requestArtists")){
                   List<MusicEntity> topTracks= null;
@@ -383,11 +417,16 @@ public class MainActivity extends FlutterActivity {
                   } catch (InterruptedException e) {
                     e.printStackTrace();
                   }
-                  List inQ=new ArrayList();
-                  for(MusicEntity musicEntity:topTracks){
-                    inQ.add(gson.fromJson(musicEntity.detailJSON,HashMap.class));
-                  }
-                  result.success(inQ);
+                    int size=0;
+                    if(methodCall.hasArgument("page")){
+                        size=methodCall.argument("page");
+                    }
+                    List inQ=new ArrayList();
+                    for(int i=size*10;i<(size+1)*10 && i<topTracks.size();i++){
+
+                        inQ.add(gson.fromJson(topTracks.get(i).detailJSON,HashMap.class));
+                    }
+                    result.success(inQ);
                 }
                 else if(methodCall.method.equals("deletetrack")){
                   try{
@@ -402,7 +441,7 @@ public class MainActivity extends FlutterActivity {
                 }
                 else if(methodCall.method.equals("getPlaylists")){
                   List<HashMap> outputplaylist=new ArrayList<>();
-
+                  int size = methodCall.argument("page");
                   try{
                     List<PlaylistEntity> playlistEntities = new MusicDBManager(MainActivity.this).getPlaylists();
                     for(PlaylistEntity playlistEntity:playlistEntities){
@@ -414,7 +453,12 @@ public class MainActivity extends FlutterActivity {
                   } catch(Exception e){
                     e.printStackTrace();
                   }
-                  result.success(outputplaylist);
+                  List inQ=new ArrayList();
+                  for(int i=size*10;i<(size+1)*10 && i<outputplaylist.size();i++){
+
+                      inQ.add(outputplaylist.get(i));
+                  }
+                  result.success(inQ);
                 }
                 else if(methodCall.method.equals("addTracktoPlaylist")){
                   if(methodCall.hasArgument("track") && methodCall.hasArgument("playlistId")){

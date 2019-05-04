@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'searchScreen.dart';
 import 'package:flutter/cupertino.dart';
@@ -10,16 +8,20 @@ import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'playlistSpcl.dart';
+import 'package:flutter/services.dart';
 
+const platform = const MethodChannel("me.devsilver.musicpiped/PlayerChannel");
 
-class Home extends StatelessWidget{
+class Home extends StatefulWidget{
 
   final ValueSetter onreturn;
-  final Future toptrackfuture;
-  final Future topartistfuture;
-  
-  Home(this.onreturn,this.toptrackfuture,this.topartistfuture);
+  Home(this.onreturn);
 
+  @override
+  _HomeState createState() => _HomeState();
+}
+
+class _HomeState extends State<Home> {
   @override
   Widget build(BuildContext context) {
     return SliverToBoxAdapter(
@@ -65,7 +67,7 @@ class Home extends StatelessWidget{
                   onSubmitted: (suggestion) async {
                     final result  = await Navigator.push(context, CupertinoPageRoute(builder: (context)=>SearchScreen(suggestion.toString())));
                     if(result!=null){
-                      onreturn(result);
+                      widget.onreturn(result);
                     }
                   }
                 ),
@@ -87,7 +89,7 @@ class Home extends StatelessWidget{
                 onSuggestionSelected: (dynamic suggestion) async {
                   final result  = await Navigator.push(context, CupertinoPageRoute(builder: (context)=>SearchScreen(suggestion.toString())));
                   if(result!=null){
-                    onreturn(result);
+                    widget.onreturn(result);
                   }
                 },
                 
@@ -284,7 +286,7 @@ class Home extends StatelessWidget{
             Container(
               height: 120,
               child: FutureBuilder(
-                future: toptrackfuture,
+                future: platform.invokeMethod("requestTopTracks"),
                 builder: (BuildContext btcx, AsyncSnapshot asp){
                   if(asp.connectionState==ConnectionState.done){
                     List toptrack=asp.data;
@@ -348,7 +350,7 @@ class Home extends StatelessWidget{
             Container(
               height: 120,
               child: FutureBuilder(
-                future: topartistfuture,
+                future: platform.invokeMethod("requestArtists",{"page":0}),
                 builder: (BuildContext btcx, AsyncSnapshot asp){
                   if(asp.connectionState==ConnectionState.done){
                     List topartist=asp.data;
