@@ -1,7 +1,7 @@
 <p align="center"><a href="https://deep-gaurav,github.io"><img src="android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png" width="150"></a></p> 
 <h2 align="center"><b>MusicPiped</b></h2>
 <h4 align="center">A libre lightweight streaming MusicPlayer for Android.</h4>
-<p align="center"><a href="https://f-droid.org/en/packages/deep.ryd.rydplayer/"><img src="https://f-droid.org/wiki/images/0/06/F-Droid-button_get-it-on.png"></a></p> 
+<p align="center"><a href="https://f-droid.org/en/packages/deep.ryd.rydplayer/"><img src="https://f-droid.org/wiki/images/0/06/F-Droid-button_get-it-on.png"></a><a href='https://play.google.com/store/apps/details?id=deep.ryd.rydplayer&pcampaignid=MKT-Other-global-all-co-prtnr-py-PartBadge-Mar2515-1'><img height=100 alt='Get it on Google Play' src='https://play.google.com/intl/en_us/badges/images/generic/en_badge_web_generic.png'/></a></p> 
 
 <p align="center">
 <a href="https://github.com/deep-gaurav/MusicPiped" alt="GitHub release"><img src="https://img.shields.io/github/release/deep-gaurav/MusicPiped.svg" ></a>
