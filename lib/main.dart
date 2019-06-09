@@ -231,7 +231,7 @@ class MyHomePageState extends State<MyHomePage>
     positionNotifier.addListener(() {
       if (totalLength.value > 0 &&
           positionNotifier.value > 0 &&
-          positionNotifier.value >= totalLength.value) {
+          totalLength.value-positionNotifier.value<=2) {
         next();
       }
     });
