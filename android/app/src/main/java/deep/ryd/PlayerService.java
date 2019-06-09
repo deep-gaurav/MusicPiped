@@ -68,6 +68,10 @@ public class PlayerService extends Service {
             PendingIntent.FLAG_UPDATE_CURRENT
     );
 
+    Intent actionIntent = new Intent(this,MainActivity.class);
+
+    PendingIntent actionpendingIntent = PendingIntent.getActivity(this,5,actionIntent,PendingIntent.FLAG_UPDATE_CURRENT);
+
     Notification.Action playpauseAction;
       if(playing){
         playpauseAction = new Notification.Action(
@@ -82,6 +86,7 @@ public class PlayerService extends Service {
                 playpendingIntent
         );
       }
+
 
 
     Notification.Builder builder;
@@ -104,6 +109,7 @@ public class PlayerService extends Service {
             )
             .setContentTitle(title)
             .setContentText(author)
+            .setContentIntent(actionpendingIntent)
             .setLargeIcon(thumbnail);
 
   }

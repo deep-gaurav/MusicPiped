@@ -458,7 +458,7 @@ class MyHomePageState extends State<MyHomePage>
   void onEnd() {
     if (repeat.value == 2) {
       //IF repeatSingle
-      player.play();
+      playCurrent();
     } else {
       if (currentIndex.value == queue.value.length - 1) {
         if (repeat.value == 3) {
