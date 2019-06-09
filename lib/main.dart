@@ -195,7 +195,7 @@ class MyHomePageState extends State<MyHomePage>
     });
 
     player.addEventListener('timeupdate', (e) {
-      if(ignorePositionUpdate.value){
+      if (ignorePositionUpdate.value) {
         return;
       }
       positionNotifier.value = player.currentTime;
@@ -228,11 +228,11 @@ class MyHomePageState extends State<MyHomePage>
       previous();
     });
 
-    positionNotifier.addListener((){
-      if(totalLength.value>0
-       && positionNotifier.value>0
-       && positionNotifier.value>=totalLength.value){
-         next();
+    positionNotifier.addListener(() {
+      if (totalLength.value > 0 &&
+          positionNotifier.value > 0 &&
+          positionNotifier.value >= totalLength.value) {
+        next();
       }
     });
 
@@ -247,6 +247,24 @@ class MyHomePageState extends State<MyHomePage>
         onEnd();
       }
     });
+    
+    player.readyOpenURL.addListener(()async{
+      try{
+
+      String id = player.readyOpenURL.value;
+        String url = InvidiosAPI + "videos/" + id;
+        var response = await http.get(url);
+          var curr = json.decode(utf8.decode(response.bodyBytes));
+          queue.value = [curr];
+          currentIndex.value = 0;
+          playCurrent();
+      }catch(e){
+        print(e);
+      }
+
+      }
+    );   
+    
   }
 
   Future<bool> checkCache(Map s) async {
@@ -271,9 +289,9 @@ class MyHomePageState extends State<MyHomePage>
     var provider = CachedNetworkImageProvider(url);
     var stream = provider.resolve(ImageConfiguration());
     var completer = Completer<ByteData>();
-    stream.addListener((info, callflag) {
+    stream.addListener(ImageStreamListener((info, callflag) {
       completer.complete(info.image.toByteData(format: ImageByteFormat.png));
-    });
+    }));
     return completer.future;
   }
 
@@ -838,21 +856,10 @@ class MyHomePageState extends State<MyHomePage>
               ValueListenableBuilder(
                 valueListenable: positionNotifier,
                 builder: (context, int position, child) {
-                  return Slider(
-                    max: totalLength.value.toDouble() > position.toDouble()
-                        ? totalLength.value.toDouble()
-                        : position.toDouble(),
-                    value: position.toDouble(),
-                    onChangeStart: (val){
-                      ignorePositionUpdate.value=true;
-                    },
-                    onChanged: (newpos) {
-                      positionNotifier.value = newpos.round();
-                    },
-                    onChangeEnd: (pos) {
-                      ignorePositionUpdate.value=false;
-                      player.currentTime = pos.round();
-                    },
+                  return LinearProgressIndicator(
+                    value: positionNotifier.value < totalLength.value
+                        ? positionNotifier.value / totalLength.value
+                        : 0,
                   );
                 },
               ),
@@ -1044,8 +1051,8 @@ class MyHomePageState extends State<MyHomePage>
                               ? Icon(Icons.play_arrow)
                               : Text((i - currentIndex.value).toString()),
                           title: Text(queue.value[i]["title"]),
-                          onTap: (){
-                            currentIndex.value=i;
+                          onTap: () {
+                            currentIndex.value = i;
                             playCurrent();
                           },
                         ),

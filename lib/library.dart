@@ -49,7 +49,8 @@ class Library extends StatelessWidget {
           print(playlists.length);
           for (var p in playlists) {
             playlistwidgets.add(Dismissible(
-              key: p["videoId"],
+              key: Key(p["title"]),
+
               onDismissed: (direction){
                 playlists.remove(p);
                 removeFromPlaylist(p);

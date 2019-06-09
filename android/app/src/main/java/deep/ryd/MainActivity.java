@@ -15,9 +15,11 @@ import android.media.MediaMetadata;
 import android.media.MediaPlayer;
 import android.media.session.MediaSession;
 import android.media.session.PlaybackState;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
 import android.widget.Toast;
@@ -76,7 +78,11 @@ public class MainActivity extends FlutterActivity implements AudioManager.OnAudi
 
   private Timer timer;
 
+  private String openURL;
+
   private String author;
+
+  private Handler handler = new Handler();
 
   private MethodChannel methodChannel;
 
@@ -104,14 +110,14 @@ public class MainActivity extends FlutterActivity implements AudioManager.OnAudi
   }
 
   @Override
-  protected void onCreate(Bundle savedInstanceState)  {
+  protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     GeneratedPluginRegistrant.registerWith(this);
 
     becomingNoisyReceiver = new BecomingNoisyReceiver();
 
     NewpipeDownloader.init(null);
-    NewPipe.init(NewpipeDownloader.getInstance(),new Localization("US","EN"));
+    NewPipe.init(NewpipeDownloader.getInstance(), new Localization("US", "EN"));
 
     UMP = new MediaPlayer();
     proxyCacheServer = URLProxyFactory.getProxy(this);
@@ -123,7 +129,7 @@ public class MainActivity extends FlutterActivity implements AudioManager.OnAudi
     serviceConnection = new ServiceConnection() {
       @Override
       public void onServiceConnected(ComponentName name, IBinder service) {
-        playerService = ((PlayerService.PlayerServiceBinder)service).getService();
+        playerService = ((PlayerService.PlayerServiceBinder) service).getService();
         setupMediaSession();
 
       }
@@ -134,12 +140,12 @@ public class MainActivity extends FlutterActivity implements AudioManager.OnAudi
       }
     };
 
-    if(Build.VERSION.SDK_INT>= Build.VERSION_CODES.O){
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
 
-      startForegroundService(new Intent(this,PlayerService.class));
+      startForegroundService(new Intent(this, PlayerService.class));
 
-    }else {
-      startService(new Intent(this,PlayerService.class));
+    } else {
+      startService(new Intent(this, PlayerService.class));
     }
     bindService(
             new Intent(
@@ -157,7 +163,7 @@ public class MainActivity extends FlutterActivity implements AudioManager.OnAudi
             new MethodChannel.MethodCallHandler() {
               @Override
               public void onMethodCall(MethodCall methodCall, MethodChannel.Result result) {
-                if(methodCall.method.equals("changeSource")){
+                if (methodCall.method.equals("changeSource")) {
                   try {
                     changeSource(
                             methodCall.argument("src"),
@@ -168,20 +174,19 @@ public class MainActivity extends FlutterActivity implements AudioManager.OnAudi
                     );
                     byte[] imagebytearray = methodCall.argument("thumb");
                     if (imagebytearray != null) {
-                      thumnb = BitmapFactory.decodeByteArray(imagebytearray,0,imagebytearray.length);
+                      thumnb = BitmapFactory.decodeByteArray(imagebytearray, 0, imagebytearray.length);
                     }
                   } catch (IOException e) {
                     e.printStackTrace();
-                    result.error("Error",e.getMessage(),e.toString());
+                    result.error("Error", e.getMessage(), e.toString());
                   }
-                }
-                else if(methodCall.method.equals("updateMetadata")){
-                    title=methodCall.argument("title");
-                    vidId=methodCall.argument("vidId");
-                    author=methodCall.argument("artist");
+                } else if (methodCall.method.equals("updateMetadata")) {
+                  title = methodCall.argument("title");
+                  vidId = methodCall.argument("vidId");
+                  author = methodCall.argument("artist");
                   byte[] imagebytearray = methodCall.argument("thumb");
                   if (imagebytearray != null) {
-                    thumnb = BitmapFactory.decodeByteArray(imagebytearray,0,imagebytearray.length);
+                    thumnb = BitmapFactory.decodeByteArray(imagebytearray, 0, imagebytearray.length);
                   }
                   setupMediaSession();
                   playerService.showNotificaion(
@@ -191,24 +196,20 @@ public class MainActivity extends FlutterActivity implements AudioManager.OnAudi
                           false,
                           thumnb
                   );
-                }
-
-                else if(methodCall.method.equals("play")){
+                } else if (methodCall.method.equals("play")) {
                   play();
-                }
-                else if(methodCall.method.equals("pause")){
+                } else if (methodCall.method.equals("pause")) {
                   pause();
-                }
-                else if(methodCall.method.equals("seek")){
+                } else if (methodCall.method.equals("seek")) {
                   seek(methodCall.argument("position"));
-                }
-
-                else if(methodCall.method.equals("isCached")){
+                } else if (methodCall.method.equals("isCached")) {
                   String url = methodCall.argument("url");
-                  Log.d("musicpiped","Check url : "+url);
+                  Log.d("musicpiped", "Check url : " + url);
                   boolean cached = proxyCacheServer.isCached(url);
                   result.success(cached);
-                  Log.d("musicpiped","androidcached "+cached);
+                  Log.d("musicpiped", "androidcached " + cached);
+                } else if(methodCall.method.equals("readyOpenURL")){
+                  result.success(openURL);
                 }
 
                 else {
@@ -218,16 +219,22 @@ public class MainActivity extends FlutterActivity implements AudioManager.OnAudi
             }
     );
 
-    timer=new Timer();
+    timer = new Timer();
     timer.scheduleAtFixedRate(
             new TimerTask() {
               @Override
               public void run() {
-                updateCycle();
+                handler.post(new Runnable() {
+                  @Override
+                  public void run() {
+                    updateCycle();
+                  }
+                });
               }
             }, 0,
             500
-    );;
+    );
+    ;
 
     UMP.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
       @Override
@@ -241,15 +248,15 @@ public class MainActivity extends FlutterActivity implements AudioManager.OnAudi
       public void onCompletion(MediaPlayer mp) {
 
         try {
-          if((UMP.getCurrentPosition()/UMP.getDuration())<0.9){
+          if ((UMP.getCurrentPosition() / UMP.getDuration()) < 0.9) {
             return;
           }
-        }catch (Exception e){
+        } catch (Exception e) {
           return;
         }
 
         methodChannel.invokeMethod(
-                "ended",""
+                "ended", ""
         );
         PlaybackState state = new PlaybackState.Builder()
                 .setActions(PlaybackState.ACTION_PLAY_PAUSE | PlaybackState.ACTION_PLAY | PlaybackState.ACTION_PAUSE | PlaybackState.ACTION_SKIP_TO_NEXT | PlaybackState.ACTION_SKIP_TO_PREVIOUS)
@@ -257,11 +264,11 @@ public class MainActivity extends FlutterActivity implements AudioManager.OnAudi
                 .build();
 
         MediaMetadata metadata = new MediaMetadata.Builder()
-                .putString(MediaMetadata.METADATA_KEY_DISPLAY_TITLE,title)
-                .putString(MediaMetadata.METADATA_KEY_TITLE,title)
-                .putString(MediaMetadata.METADATA_KEY_ALBUM_ARTIST,author)
-                .putString(MediaMetadata.METADATA_KEY_ARTIST,author)
-                .putBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART,thumnb)
+                .putString(MediaMetadata.METADATA_KEY_DISPLAY_TITLE, title)
+                .putString(MediaMetadata.METADATA_KEY_TITLE, title)
+                .putString(MediaMetadata.METADATA_KEY_ALBUM_ARTIST, author)
+                .putString(MediaMetadata.METADATA_KEY_ARTIST, author)
+                .putBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART, thumnb)
                 .build();
 
         mediaSession.setMetadata(metadata);
@@ -273,9 +280,9 @@ public class MainActivity extends FlutterActivity implements AudioManager.OnAudi
       @Override
       public boolean onError(MediaPlayer mp, int what, int extra) {
         //methodChannel.invokeMethod("error","");
-        Log.i("musicpiped","MediPlayer Error : "+what+" "+extra);
-        if(extra==MediaPlayer.MEDIA_ERROR_IO || extra == MediaPlayer.MEDIA_ERROR_TIMED_OUT){
-          Log.d("musicpiped","Timeout");
+        Log.i("musicpiped", "MediPlayer Error : " + what + " " + extra);
+        if (extra == MediaPlayer.MEDIA_ERROR_IO || extra == MediaPlayer.MEDIA_ERROR_TIMED_OUT) {
+          Log.d("musicpiped", "Timeout");
           next();
         }
         return false;
@@ -283,7 +290,53 @@ public class MainActivity extends FlutterActivity implements AudioManager.OnAudi
     });
 
     playerBroadCastReceiver = new PlayerBroadCastReceiver();
-    registerReceiver(playerBroadCastReceiver,new IntentFilter(PLAYER_ACTION_FILTER));
+    registerReceiver(playerBroadCastReceiver, new IntentFilter(PLAYER_ACTION_FILTER));
+    // ATTENTION: This was auto-generated to handle app links.
+    Intent appLinkIntent = getIntent();
+    handleURL(appLinkIntent);
+
+  }
+
+  void handleURL(Intent appLinkIntent){
+    String appLinkAction = appLinkIntent.getAction();
+    Uri appLinkData = appLinkIntent.getData();
+    if(appLinkIntent.getAction().equals(Intent.ACTION_SEND)){
+      Log.d("musicpiped","App started by share");
+      String url = appLinkIntent.getStringExtra(Intent.EXTRA_TEXT);
+      Uri uri = Uri.parse(url);
+      String vidId;
+      if(uri.getQueryParameter("v")!=null){
+        vidId = uri.getQueryParameter("v");
+      }else{
+        vidId = uri.getLastPathSegment();
+      }
+      Log.d("musicpiped","openingVideo : "+vidId);
+      openURL = vidId;
+    }
+
+    if (Intent.ACTION_VIEW.equals(appLinkAction) && appLinkData != null){
+      String vidId;
+      if(appLinkData.getQueryParameter("v")!=null){
+        vidId=appLinkData.getQueryParameter("v");
+      }
+      else {
+
+        vidId = appLinkData.getLastPathSegment();
+      }
+      openURL = vidId;
+    }
+    else if(Intent.ACTION_SEND.equals(appLinkAction) && appLinkData !=null){
+      String vidId;
+      if(appLinkData.getQueryParameter("v")!=null){
+        vidId=appLinkData.getQueryParameter("v");
+      }
+      else {
+
+        vidId = appLinkData.getLastPathSegment();
+      }
+      openURL = vidId;
+    }
+
   }
 
   void onPrepare(){
@@ -336,6 +389,11 @@ public class MainActivity extends FlutterActivity implements AudioManager.OnAudi
     Log.d("musicpiped","non proxy URL : "+url);
     String proxiedURL = proxyCacheServer.getProxyUrl(url);
     Log.d("musicpiped","Proxy URL: "+proxiedURL);
+    try {
+      UMP.stop();
+    }catch (Exception e){
+      e.printStackTrace();
+    }
     UMP.setDataSource(proxiedURL);
     UMP.prepareAsync();
   }
@@ -350,7 +408,13 @@ public class MainActivity extends FlutterActivity implements AudioManager.OnAudi
         return;
       }
       state = PlayerState.Playing;
-      UMP.start();
+      try {
+
+        UMP.start();
+      } catch (Exception e){
+        e.printStackTrace();
+        return;
+      }
       PlaybackState state = new PlaybackState.Builder()
               .setActions(PlaybackState.ACTION_PLAY_PAUSE | PlaybackState.ACTION_PLAY | PlaybackState.ACTION_PAUSE| PlaybackState.ACTION_SKIP_TO_NEXT | PlaybackState.ACTION_SKIP_TO_PREVIOUS | PlaybackState.ACTION_STOP )
               .setState(PlaybackState.STATE_PLAYING, PlaybackState.PLAYBACK_POSITION_UNKNOWN, 0)
@@ -559,15 +623,31 @@ public class MainActivity extends FlutterActivity implements AudioManager.OnAudi
 
   @Override
   protected void onDestroy() {
-    timer.cancel();
-    UMP.stop();
-    UMP.release();
-    mediaSession.setActive(false);
-    mediaSession.release();
+    try {
+      timer.cancel();
+      UMP.stop();
+      UMP.release();
+    }
+    catch (Exception e){
+      e.printStackTrace();
+    }
+    try{
 
-    unregisterReceiver(playerBroadCastReceiver);
-    unregisterReceiver(becomingNoisyReceiver);
-    unbindService(serviceConnection);
+      mediaSession.setActive(false);
+      mediaSession.release();
+
+    }
+    catch (Exception e){
+      e.printStackTrace();
+    }
+    try{
+      unregisterReceiver(playerBroadCastReceiver);
+      unregisterReceiver(becomingNoisyReceiver);
+      unbindService(serviceConnection);
+    }catch (Exception e){
+      e.printStackTrace();
+    }
+
     stopService(new Intent(this,PlayerService.class));
     super.onDestroy();
   }
@@ -627,7 +707,14 @@ public class MainActivity extends FlutterActivity implements AudioManager.OnAudi
     YoutubeService youtubeService = (YoutubeService) NewPipe.getService(NewPipe.getIdOfService("YouTube"));
     StreamExtractor streamExtractor = youtubeService.getStreamExtractor(url);
     streamExtractor.fetchPage();
+    if(streamExtractor.getAudioStreams().size()>1)
     return streamExtractor.getAudioStreams().get(0).url;
+    else if(streamExtractor.getVideoStreams().size()>1){
+      return streamExtractor.getVideoStreams().get(0).url;
+    }
+    else {
+      return "ERROR";
+    }
   }
 
   boolean verifyURL (String url){

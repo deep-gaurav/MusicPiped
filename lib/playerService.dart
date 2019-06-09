@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 
@@ -6,6 +7,7 @@ class AudioPlayer{
   String _src;
 
   Map<String,Function> listeners = new Map();
+
   
   Map<String,dynamic> metadata;
 
@@ -31,12 +33,16 @@ class AudioPlayer{
   }
   int duration;
 
+  var readyOpenURL=ValueNotifier<String>("");
+
   static const platform = const MethodChannel('me.devsilver.musicpiped/player');
 
   AudioPlayer(){
+    print("musicpiped: Dart Handler Ready");
     platform.setMethodCallHandler(
       platformHandler
     );
+    platform.invokeMethod("readyOpenURL").then((p){print("musicpiped:"+ p);readyOpenURL.value=p;});
   }
   
   Future<dynamic> platformHandler(MethodCall methodCall){
@@ -44,7 +50,6 @@ class AudioPlayer{
       _currentTime = methodCall.arguments['currentTime'];
       duration = methodCall.arguments['duration'];
     }
-
     if(listeners.containsKey(methodCall.method)){
       listeners[methodCall.method](methodCall.arguments);
     }
