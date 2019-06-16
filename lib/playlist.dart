@@ -94,7 +94,7 @@ class PlaylistState extends State<Playlist> {
         db.transaction('playlists', 'readonly').objectStore('playlists');
     var plstream = playlistobstore.openCursor(autoAdvance: true);
     plstream.listen((pl) {
-      if (!(pl.value as Map).containsKey('playlistId')) {
+      if (!(pl.value as Map).containsKey('playlistId') && !(pl.value as Map).containsKey('mixId')) {
         playlists.add(pl.value);
       }
     }).onDone(() {});

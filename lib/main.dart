@@ -38,7 +38,7 @@ var quality = ValueNotifier("best");
 
 var ignorePositionUpdate = ValueNotifier(false);
 
-AudioPlayer player = AudioPlayer();
+AudioPlayer player;
 
 void main() async {
   var appDir = await getApplicationDocumentsDirectory();
@@ -194,6 +194,8 @@ class MyHomePageState extends State<MyHomePage>
       setState(() {});
     });
 
+    player = AudioPlayer();
+
     player.addEventListener('timeupdate', (e) {
       if (ignorePositionUpdate.value) {
         return;
@@ -231,7 +233,7 @@ class MyHomePageState extends State<MyHomePage>
     positionNotifier.addListener(() {
       if (totalLength.value > 0 &&
           positionNotifier.value > 0 &&
-          totalLength.value-positionNotifier.value<=2) {
+          totalLength.value - positionNotifier.value <= 2) {
         next();
       }
     });
@@ -247,24 +249,20 @@ class MyHomePageState extends State<MyHomePage>
         onEnd();
       }
     });
-    
-    player.readyOpenURL.addListener(()async{
-      try{
 
-      String id = player.readyOpenURL.value;
+    player.readyOpenURL.addListener(() async {
+      try {
+        String id = player.readyOpenURL.value;
         String url = InvidiosAPI + "videos/" + id;
         var response = await http.get(url);
-          var curr = json.decode(utf8.decode(response.bodyBytes));
-          queue.value = [curr];
-          currentIndex.value = 0;
-          playCurrent();
-      }catch(e){
+        var curr = json.decode(utf8.decode(response.bodyBytes));
+        queue.value = [curr];
+        currentIndex.value = 0;
+        playCurrent();
+      } catch (e) {
         print(e);
       }
-
-      }
-    );   
-    
+    });
   }
 
   Future<bool> checkCache(Map s) async {
@@ -523,15 +521,37 @@ class MyHomePageState extends State<MyHomePage>
             return IconButton(
               icon: Icon(Icons.search),
               onPressed: () async {
-                String searchQ = await showSearch<String>(
+                Map searchR = await showSearch<Map>(
                     context: context, delegate: _searchDelegate);
+                String searchQ = searchR["query"];
+                String type = searchR["type"];
                 if (searchQ.isNotEmpty) {
-                  var result = await Navigator.of(context).push(
-                      MaterialPageRoute(
-                          builder: (context) => (SearchScreen(searchQ))));
+                  var result =
+                      await Navigator.of(context).push(MaterialPageRoute(
+                          builder: (context) => (SearchScreen(
+                                searchQ,
+                                type,
+                                (q) {
+                                  queue.value = q;
+                                  currentIndex.value = 0;
+                                  playCurrent();
+                                },
+                                (track) {
+                                  if (queue.value != null &&
+                                      queue.value.isNotEmpty) {
+                                    queue.value
+                                        .insert(currentIndex.value + 1, track);
+                                  } else {
+                                    queue.value = [track];
+                                    currentIndex.value = 0;
+                                    playCurrent();
+                                  }
+                                },
+                              ))));
                   if (result == null) {
                     return;
                   }
+                  print(result);
                   queue.value = result["queue"];
                   currentIndex.value = 0;
                   playerState.value = PlayerState.Loading;
@@ -544,8 +564,8 @@ class MyHomePageState extends State<MyHomePage>
             icon: Icon(Icons.more_vert),
             onPressed: () {
               showModalBottomSheet(
-                  context: context,
-                  builder: (context) => Container(
+                context: context,
+                builder: (context) => Container(
                       color: Theme.of(context).backgroundColor,
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
@@ -636,9 +656,18 @@ class MyHomePageState extends State<MyHomePage>
                                 content: Text("Reload to take effect"),
                               ));
                             },
-                          )
+                          ),
+                          ListTile(
+                            title: Text("Open System Equalizer"),
+                            onTap: () {
+                              print("Open Equalizer");
+                              player.openFX();
+                            },
+                          ),
                         ],
-                      )));
+                      ),
+                    ),
+              );
             },
           )
         ],
@@ -1067,10 +1096,13 @@ class MyHomePageState extends State<MyHomePage>
   }
 }
 
-class YoutubeSuggestion extends SearchDelegate<String> {
+class YoutubeSuggestion extends SearchDelegate<Map> {
   static String corsanywhere = 'https://cors-anywhere.herokuapp.com/';
   String suggestionURL =
       'http://suggestqueries.google.com/complete/search?client=firefox&ds=yt&q=';
+
+  String searchType = "all";
+  var types = ["all", "video", "playlist"];
 
   @override
   List<Widget> buildActions(BuildContext context) {
@@ -1082,10 +1114,26 @@ class YoutubeSuggestion extends SearchDelegate<String> {
           showSuggestions(context);
         },
       ),
+      PopupMenuButton<String>(
+        icon: Icon(Icons.filter_list),
+        itemBuilder: (context) {
+          var p = List<PopupMenuEntry<String>>();
+          for (var i in types) {
+            p.add(PopupMenuItem<String>(
+              value: i,
+              child: Text(i),
+            ));
+          }
+          return p;
+        },
+        onSelected: (type) {
+          searchType = type;
+        },
+      ),
       IconButton(
         icon: Icon(Icons.search),
         onPressed: () {
-          close(context, query);
+          close(context, {"query": query, "type": searchType});
         },
       ),
     ];
@@ -1096,7 +1144,7 @@ class YoutubeSuggestion extends SearchDelegate<String> {
     return IconButton(
       icon: Icon(Icons.arrow_back),
       onPressed: () {
-        close(context, "");
+        close(context, {"query": "", "type": searchType});
       },
     );
   }
@@ -1110,11 +1158,16 @@ class YoutubeSuggestion extends SearchDelegate<String> {
   Widget buildSuggestions(BuildContext context) {
     if (query.isNotEmpty) {
       String queryURL = suggestionURL + query;
-      Future results = http.get(queryURL);
+      Future results;
+      try {
+        results = http.get(queryURL);
+      } on Exception catch (e) {
+        results = Future.error(Error());
+      }
       return FutureBuilder(
         future: results,
         builder: (context, ass) {
-          if (ass.connectionState == ConnectionState.done) {
+          if (ass.connectionState == ConnectionState.done && !ass.hasError) {
             http.Response response = ass.data;
             List l = json.decode(response.body);
             List<String> suggestions = List();
@@ -1126,7 +1179,7 @@ class YoutubeSuggestion extends SearchDelegate<String> {
               query: query,
               onSelected: (str) {
                 query = str;
-                close(context, str);
+                close(context, {"query": str, "type": searchType});
               },
               onAdd: (str) {
                 query = str;

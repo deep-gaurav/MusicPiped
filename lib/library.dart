@@ -59,9 +59,9 @@ class Library extends StatelessWidget {
               child: Card(
                 child: ListTile(
                   title: Text(p['title']),
-                  trailing: p.containsKey('playlistId') ? Icon(Icons.sync) : null,
+                  trailing: p.containsKey('playlistId') || p.containsKey('mixId') ? Icon(Icons.sync) : null,
                   onTap: () {
-                    if (p.containsKey('playlistId')) {
+                    if (p.containsKey('playlistId') || p.containsKey('mixId')) {
                       Navigator.push(
                           context,
                           MaterialPageRoute(

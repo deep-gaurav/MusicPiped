@@ -23,6 +23,8 @@ public class URLProxyFactory {
   private static HttpProxyCacheServer newProxy(Context context) {
     return new HttpProxyCacheServer.Builder(context)
             .fileNameGenerator(new TrackFileNameGenerator())
+            .maxCacheFilesCount(50)
+            .maxCacheSize(1024 * 1024 * 500)
             .build();
   }
 }

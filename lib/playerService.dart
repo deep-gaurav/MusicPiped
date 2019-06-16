@@ -77,4 +77,8 @@ class AudioPlayer{
   void updateMetadata(){
     platform.invokeMethod("updateMetadata",metadata);
   }
+
+  void openFX(){
+    platform.invokeMethod('openSystemEqualizer');
+  }
 }

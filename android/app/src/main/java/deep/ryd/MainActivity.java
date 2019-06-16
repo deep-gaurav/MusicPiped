@@ -13,6 +13,7 @@ import android.graphics.BitmapFactory;
 import android.media.AudioManager;
 import android.media.MediaMetadata;
 import android.media.MediaPlayer;
+import android.media.audiofx.AudioEffect;
 import android.media.session.MediaSession;
 import android.media.session.PlaybackState;
 import android.net.Uri;
@@ -32,6 +33,7 @@ import org.schabi.newpipe.extractor.Downloader;
 import org.schabi.newpipe.extractor.NewPipe;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
 import org.schabi.newpipe.extractor.services.youtube.YoutubeService;
+import org.schabi.newpipe.extractor.stream.AudioStream;
 import org.schabi.newpipe.extractor.stream.StreamExtractor;
 import org.schabi.newpipe.extractor.stream.StreamInfo;
 import org.schabi.newpipe.extractor.utils.Localization;
@@ -41,7 +43,9 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -53,6 +57,9 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+
+import static android.media.audiofx.AudioEffect.CONTENT_TYPE_MUSIC;
+import static android.media.audiofx.AudioEffect.EXTRA_CONTENT_TYPE;
 
 
 enum PlayerState{
@@ -210,6 +217,8 @@ public class MainActivity extends FlutterActivity implements AudioManager.OnAudi
                   Log.d("musicpiped", "androidcached " + cached);
                 } else if(methodCall.method.equals("readyOpenURL")){
                   result.success(openURL);
+                } else if(methodCall.method.equals("openSystemEqualizer")){
+                  openAudioFx();
                 }
 
                 else {
@@ -280,7 +289,7 @@ public class MainActivity extends FlutterActivity implements AudioManager.OnAudi
       @Override
       public boolean onError(MediaPlayer mp, int what, int extra) {
         //methodChannel.invokeMethod("error","");
-        Log.i("musicpiped", "MediPlayer Error : " + what + " " + extra);
+        //Log.i("musicpiped", "MediPlayer Error : " + what + " " + extra);
         if (extra == MediaPlayer.MEDIA_ERROR_IO || extra == MediaPlayer.MEDIA_ERROR_TIMED_OUT) {
           Log.d("musicpiped", "Timeout");
           next();
@@ -296,6 +305,34 @@ public class MainActivity extends FlutterActivity implements AudioManager.OnAudi
     handleURL(appLinkIntent);
 
   }
+  public void openAudioFx() {
+    try{
+
+      Intent i = new Intent(AudioEffect.ACTION_DISPLAY_AUDIO_EFFECT_CONTROL_PANEL);
+      i.putExtra(AudioEffect.EXTRA_PACKAGE_NAME, getPackageName());
+      i.putExtra(AudioEffect.EXTRA_AUDIO_SESSION, UMP.getAudioSessionId());
+
+      startActivityForResult(i,0);
+    }
+    catch (Exception e){
+      e.printStackTrace();
+    }
+  }
+
+  public void applyAudioFx(){
+    try{
+
+      Intent i = new Intent(AudioEffect.ACTION_DISPLAY_AUDIO_EFFECT_CONTROL_PANEL);
+      i.putExtra(AudioEffect.EXTRA_PACKAGE_NAME, getPackageName());
+      i.putExtra(AudioEffect.EXTRA_AUDIO_SESSION, UMP.getAudioSessionId());
+
+      startActivityForResult(i,0);
+    }
+    catch (Exception e){
+      e.printStackTrace();
+    }
+  }
+
 
   void handleURL(Intent appLinkIntent){
     String appLinkAction = appLinkIntent.getAction();
@@ -696,7 +733,7 @@ public class MainActivity extends FlutterActivity implements AudioManager.OnAudi
     this.videoId=videoId;
   }
 
-  String getNewpipeURL() throws ExtractionException, IOException {
+  List<String> getNewpipeURL() throws ExtractionException, IOException {
 
     Log.d("musicpiped","Get newpipe URL");
 
@@ -707,14 +744,11 @@ public class MainActivity extends FlutterActivity implements AudioManager.OnAudi
     YoutubeService youtubeService = (YoutubeService) NewPipe.getService(NewPipe.getIdOfService("YouTube"));
     StreamExtractor streamExtractor = youtubeService.getStreamExtractor(url);
     streamExtractor.fetchPage();
-    if(streamExtractor.getAudioStreams().size()>1)
-    return streamExtractor.getAudioStreams().get(0).url;
-    else if(streamExtractor.getVideoStreams().size()>1){
-      return streamExtractor.getVideoStreams().get(0).url;
+    List<String> urls = new ArrayList<>();
+    for(AudioStream s: streamExtractor.getAudioStreams()){
+      urls.add(s.url);
     }
-    else {
-      return "ERROR";
-    }
+    return urls;
   }
 
   boolean verifyURL (String url){
@@ -748,14 +782,23 @@ public class MainActivity extends FlutterActivity implements AudioManager.OnAudi
      String url = strings[0];
 
      Log.d("musicpiped","CheckResponseCode");
-     while (verifyURL(url)){
+     for(int tries=0;tries<3 && verifyURL(url); tries++){
        try {
-         url = getNewpipeURL();
+          List<String> newURLS = getNewpipeURL();
+          for(String newurl : newURLS){
+            if(!verifyURL(newurl)){
+              url = newurl;
+              break;
+            }
+          }
        } catch (ExtractionException e) {
          e.printStackTrace();
        } catch (IOException e) {
          e.printStackTrace();
        }
+     }
+     if(verifyURL(url)){
+       url = "ERROR";
      }
      return url;
    }
@@ -764,7 +807,7 @@ public class MainActivity extends FlutterActivity implements AudioManager.OnAudi
    protected void onPostExecute(String s) {
      super.onPostExecute(s);
      if(s=="ERROR"){
-       Toast.makeText(activity,"Can not play that track, Retry late",Toast.LENGTH_LONG);
+       Toast.makeText(activity,"Can not play that track, Retry later",Toast.LENGTH_LONG).show();
        activity.next();
      }else{
        try {
