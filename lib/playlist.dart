@@ -18,7 +18,6 @@ class Playlist extends StatefulWidget {
   String playlistname = 'All Tracks';
   bool usePlaylist = false;
   Map playlistdetail;
-  AudioPlayer player;
 
   bool offline;
 
@@ -74,8 +73,8 @@ class PlaylistState extends State<Playlist> {
         var tmptracks = List.from(alltracks);
         for (Map s in tmptracks) {
           if (widget.offline) {
-            if (!await player.isCached(
-                "https://dummyurl.com/?a=b", s["videoId"])) {
+            // TODO FIX THIS IS CACHED WAS HERE
+            if (!await Future.value(false)) {
               alltracks.remove(s);
             }
           }

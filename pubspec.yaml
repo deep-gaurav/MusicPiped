@@ -26,7 +26,9 @@ dependencies:
   cached_network_image: any
   cupertino_icons: ^0.1.2
   fluttery_seekbar: ^0.0.1
-
+  audioplayer: ^0.5.2
+  youtube_extractor: ^1.0.4
+  audio_service: ^0.3.1
 
 dev_dependencies:
   flutter_test:

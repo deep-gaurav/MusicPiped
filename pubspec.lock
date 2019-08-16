@@ -7,7 +7,21 @@ packages:
       name: async
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.2.0"
+    version: "2.1.0"
+  audio_service:
+    dependency: "direct main"
+    description:
+      name: audio_service
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.3.1"
+  audioplayer:
+    dependency: "direct main"
+    description:
+      name: audioplayer
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.5.2"
   boolean_selector:
     dependency: transitive
     description:
@@ -21,7 +35,7 @@ packages:
       name: cached_network_image
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.8.0"
+    version: "1.1.1"
   charcode:
     dependency: transitive
     description:
@@ -49,7 +63,7 @@ packages:
       name: crypto
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.0.6"
+    version: "2.1.1+1"
   cupertino_icons:
     dependency: "direct main"
     description:
@@ -68,7 +82,7 @@ packages:
       name: flutter_cache_manager
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.3.2"
+    version: "1.1.1"
   flutter_test:
     dependency: "direct dev"
     description: flutter
@@ -108,7 +122,7 @@ packages:
       name: idb_shim
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.7.6"
+    version: "1.8.1"
   js:
     dependency: transitive
     description:
@@ -150,7 +164,7 @@ packages:
       name: path_provider
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.5.0+1"
+    version: "1.2.0"
   pedantic:
     dependency: transitive
     description:
@@ -158,27 +172,41 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.5.0"
+  petitparser:
+    dependency: transitive
+    description:
+      name: petitparser
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "2.2.1"
   quiver:
     dependency: transitive
     description:
       name: quiver
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.0.3"
+    version: "2.0.2"
+  rxdart:
+    dependency: transitive
+    description:
+      name: rxdart
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.22.1+1"
   sembast:
     dependency: transitive
     description:
       name: sembast
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.15.4"
+    version: "2.0.1"
   share:
     dependency: "direct main"
     description:
       name: share
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.6.1+1"
+    version: "0.6.2"
   sky_engine:
     dependency: transitive
     description: flutter
@@ -197,7 +225,7 @@ packages:
       name: sqflite
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.1.5"
+    version: "1.1.6+3"
   stack_trace:
     dependency: transitive
     description:
@@ -225,7 +253,7 @@ packages:
       name: synchronized
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.1.0"
+    version: "2.1.0+1"
   term_glyph:
     dependency: transitive
     description:
@@ -239,7 +267,7 @@ packages:
       name: test_api
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.2.5"
+    version: "0.2.4"
   typed_data:
     dependency: transitive
     description:
@@ -253,7 +281,7 @@ packages:
       name: uuid
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.0.1"
+    version: "2.0.2"
   vector_math:
     dependency: transitive
     description:
@@ -261,6 +289,20 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "2.0.8"
+  xml:
+    dependency: transitive
+    description:
+      name: xml
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "3.4.1"
+  youtube_extractor:
+    dependency: "direct main"
+    description:
+      name: youtube_extractor
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "1.0.4"
 sdks:
   dart: ">=2.2.0 <3.0.0"
   flutter: ">=1.2.1 <2.0.0"

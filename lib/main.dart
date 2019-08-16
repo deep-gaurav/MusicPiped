@@ -2,8 +2,9 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui';
+import 'package:audio_service/audio_service.dart';
+import 'package:audioplayer/audioplayer.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/services.dart';
 import 'package:pedantic/pedantic.dart';
 import 'dart:io';
 
@@ -38,7 +39,27 @@ var quality = ValueNotifier("best");
 
 var ignorePositionUpdate = ValueNotifier(false);
 
-AudioPlayer player;
+var done=false; 
+var queue = ValueNotifier<List>([]);
+
+const mediaControlButtons = {
+  "play": MediaControl(
+      androidIcon: "drawable/ic_play_arrow_black_24dp",
+      action: MediaAction.play,
+      label: "Play"),
+  "pause": MediaControl(
+      androidIcon: "drawable/ic_pause_black_24dp",
+      action: MediaAction.pause,
+      label: "Pause"),
+  "next": MediaControl(
+      androidIcon: "drawable/ic_skip_next_black_24dp",
+      action: MediaAction.skipToNext,
+      label: "Next"),
+  "previous": MediaControl(
+      androidIcon: "drawable/ic_skip_previous_black_24dp",
+      action: MediaAction.skipToPrevious,
+      label: "Previous")
+};
 
 void main() async {
   var appDir = await getApplicationDocumentsDirectory();
@@ -140,14 +161,12 @@ class MyHomePage extends StatefulWidget {
 enum PlayerState { Loading, Playing, Paused, Stopped, Error }
 
 class MyHomePageState extends State<MyHomePage>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin,WidgetsBindingObserver {
   TextEditingController textEditingController = TextEditingController();
 
   dynamic howlerId = 0;
 
   static String InvidiosAPI = invidiosAPI.value + "api/v1/";
-
-  var queue = ValueNotifier<List>([]);
 
   var playerState = ValueNotifier(PlayerState.Stopped);
 
@@ -187,6 +206,8 @@ class MyHomePageState extends State<MyHomePage>
   void initState() {
     super.initState();
 
+    WidgetsBinding.instance.addObserver(this);
+
     db = musicDB;
     _tabController = TabController(length: 3, vsync: this);
 
@@ -194,41 +215,77 @@ class MyHomePageState extends State<MyHomePage>
       setState(() {});
     });
 
-    player = AudioPlayer();
+    AudioService.connect(); // When UI becomes visible
+    AudioService.start(
+      // When user clicks button to start playback
+      backgroundTask: myBackgroundTask,
+      androidNotificationChannelName: 'Music Player',
+      androidNotificationIcon: "mipmap/ic_launcher",
+    );
 
-    player.addEventListener('timeupdate', (e) {
+    // queue.addListener((){
+    //   for(var x in AudioService.queue){
+    //     AudioService.removeQueueItem(x);
+    //   }
+    //           queue.value.map<MediaItem>((qVal)=>MediaItem(id: qVal["videoId"], album: qVal["genre"], title: qVal["title"],
+    //       artist: qVal["author"],
+    //       genre: qVal["genre"],
+    //       artUri: (qVal["videoThumbnails"] as List).last["url"]
+    //     )).forEach((f)=>AudioService.addQueueItem(f));
+    // });
+
+    AudioService.playbackStateStream.listen((state) {
       if (ignorePositionUpdate.value) {
         return;
       }
-      positionNotifier.value = player.currentTime;
-      totalLength.value = player.duration;
+      positionNotifier.value = state.position;
+      switch (state.basicState) {
+        case BasicPlaybackState.stopped:
+          playerState.value = PlayerState.Stopped;
+          break;
+        case BasicPlaybackState.playing:
+          playerState.value = PlayerState.Playing;
+          break;
+        case BasicPlaybackState.paused:
+          playerState.value = PlayerState.Paused;
+          break;
+          break;
+        case BasicPlaybackState.none:
+          // TODO: Handle this case.
+          break;
+        case BasicPlaybackState.fastForwarding:
+          // TODO: Handle this case.
+          break;
+        case BasicPlaybackState.rewinding:
+          // TODO: Handle this case.
+          break;
+        case BasicPlaybackState.buffering:
+          playerState.value = PlayerState.Loading;
+          break;
+        case BasicPlaybackState.error:
+          playerState.value = PlayerState.Error;
+          break;
+        case BasicPlaybackState.connecting:
+          playerState.value = PlayerState.Loading;
+          break;
+        case BasicPlaybackState.skippingToPrevious:
+          previous();
+          break;
+        case BasicPlaybackState.skippingToNext:
+          next();
+          break;
+        case BasicPlaybackState.skippingToQueueItem:
+          // TODO: Handle this case.
+          break;
+      }
     });
     /*
     player.addEventListener('ended', (e) {
       playerState.value = PlayerState.Stopped;
     });
     */
-    player.addEventListener('playing', (e) {
-      playerState.value = PlayerState.Playing;
-    });
-    player.addEventListener('play', (e) {
-      playerState.value = PlayerState.Playing;
-    });
-    player.addEventListener('pause', (e) {
-      playerState.value = PlayerState.Paused;
-    });
-    player.addEventListener('loadstart', (e) {
-      playerState.value = PlayerState.Loading;
-    });
-    player.addEventListener('error', (e) {
-      playerState.value = PlayerState.Error;
-    });
-    player.addEventListener('next', (e) {
-      next();
-    });
-    player.addEventListener('previous', (e) {
-      previous();
-    });
+
+    // TODO add next and previous
 
     positionNotifier.addListener(() {
       if (totalLength.value > 0 &&
@@ -249,24 +306,10 @@ class MyHomePageState extends State<MyHomePage>
         onEnd();
       }
     });
-
-    player.readyOpenURL.addListener(() async {
-      try {
-        String id = player.readyOpenURL.value;
-        String url = InvidiosAPI + "videos/" + id;
-        var response = await http.get(url);
-        var curr = json.decode(utf8.decode(response.bodyBytes));
-        queue.value = [curr];
-        currentIndex.value = 0;
-        playCurrent();
-      } catch (e) {
-        print(e);
-      }
-    });
   }
 
   Future<bool> checkCache(Map s) async {
-    return player.isCached("https://dummyurl.com/abc.mp4?a=1", s["videoId"]);
+    return false;
   }
 
   Future<Map> refreshLink(String vidId, Map s) async {
@@ -283,15 +326,15 @@ class MyHomePageState extends State<MyHomePage>
     return s;
   }
 
-  Future<ByteData> imagefromURL(String url) {
-    var provider = CachedNetworkImageProvider(url);
-    var stream = provider.resolve(ImageConfiguration());
-    var completer = Completer<ByteData>();
-    stream.addListener(ImageStreamListener((info, callflag) {
-      completer.complete(info.image.toByteData(format: ImageByteFormat.png));
-    }));
-    return completer.future;
-  }
+  // Future<ByteData> imagefromURL(String url) {
+  //   var provider = CachedNetworkImageProvider(url);
+  //   var stream = provider.resolve(ImageConfiguration());
+  //   var completer = Completer<ByteData>();
+  //   stream.addListener(ImageStreamListener((info, callflag) {
+  //     completer.complete(info.image.toByteData(format: ImageByteFormat.png));
+  //   }));
+  //   return completer.future;
+  // }
 
   Future<String> fixURLAccess(Map s) async {
     List formats = List.from(s["adaptiveFormats"]);
@@ -323,28 +366,29 @@ class MyHomePageState extends State<MyHomePage>
   }
 
   void updateMetadata() async {
-    player.pause();
-    playerState.value = PlayerState.Loading;
-    Map s = queue.value[currentIndex.value];
-    var image;
-    try {
-      image = await imagefromURL(
-          TrackTile.urlfromImage(s["videoThumbnails"], "medium"));
-    } catch (e) {
-      image = null;
-    }
-    var barrray = image.buffer.asUint8List();
-    player.metadata = {
-      "title": s["title"],
-      "artist": s["author"],
-      "thumb": barrray,
-      "vidId": s["videoId"]
-    };
-    player.updateMetadata();
+//    player.pause();
+//    playerState.value = PlayerState.Loading;
+//    Map s = queue.value[currentIndex.value];
+//    var image;
+//    try {
+//      image = await imagefromURL(
+//          TrackTile.urlfromImage(s["videoThumbnails"], "medium"));
+//    } catch (e) {
+//      image = null;
+//    }
+//    var barrray = image.buffer.asUint8List();
+//    player.metadata = {
+//      "title": s["title"],
+//      "artist": s["author"],
+//      "thumb": barrray,
+//      "vidId": s["videoId"]
+//    };
+    // player.updateMetadata();
+    // TODO metadataupdate
   }
 
   Future<void> loadCurrent() async {
-    Map s = this.queue.value[currentIndex.value];
+    Map s = queue.value[currentIndex.value];
     bool cached = false;
     if (await checkCache(s)) {
       cached = true;
@@ -358,30 +402,21 @@ class MyHomePageState extends State<MyHomePage>
     if (!cached) {
       url = await fixURLAccess(s);
     }
-
-    player.pause();
-    player.currentTime = 0;
+//
+//    player.pause();
+//    player.currentTime = 0;
 
     //howlerId = howler.callMethod("play");
     var image;
     try {
-      image = await imagefromURL(
-          TrackTile.urlfromImage(s["videoThumbnails"], "medium"));
+      image = TrackTile.urlfromImage(s["videoThumbnails"], "medium");
     } catch (e) {
       image = null;
     }
-    var barrray = image.buffer.asUint8List();
-    player.metadata = {
-      "title": s["title"],
-      "artist": s["author"],
-      "thumb": barrray,
-      "vidId": s["videoId"]
-    };
-    player.src = url;
+    totalLength.value = s["lengthSeconds"];
 
-    unawaited(player.play().catchError((e) {
-      playerState.value = PlayerState.Error;
-    }));
+    AudioService.customAction("setMetadata", s);
+    AudioService.playFromMediaId(url+"&videoId=${s['videoId']}");
 
     s = Map.from(s);
     if (s.containsKey('timesPlayed')) {
@@ -661,7 +696,7 @@ class MyHomePageState extends State<MyHomePage>
                             title: Text("Open System Equalizer"),
                             onTap: () {
                               print("Open Equalizer");
-                              player.openFX();
+                              // player.openFX();
                             },
                           ),
                         ],
@@ -861,11 +896,11 @@ class MyHomePageState extends State<MyHomePage>
                 playerState: playerState,
                 play: () {
                   playerState.value = PlayerState.Playing;
-                  player.play();
+                  AudioService.play();
                 },
                 pause: () {
                   playerState.value = PlayerState.Paused;
-                  player.pause();
+                  AudioService.pause();
                 },
                 next: next,
                 previous: previous,
@@ -922,10 +957,10 @@ class MyHomePageState extends State<MyHomePage>
                                   onPressed: () {
                                     if (playerState.value ==
                                         PlayerState.Playing) {
-                                      player.pause();
+                                      AudioService.pause();
                                       playerState.value = PlayerState.Paused;
                                     } else {
-                                      player.play();
+                                      AudioService.play();
                                     }
                                   },
                                 );
@@ -1244,4 +1279,128 @@ class _SuggestionList extends StatelessWidget {
       },
     );
   }
+}
+
+void myBackgroundTask() {
+  var playercompleter = Completer();
+  print("Completer started");
+  var Q = List<MediaItem>();
+  var audioPlayer = AudioPlayer();
+
+  void pause() {
+    AudioServiceBackground.setState(controls: [
+      mediaControlButtons["previous"],
+      mediaControlButtons["play"],
+      mediaControlButtons["next"]
+    ], basicState: BasicPlaybackState.paused);
+    audioPlayer.pause();
+  }
+
+  void play() {
+    AudioServiceBackground.setState(controls: [
+      mediaControlButtons["previous"],
+      mediaControlButtons["pause"],
+      mediaControlButtons["next"]
+    ], basicState: BasicPlaybackState.playing);
+    audioPlayer.pause();
+  }
+
+  audioPlayer.onAudioPositionChanged.listen((p) {
+    AudioServiceBackground.setState(
+      controls: [
+        mediaControlButtons["previous"],
+        mediaControlButtons["pause"],
+        mediaControlButtons["next"]
+      ],
+      basicState: BasicPlaybackState.playing,
+      position: p.inSeconds,
+    );
+  });
+
+  audioPlayer.onPlayerStateChanged.listen((state) {
+    if (state == AudioPlayerState.COMPLETED) {
+      AudioServiceBackground.setState(controls: [
+        mediaControlButtons["previous"],
+        mediaControlButtons["play"],
+        mediaControlButtons["next"]
+      ], basicState: BasicPlaybackState.stopped);
+    }
+  });
+
+  AudioServiceBackground.run(
+    onPlayFromMediaId: (url) {
+      audioPlayer.stop();
+      audioPlayer.play(url);
+
+      AudioServiceBackground.setState(controls: [
+        mediaControlButtons["previous"],
+        mediaControlButtons["pause"],
+        mediaControlButtons["next"]
+      ], basicState: BasicPlaybackState.connecting);
+    },
+    onCustomAction: (action, data) {
+      if (action == "setMetadata") {
+        var meta = MediaItem(
+            id: data["videoId"],
+            album: data["author"],
+            title: data["title"],
+            artist: data["author"],
+            genre: data["genre"],
+            artUri: data["videoThumbnails"].last["url"],
+            displayTitle: data["title"],
+            displaySubtitle: data["author"]);
+        print("metadata $meta");
+        AudioServiceBackground.setMediaItem(meta);
+        AudioServiceBackground.setState(controls: [
+          mediaControlButtons["previous"],
+          mediaControlButtons["pause"],
+          mediaControlButtons["next"]
+        ], basicState: BasicPlaybackState.connecting);
+      }
+    },
+    onStart: () async {
+      print("Started");
+      await playercompleter.future;
+    },
+    onPlay: () {
+      AudioServiceBackground.setState(controls: [
+        mediaControlButtons["previous"],
+        mediaControlButtons["pause"],
+        mediaControlButtons["next"]
+      ], basicState: BasicPlaybackState.playing);
+      audioPlayer.play("");
+    },
+    onPause: () {
+      pause();
+    },
+    onStop: () {
+      playercompleter.complete();
+      audioPlayer.stop();
+    },
+    onClick: (MediaButton button) {},
+    onSkipToNext: () {
+      AudioServiceBackground.setState(controls: [
+        mediaControlButtons["previous"],
+        mediaControlButtons["pause"],
+        mediaControlButtons["next"]
+      ], basicState: BasicPlaybackState.skippingToNext);
+    },
+    onSkipToPrevious: () {
+      AudioServiceBackground.setState(controls: [
+        mediaControlButtons["previous"],
+        mediaControlButtons["pause"],
+        mediaControlButtons["next"]
+      ], basicState: BasicPlaybackState.skippingToPrevious);
+    },
+    onAudioBecomingNoisy: () {
+      pause();
+    },
+    onAudioFocusLostTransient: () {
+      pause();
+    },
+    onSeekTo: (p) {
+      audioPlayer.seek(p.toDouble()).catchError((e) => debugPrint(e));
+    },
+    
+  );
 }

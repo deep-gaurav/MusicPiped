@@ -1,3 +1,4 @@
+import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'dart:ui';
 
@@ -139,8 +140,8 @@ class PlayerScreen extends StatelessWidget {
                                         onDragEnd: (pos) {
                                           ignorePositionUpdate.value=false;
 
-                                          player.currentTime =
-                                              (pos * totalTime.value).toInt();
+                                          AudioService.seekTo(
+                                              (pos * totalTime.value).toInt());
                                         },
                                       );
                                     },
@@ -306,11 +307,11 @@ class PlayerScreen extends StatelessWidget {
                                       onPressed: () {
                                         if (playerState.value ==
                                             PlayerState.Playing) {
-                                          player.pause();
+                                          AudioService.pause();
                                           playerState.value =
                                               PlayerState.Paused;
                                         } else {
-                                          player.play();
+                                          AudioService.play();
                                         }
                                       },
                                     );
