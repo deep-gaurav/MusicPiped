@@ -5,6 +5,7 @@ import 'dart:ui';
 import 'package:audio_service/audio_service.dart';
 import 'package:audioplayer/audioplayer.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/services.dart';
 import 'package:pedantic/pedantic.dart';
 import 'dart:io';
 
@@ -30,6 +31,8 @@ import 'package:flutter/foundation.dart';
 
 var idbFactory;
 
+const platform = const MethodChannel('deep.musicpiped/urlfix');
+
 Database musicDB;
 Database settingDB;
 
@@ -39,7 +42,6 @@ var quality = ValueNotifier("best");
 
 var ignorePositionUpdate = ValueNotifier(false);
 
-var done=false; 
 var queue = ValueNotifier<List>([]);
 
 const mediaControlButtons = {
@@ -222,6 +224,9 @@ class MyHomePageState extends State<MyHomePage>
       androidNotificationChannelName: 'Music Player',
       androidNotificationIcon: "mipmap/ic_launcher",
     );
+    Timer.periodic(Duration(seconds: 2), (t){
+      AudioService.customAction("tick");
+    });
 
     // queue.addListener((){
     //   for(var x in AudioService.queue){
@@ -287,13 +292,6 @@ class MyHomePageState extends State<MyHomePage>
 
     // TODO add next and previous
 
-    positionNotifier.addListener(() {
-      if (totalLength.value > 0 &&
-          positionNotifier.value > 0 &&
-          totalLength.value - positionNotifier.value <= 2) {
-        next();
-      }
-    });
 
     playerState.addListener(() {
       if (playerState.value == PlayerState.Stopped) {
@@ -416,7 +414,14 @@ class MyHomePageState extends State<MyHomePage>
     totalLength.value = s["lengthSeconds"];
 
     AudioService.customAction("setMetadata", s);
-    AudioService.playFromMediaId(url+"&videoId=${s['videoId']}");
+
+    print("getNewPipe URL for vid ${s['videoId']}");
+    url+="&videoId=${s['videoId']}";
+    url=await platform.invokeMethod("getURL",{"url":url});
+
+    print("Received Newpipe URL $url");
+
+    AudioService.playFromMediaId(url);
 
     s = Map.from(s);
     if (s.containsKey('timesPlayed')) {
@@ -1285,14 +1290,17 @@ void myBackgroundTask() {
   var playercompleter = Completer();
   print("Completer started");
   var Q = List<MediaItem>();
+
   var audioPlayer = AudioPlayer();
 
-  void pause() {
+  void pause() async{
     AudioServiceBackground.setState(controls: [
       mediaControlButtons["previous"],
       mediaControlButtons["play"],
       mediaControlButtons["next"]
-    ], basicState: BasicPlaybackState.paused);
+    ], basicState: BasicPlaybackState.paused,
+    position: (await audioPlayer.onAudioPositionChanged.first).inSeconds
+    );
     audioPlayer.pause();
   }
 
@@ -1302,7 +1310,7 @@ void myBackgroundTask() {
       mediaControlButtons["pause"],
       mediaControlButtons["next"]
     ], basicState: BasicPlaybackState.playing);
-    audioPlayer.pause();
+    audioPlayer.play("").catchError((e)=>debugPrint(e));
   }
 
   audioPlayer.onAudioPositionChanged.listen((p) {
@@ -1327,8 +1335,10 @@ void myBackgroundTask() {
     }
   });
 
+
   AudioServiceBackground.run(
-    onPlayFromMediaId: (url) {
+    onPlayFromMediaId: (url) async{
+
       audioPlayer.stop();
       audioPlayer.play(url);
 
@@ -1338,8 +1348,9 @@ void myBackgroundTask() {
         mediaControlButtons["next"]
       ], basicState: BasicPlaybackState.connecting);
     },
-    onCustomAction: (action, data) {
+    onCustomAction: (action, data) async{
       if (action == "setMetadata") {
+        audioPlayer.pause();
         var meta = MediaItem(
             id: data["videoId"],
             album: data["author"],
@@ -1355,12 +1366,20 @@ void myBackgroundTask() {
           mediaControlButtons["previous"],
           mediaControlButtons["pause"],
           mediaControlButtons["next"]
-        ], basicState: BasicPlaybackState.connecting);
+        ], basicState: BasicPlaybackState.connecting,
+          position: 0
+        );
+      }else if(action=="Stop"){
+        print("STOPPING");
+        await audioPlayer.stop();
+        playercompleter.complete(null);
+
       }
     },
     onStart: () async {
       print("Started");
       await playercompleter.future;
+      return;
     },
     onPlay: () {
       AudioServiceBackground.setState(controls: [
@@ -1368,16 +1387,31 @@ void myBackgroundTask() {
         mediaControlButtons["pause"],
         mediaControlButtons["next"]
       ], basicState: BasicPlaybackState.playing);
-      audioPlayer.play("");
+      audioPlayer.play("").catchError((e)=>debugPrint(e));
     },
     onPause: () {
       pause();
     },
     onStop: () {
-      playercompleter.complete();
       audioPlayer.stop();
+      AudioServiceBackground.setState(controls: [], basicState: BasicPlaybackState.stopped);
+      playercompleter.complete();
     },
-    onClick: (MediaButton button) {},
+    onClick: (MediaButton button) {
+      if(button==MediaButton.media){
+        if(AudioServiceBackground.state.basicState==BasicPlaybackState.paused){
+          play();
+        }
+        else{
+          pause();
+        }
+      }else if(button==MediaButton.next){
+        AudioServiceBackground.setState(controls: [mediaControlButtons["previous"],mediaControlButtons["pause"],mediaControlButtons["next"]], basicState: BasicPlaybackState.skippingToNext);
+      }else if(button==MediaButton.previous){
+
+        AudioServiceBackground.setState(controls: [mediaControlButtons["previous"],mediaControlButtons["pause"],mediaControlButtons["previous"]], basicState: BasicPlaybackState.skippingToPrevious);
+      }
+    },
     onSkipToNext: () {
       AudioServiceBackground.setState(controls: [
         mediaControlButtons["previous"],

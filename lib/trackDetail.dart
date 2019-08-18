@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:idb_shim/idb.dart';
 
 import 'searchScreen.dart';
 import 'trending.dart';
@@ -17,8 +18,27 @@ class TrackDetail extends StatelessWidget {
   void Function(List<Map>) onPressed;
   Future recommendedWids;
 
-  TrackDetail(this.initialtrackInfo, this.onPressed);
+  var db;
+  var playlists = List();
 
+  TrackDetail(this.initialtrackInfo, this.onPressed){
+    setplaylists();
+  }
+
+
+  void setplaylists() async {
+    if (db == null) {
+      db = await idbFactory.open('musicDB');
+    }
+    var playlistobstore =
+    db.transaction('playlists', 'readonly').objectStore('playlists');
+    var plstream = playlistobstore.openCursor(autoAdvance: true);
+    plstream.listen((pl) {
+      if (!(pl.value as Map).containsKey('playlistId') && !(pl.value as Map).containsKey('mixId')) {
+        playlists.add(pl.value);
+      }
+    }).onDone(() {});
+  }
   @override
   Widget build(BuildContext context) {
     trackInfo = initialtrackInfo;
@@ -88,7 +108,9 @@ class TrackDetail extends StatelessWidget {
             ],
           )),
           SliverToBoxAdapter(
-            child: ButtonBar(
+            child: Wrap(
+              spacing: 5,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: <Widget>[
                 RaisedButton.icon(
                   icon: Icon(Icons.play_arrow),
@@ -114,7 +136,50 @@ class TrackDetail extends StatelessWidget {
                     Navigator.of(context).pop(trackInfo);
                   },
                   color: Theme.of(context).primaryColor,
-                )
+                ),
+                RaisedButton.icon(
+                  icon: Icon(Icons.add),
+                  label: Text("Add to Playlist"),
+                  color: Theme.of(context).primaryColor,
+                  onPressed: () {
+                    showDialog(
+                        context: context,
+                        builder: (context) {
+                          var l = List();
+                          for (var m in playlists) {
+                            l.add(FlatButton(
+                              child: Text(m['title']),
+                              onPressed: () async {
+                                ObjectStore ob = db
+                                    .transaction('tracks', 'readwrite')
+                                    .objectStore('tracks');
+                                Map track = trackInfo;
+                                if(await ob.getObject(track["videoId"])!=null){
+                                  track= await ob.getObject(track['videoId']);
+                                }
+                                if (track.containsKey('inPlaylists') &&
+                                    !(track['inPlaylists'] as List)
+                                        .contains(m['title'])) {
+                                  (track['inPlaylists'] as List)
+                                      .add(m['title']);
+                                } else {
+                                  track['inPlaylists'] = List();
+                                  (track['inPlaylists'] as List)
+                                      .add(m['title']);
+                                }
+                                await ob.put(track);
+                                Navigator.pop(context);
+                              },
+                            ));
+                          }
+                          return SimpleDialog(
+                            title: Text("Add to Playlist"),
+                            children: <Widget>[...l],
+                          );
+                        });
+                  },
+                ),
+
               ],
             ),
           ),

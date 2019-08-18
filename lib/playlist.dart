@@ -74,7 +74,7 @@ class PlaylistState extends State<Playlist> {
         for (Map s in tmptracks) {
           if (widget.offline) {
             // TODO FIX THIS IS CACHED WAS HERE
-            if (!await Future.value(false)) {
+            if (!await platform.invokeMethod("isCached",{"url":"http://dummu.com/?videoId=${s['videoId']}"})) {
               alltracks.remove(s);
             }
           }

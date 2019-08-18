@@ -79,5 +79,6 @@ dependencies {
     implementation 'com.danikula:videocache:2.7.1'
     implementation 'com.github.TeamNewPipe:NewPipeExtractor:v0.17.0'
     implementation 'com.squareup.okhttp3:okhttp:4.0.0-alpha02'
+    implementation 'androidx.media:media:1.1.0-rc01'
 
 }

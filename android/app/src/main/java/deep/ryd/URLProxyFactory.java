@@ -3,10 +3,12 @@ package deep.ryd;
 
 import android.content.Context;
 import android.net.Uri;
+import android.util.Log;
 
 import com.danikula.videocache.HttpProxyCacheServer;
 import com.danikula.videocache.file.FileNameGenerator;
 
+import java.io.File;
 import java.net.URI;
 
 public class URLProxyFactory {
@@ -36,6 +38,7 @@ class TrackFileNameGenerator implements FileNameGenerator {
     Uri uri = Uri.parse(url);
     String vidId=uri.getQueryParameter("videoId");
 
+    Log.d("musicpiped","Generated filename "+vidId);
     return vidId;
   }
 }
