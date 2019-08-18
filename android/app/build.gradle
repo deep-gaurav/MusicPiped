@@ -44,8 +44,8 @@ android {
         applicationId "deep.ryd.rydplayer"
         minSdkVersion 21
         targetSdkVersion 28
-        versionCode 55
-        versionName "2.0.5"
+        versionCode 57
+        versionName "2.1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     signingConfigs {
