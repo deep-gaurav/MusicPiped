@@ -6,6 +6,7 @@ import 'package:audio_service/audio_service.dart';
 import 'package:audioplayer/audioplayer.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/services.dart';
+import 'package:musicpiped_pro/queue.dart';
 import 'package:pedantic/pedantic.dart';
 import 'dart:io';
 
@@ -17,6 +18,8 @@ import 'dart:convert';
 import 'package:idb_shim/idb.dart';
 import 'package:idb_shim/idb_io.dart';
 import 'package:path_provider/path_provider.dart';
+
+import 'backgroundControl.dart';
 
 import 'searchScreen.dart';
 import 'trending.dart';
@@ -44,6 +47,8 @@ var ignorePositionUpdate = ValueNotifier(false);
 
 var queue = ValueNotifier<List>([]);
 
+GlobalKey<MyHomePageState> mainKey = GlobalKey();
+
 const mediaControlButtons = {
   "play": MediaControl(
       androidIcon: "drawable/ic_play_arrow_black_24dp",
@@ -64,6 +69,10 @@ const mediaControlButtons = {
 };
 
 void main() async {
+  runApp(MyApp());
+}
+
+Future init() async {
   var appDir = await getApplicationDocumentsDirectory();
 
   var dbDir = appDir.path + Platform.pathSeparator + "musicDB";
@@ -97,7 +106,6 @@ void main() async {
       ob2.add({'title': 'Favorites'});
     }
   });
-  runApp(MyApp());
 }
 
 Future<Database> initSettings() async {
@@ -138,15 +146,27 @@ dynamic putSetting(String key, value) async {
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'MusicPiped Pro',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        brightness:
-            brightness.value == "dark" ? Brightness.dark : Brightness.light,
-      ),
-      home: MyHomePage(title: 'MusicPiped'),
-      debugShowCheckedModeBanner: false,
+    return FutureBuilder(
+      future: init(),
+      builder: (context, ass) {
+        if (ass.connectionState == ConnectionState.done) {
+          return MaterialApp(
+            title: 'MusicPiped Pro',
+            theme: ThemeData(
+              primarySwatch: Colors.blue,
+              brightness: brightness.value == "dark"
+                  ? Brightness.dark
+                  : Brightness.light,
+            ),
+            home: MyHomePage(key: mainKey, title: 'MusicPiped'),
+            debugShowCheckedModeBanner: false,
+          );
+        } else {
+          return Center(
+            child: CircularProgressIndicator(),
+          );
+        }
+      },
     );
   }
 }
@@ -163,7 +183,7 @@ class MyHomePage extends StatefulWidget {
 enum PlayerState { Loading, Playing, Paused, Stopped, Error }
 
 class MyHomePageState extends State<MyHomePage>
-    with SingleTickerProviderStateMixin,WidgetsBindingObserver {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   TextEditingController textEditingController = TextEditingController();
 
   dynamic howlerId = 0;
@@ -220,11 +240,11 @@ class MyHomePageState extends State<MyHomePage>
     AudioService.connect(); // When UI becomes visible
     AudioService.start(
       // When user clicks button to start playback
-      backgroundTask: myBackgroundTask,
+      backgroundTaskEntrypoint: myBackgroundTask,
       androidNotificationChannelName: 'Music Player',
       androidNotificationIcon: "mipmap/ic_launcher",
     );
-    Timer.periodic(Duration(seconds: 2), (t){
+    Timer.periodic(Duration(seconds: 2), (t) {
       AudioService.customAction("tick");
     });
 
@@ -291,7 +311,6 @@ class MyHomePageState extends State<MyHomePage>
     */
 
     // TODO add next and previous
-
 
     playerState.addListener(() {
       if (playerState.value == PlayerState.Stopped) {
@@ -416,8 +435,8 @@ class MyHomePageState extends State<MyHomePage>
     AudioService.customAction("setMetadata", s);
 
     print("getNewPipe URL for vid ${s['videoId']}");
-    url+="&videoId=${s['videoId']}";
-    url=await platform.invokeMethod("getURL",{"url":url});
+    url += "&videoId=${s['videoId']}";
+    url = await platform.invokeMethod("getURL", {"url": url});
 
     print("Received Newpipe URL $url");
 
@@ -443,6 +462,25 @@ class MyHomePageState extends State<MyHomePage>
     loadCurrent().catchError((e) {
       loadCurrent();
     });
+  }
+
+  void playNext(track) {
+    if (queue.value != null && queue.value.isNotEmpty) {
+      queue.value.insert(currentIndex.value + 1, track);
+    } else {
+      queue.value = [track];
+      currentIndex.value = 0;
+      playCurrent();
+    }
+  }
+
+  void addtoQueue(track) {
+    if (queue.value != null && queue.value.isNotEmpty) {
+      queue.value.add(track);
+    } else {
+      queue.value = [track];
+      playCurrent();
+    }
   }
 
   /*
@@ -576,17 +614,7 @@ class MyHomePageState extends State<MyHomePage>
                                   currentIndex.value = 0;
                                   playCurrent();
                                 },
-                                (track) {
-                                  if (queue.value != null &&
-                                      queue.value.isNotEmpty) {
-                                    queue.value
-                                        .insert(currentIndex.value + 1, track);
-                                  } else {
-                                    queue.value = [track];
-                                    currentIndex.value = 0;
-                                    playCurrent();
-                                  }
-                                },
+                                playNext,
                               ))));
                   if (result == null) {
                     return;
@@ -606,107 +634,107 @@ class MyHomePageState extends State<MyHomePage>
               showModalBottomSheet(
                 context: context,
                 builder: (context) => Container(
-                      color: Theme.of(context).backgroundColor,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: <Widget>[
-                          Padding(
-                            padding: EdgeInsets.all(8),
-                            child: Text(
-                              "Settings",
-                              style: Theme.of(context).textTheme.title,
-                            ),
-                          ),
-                          SwitchListTile.adaptive(
-                            value: brightness.value == "dark",
-                            title: Text("Dark Mode"),
-                            onChanged: (val) {
-                              if (val) {
-                                brightness.value = "dark";
-                              } else {
-                                brightness.value = "light";
-                              }
-                              scaffoldKey.currentState.removeCurrentSnackBar();
+                  color: Theme.of(context).backgroundColor,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      Padding(
+                        padding: EdgeInsets.all(8),
+                        child: Text(
+                          "Settings",
+                          style: Theme.of(context).textTheme.title,
+                        ),
+                      ),
+                      SwitchListTile.adaptive(
+                        value: brightness.value == "dark",
+                        title: Text("Dark Mode"),
+                        onChanged: (val) {
+                          if (val) {
+                            brightness.value = "dark";
+                          } else {
+                            brightness.value = "light";
+                          }
+                          scaffoldKey.currentState.removeCurrentSnackBar();
 
-                              scaffoldKey.currentState.showSnackBar(SnackBar(
-                                content: Text("Reload to take effect"),
-                              ));
+                          scaffoldKey.currentState.showSnackBar(SnackBar(
+                            content: Text("Reload to take effect"),
+                          ));
+                          Navigator.pop(context);
+                        },
+                      ),
+                      ListTile(
+                        title: Text("Quality"),
+                        trailing: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: DropdownButton(
+                            value: quality.value,
+                            items: [
+                              DropdownMenuItem(
+                                value: 'best',
+                                child: Text("Best Quality"),
+                              ),
+                              DropdownMenuItem(
+                                value: 'worst',
+                                child: Text("Minimize Data"),
+                              )
+                            ],
+                            onChanged: (newquality) {
+                              quality.value = newquality;
                               Navigator.pop(context);
                             },
                           ),
-                          ListTile(
-                            title: Text("Quality"),
-                            trailing: SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: DropdownButton(
-                                value: quality.value,
-                                items: [
-                                  DropdownMenuItem(
-                                    value: 'best',
-                                    child: Text("Best Quality"),
-                                  ),
-                                  DropdownMenuItem(
-                                    value: 'worst',
-                                    child: Text("Minimize Data"),
-                                  )
-                                ],
-                                onChanged: (newquality) {
-                                  quality.value = newquality;
-                                  Navigator.pop(context);
-                                },
-                              ),
-                            ),
-                          ),
-                          ListTile(
-                            title: Text("Invidious API"),
-                            onTap: () async {
-                              var controller = TextEditingController.fromValue(
-                                  TextEditingValue(text: invidiosAPI.value));
-                              await showDialog(
-                                  context: context,
-                                  builder: (context) => SimpleDialog(
-                                        title: Text("Invidious API"),
+                        ),
+                      ),
+                      ListTile(
+                        title: Text("Invidious API"),
+                        onTap: () async {
+                          var controller = TextEditingController.fromValue(
+                              TextEditingValue(text: invidiosAPI.value));
+                          await showDialog(
+                              context: context,
+                              builder: (context) => SimpleDialog(
+                                    title: Text("Invidious API"),
+                                    children: <Widget>[
+                                      TextField(
+                                        controller: controller,
+                                      ),
+                                      ButtonBar(
                                         children: <Widget>[
-                                          TextField(
-                                            controller: controller,
+                                          FlatButton(
+                                            child: Text("Cancel"),
+                                            onPressed: () {
+                                              Navigator.pop(context);
+                                            },
                                           ),
-                                          ButtonBar(
-                                            children: <Widget>[
-                                              FlatButton(
-                                                child: Text("Cancel"),
-                                                onPressed: () {
-                                                  Navigator.pop(context);
-                                                },
-                                              ),
-                                              RaisedButton(
-                                                child: Text("Apply"),
-                                                onPressed: () {
-                                                  invidiosAPI.value =
-                                                      controller.text;
-                                                  Navigator.pop(context);
-                                                },
-                                              )
-                                            ],
+                                          RaisedButton(
+                                            child: Text("Apply"),
+                                            onPressed: () {
+                                              invidiosAPI.value =
+                                                  controller.text;
+                                              Navigator.pop(context);
+                                            },
                                           )
                                         ],
-                                      ));
-                              scaffoldKey.currentState.removeCurrentSnackBar();
+                                      )
+                                    ],
+                                  ));
+                          scaffoldKey.currentState.removeCurrentSnackBar();
 
-                              scaffoldKey.currentState.showSnackBar(SnackBar(
-                                content: Text("Reload to take effect"),
-                              ));
-                            },
-                          ),
-                          ListTile(
-                            title: Text("Open System Equalizer"),
-                            onTap: () {
-                              print("Open Equalizer");
-                              // player.openFX();
-                            },
-                          ),
-                        ],
+                          scaffoldKey.currentState.showSnackBar(SnackBar(
+                            content: Text("Reload to take effect"),
+                          ));
+                        },
                       ),
-                    ),
+                      ListTile(
+                        title: Text("Open System Equalizer"),
+                        onTap: () {
+                          print("Open Equalizer");
+                          // player.openFX();
+                        },
+                      ),
+                    ],
+                  ),
+                ),
               );
             },
           )
@@ -795,48 +823,7 @@ class MyHomePageState extends State<MyHomePage>
                       );
                     });
                 if (create == 1) {
-                  bool reload = await showDialog(
-                      context: context,
-                      builder: (context) {
-                        var _controller = TextEditingController();
-                        return SimpleDialog(
-                          title: Text("Local Playlist"),
-                          children: <Widget>[
-                            TextField(
-                              controller: _controller,
-                              decoration:
-                                  InputDecoration(labelText: "Playlist Name"),
-                            ),
-                            ButtonBar(
-                              children: <Widget>[
-                                FlatButton(
-                                  child: Text("Cancel"),
-                                  onPressed: () {
-                                    Navigator.pop(context, false);
-                                  },
-                                ),
-                                RaisedButton(
-                                  child: Text("Create"),
-                                  onPressed: () {
-                                    if (!db.objectStoreNames
-                                        .contains('playlists')) {
-                                      var ob = db.createObjectStore(
-                                        'playlists',
-                                        keyPath: 'title',
-                                      );
-                                    }
-                                    var ob = db
-                                        .transaction('playlists', 'readwrite')
-                                        .objectStore('playlists');
-                                    ob.add({'title': _controller.text});
-                                    Navigator.pop(context, true);
-                                  },
-                                )
-                              ],
-                            )
-                          ],
-                        );
-                      });
+                  bool reload = await createPlaylist();
                   setState(() {});
                 } else if (create == 2) {
                   bool reload = await showDialog(
@@ -1097,41 +1084,54 @@ class MyHomePageState extends State<MyHomePage>
     );
   }
 
+  Future createPlaylist() async {
+    return await showDialog(
+        context: context,
+        builder: (context) {
+          var _controller = TextEditingController();
+          return SimpleDialog(
+            title: Text("Local Playlist"),
+            children: <Widget>[
+              TextField(
+                controller: _controller,
+                decoration: InputDecoration(labelText: "Playlist Name"),
+              ),
+              ButtonBar(
+                children: <Widget>[
+                  FlatButton(
+                    child: Text("Cancel"),
+                    onPressed: () {
+                      Navigator.pop(context, false);
+                    },
+                  ),
+                  RaisedButton(
+                    child: Text("Create"),
+                    onPressed: () {
+                      if (!db.objectStoreNames.contains('playlists')) {
+                        var ob = db.createObjectStore(
+                          'playlists',
+                          keyPath: 'title',
+                        );
+                      }
+                      var ob = db
+                          .transaction('playlists', 'readwrite')
+                          .objectStore('playlists');
+                      ob.add({'title': _controller.text});
+                      Navigator.pop(context, _controller.text);
+                    },
+                  )
+                ],
+              )
+            ],
+          );
+        });
+  }
+
   void showQueue(context) {
     showModalBottomSheet(
         context: context,
         builder: (context) {
-          return Column(children: <Widget>[
-            Text(
-              "Queue",
-              style: Theme.of(context).textTheme.title,
-            ),
-            ValueListenableBuilder(
-              valueListenable: currentIndex,
-              builder: (context, i, wid) {
-                return Expanded(
-                  child: ListView.builder(
-                    itemCount: queue.value.length,
-                    shrinkWrap: true,
-                    itemBuilder: (ctx, i) {
-                      return Card(
-                        child: ListTile(
-                          leading: i == currentIndex.value
-                              ? Icon(Icons.play_arrow)
-                              : Text((i - currentIndex.value).toString()),
-                          title: Text(queue.value[i]["title"]),
-                          onTap: () {
-                            currentIndex.value = i;
-                            playCurrent();
-                          },
-                        ),
-                      );
-                    },
-                  ),
-                );
-              },
-            )
-          ]);
+          return Queue();
         });
   }
 }
@@ -1287,154 +1287,5 @@ class _SuggestionList extends StatelessWidget {
 }
 
 void myBackgroundTask() {
-  var playercompleter = Completer();
-  print("Completer started");
-  var Q = List<MediaItem>();
-
-  var audioPlayer = AudioPlayer();
-
-  void pause() async{
-    AudioServiceBackground.setState(controls: [
-      mediaControlButtons["previous"],
-      mediaControlButtons["play"],
-      mediaControlButtons["next"]
-    ], basicState: BasicPlaybackState.paused,
-    position: (await audioPlayer.onAudioPositionChanged.first).inSeconds
-    );
-    audioPlayer.pause();
-  }
-
-  void play() {
-    AudioServiceBackground.setState(controls: [
-      mediaControlButtons["previous"],
-      mediaControlButtons["pause"],
-      mediaControlButtons["next"]
-    ], basicState: BasicPlaybackState.playing);
-    audioPlayer.play("").catchError((e)=>debugPrint(e));
-  }
-
-  audioPlayer.onAudioPositionChanged.listen((p) {
-    AudioServiceBackground.setState(
-      controls: [
-        mediaControlButtons["previous"],
-        mediaControlButtons["pause"],
-        mediaControlButtons["next"]
-      ],
-      basicState: BasicPlaybackState.playing,
-      position: p.inSeconds,
-    );
-  });
-
-  audioPlayer.onPlayerStateChanged.listen((state) {
-    if (state == AudioPlayerState.COMPLETED) {
-      AudioServiceBackground.setState(controls: [
-        mediaControlButtons["previous"],
-        mediaControlButtons["play"],
-        mediaControlButtons["next"]
-      ], basicState: BasicPlaybackState.stopped);
-    }
-  });
-
-
-  AudioServiceBackground.run(
-    onPlayFromMediaId: (url) async{
-
-      audioPlayer.stop();
-      audioPlayer.play(url);
-
-      AudioServiceBackground.setState(controls: [
-        mediaControlButtons["previous"],
-        mediaControlButtons["pause"],
-        mediaControlButtons["next"]
-      ], basicState: BasicPlaybackState.connecting);
-    },
-    onCustomAction: (action, data) async{
-      if (action == "setMetadata") {
-        audioPlayer.pause();
-        var meta = MediaItem(
-            id: data["videoId"],
-            album: data["author"],
-            title: data["title"],
-            artist: data["author"],
-            genre: data["genre"],
-            artUri: data["videoThumbnails"].last["url"],
-            displayTitle: data["title"],
-            displaySubtitle: data["author"]);
-        print("metadata $meta");
-        AudioServiceBackground.setMediaItem(meta);
-        AudioServiceBackground.setState(controls: [
-          mediaControlButtons["previous"],
-          mediaControlButtons["pause"],
-          mediaControlButtons["next"]
-        ], basicState: BasicPlaybackState.connecting,
-          position: 0
-        );
-      }else if(action=="Stop"){
-        print("STOPPING");
-        await audioPlayer.stop();
-        playercompleter.complete(null);
-
-      }
-    },
-    onStart: () async {
-      print("Started");
-      await playercompleter.future;
-      return;
-    },
-    onPlay: () {
-      AudioServiceBackground.setState(controls: [
-        mediaControlButtons["previous"],
-        mediaControlButtons["pause"],
-        mediaControlButtons["next"]
-      ], basicState: BasicPlaybackState.playing);
-      audioPlayer.play("").catchError((e)=>debugPrint(e));
-    },
-    onPause: () {
-      pause();
-    },
-    onStop: () {
-      audioPlayer.stop();
-      AudioServiceBackground.setState(controls: [], basicState: BasicPlaybackState.stopped);
-      playercompleter.complete();
-    },
-    onClick: (MediaButton button) {
-      if(button==MediaButton.media){
-        if(AudioServiceBackground.state.basicState==BasicPlaybackState.paused){
-          play();
-        }
-        else{
-          pause();
-        }
-      }else if(button==MediaButton.next){
-        AudioServiceBackground.setState(controls: [mediaControlButtons["previous"],mediaControlButtons["pause"],mediaControlButtons["next"]], basicState: BasicPlaybackState.skippingToNext);
-      }else if(button==MediaButton.previous){
-
-        AudioServiceBackground.setState(controls: [mediaControlButtons["previous"],mediaControlButtons["pause"],mediaControlButtons["previous"]], basicState: BasicPlaybackState.skippingToPrevious);
-      }
-    },
-    onSkipToNext: () {
-      AudioServiceBackground.setState(controls: [
-        mediaControlButtons["previous"],
-        mediaControlButtons["pause"],
-        mediaControlButtons["next"]
-      ], basicState: BasicPlaybackState.skippingToNext);
-    },
-    onSkipToPrevious: () {
-      AudioServiceBackground.setState(controls: [
-        mediaControlButtons["previous"],
-        mediaControlButtons["pause"],
-        mediaControlButtons["next"]
-      ], basicState: BasicPlaybackState.skippingToPrevious);
-    },
-    onAudioBecomingNoisy: () {
-      pause();
-    },
-    onAudioFocusLostTransient: () {
-      pause();
-    },
-    onSeekTo: (p) {
-      audioPlayer.seek(p.toDouble()).catchError((e) => debugPrint(e));
-    },
-    
-  );
+  AudioServiceBackground.run(() => BackgroundService());
 }

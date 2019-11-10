@@ -4,7 +4,7 @@ import 'dart:ui';
 
 import 'package:share/share.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:fluttery_seekbar/fluttery_seekbar.dart';
+import 'seekbars.dart';
 
 import 'trending.dart';
 import 'searchScreen.dart';

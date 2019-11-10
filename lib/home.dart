@@ -64,69 +64,74 @@ class _HomeState extends State<Home> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        Container(
-          padding: EdgeInsets.all(8),
-          child: Text(
-            "Top Tracks",
-            style: Theme.of(context).textTheme.headline
-              ..copyWith(fontWeight: FontWeight.w800),
-            textAlign: TextAlign.start,
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Container(
+            padding: EdgeInsets.all(8),
+            child: Text(
+              "Top Tracks",
+              style: Theme.of(context).textTheme.headline
+                ..copyWith(fontWeight: FontWeight.w800),
+              textAlign: TextAlign.start,
+            ),
           ),
-        ),
-        FutureBuilder<List<Map>>(
-          future: tracks,
-          builder: (context, ass) {
-            if (ass.connectionState == ConnectionState.done) {
-              var alltracks = ass.data;
-              return Container(
-                height: 180,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: alltracks.length,
-                  itemBuilder: (context, i) {
-                    return TrackTile(alltracks[i], widget.onpressed);
-                  },
-                ),
-              );
-            } else {
-              return Center(child: CircularProgressIndicator());
-            }
-          },
-          
-        ),
-        Container(
-          padding: EdgeInsets.all(8),
-          child: Text(
-            "Last Played",
-            style: Theme.of(context).textTheme.headline
-              ..copyWith(fontWeight: FontWeight.w800),
-            textAlign: TextAlign.start,
+          FutureBuilder<List<Map>>(
+            future: tracks,
+            builder: (context, ass) {
+              if (ass.connectionState == ConnectionState.done) {
+                var alltracks = ass.data;
+                return Container(
+                  height: 180,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: alltracks.length,
+                    itemBuilder: (context, i) {
+                      return TrackTile(alltracks[i], widget.onpressed);
+                    },
+                  ),
+                );
+              } else {
+                return Center(child: CircularProgressIndicator());
+              }
+            },
+            
           ),
-        ),
-        FutureBuilder<List<Map>>(
-          future: tracks,
-          builder: (context, ass) {
-            if (ass.connectionState == ConnectionState.done) {
-              var alltracks = history;
-              return Container(
-                height: 180,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: alltracks.length,
-                  itemBuilder: (context, i) {
-                    return TrackTile(alltracks[i], widget.onpressed);
-                  },
-                ),
-              );
-            } else {
-              return Center(child: CircularProgressIndicator());
-            }
-          },
-        )
-      ],
+          Container(
+            padding: EdgeInsets.all(8),
+            child: Text(
+              "Last Played",
+              style: Theme.of(context).textTheme.headline
+                ..copyWith(fontWeight: FontWeight.w800),
+              textAlign: TextAlign.start,
+            ),
+          ),
+          FutureBuilder<List<Map>>(
+            future: tracks,
+            builder: (context, ass) {
+              if (ass.connectionState == ConnectionState.done) {
+                var alltracks = history;
+                return Container(
+                  height: 180,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: alltracks.length,
+                    itemBuilder: (context, i) {
+                      return TrackTile(alltracks[i], widget.onpressed);
+                    },
+                  ),
+                );
+              } else {
+                return Center(child: CircularProgressIndicator());
+              }
+            },
+          ),
+          Container(
+            width: 120,
+          )
+        ],
+      ),
     );
   }
 }

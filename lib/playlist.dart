@@ -85,18 +85,24 @@ class PlaylistState extends State<Playlist> {
     });
   }
 
-  void setplaylists() async {
+  Future<List> setplaylists() async {
+    var pll = List();
     if (db == null) {
       db = await idbFactory.open('musicDB');
     }
     var playlistobstore =
         db.transaction('playlists', 'readonly').objectStore('playlists');
     var plstream = playlistobstore.openCursor(autoAdvance: true);
-    plstream.listen((pl) {
+
+    await for(var pl in plstream){
       if (!(pl.value as Map).containsKey('playlistId') && !(pl.value as Map).containsKey('mixId')) {
         playlists.add(pl.value);
+        pll.add(pl.value);
       }
-    }).onDone(() {});
+    }
+
+    return pll;
+
   }
 
   @override

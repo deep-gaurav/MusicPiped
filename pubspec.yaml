@@ -23,12 +23,13 @@ dependencies:
   idb_shim: ^1.7.6
   share: any
   path_provider: any
-  cached_network_image: any
+  cached_network_image: ^2.0.0-rc
   cupertino_icons: ^0.1.2
-  fluttery_seekbar: ^0.0.1
+  # fluttery_seekbar: ^0.0.1
+  fluttery_dart2: ^0.0.9
   audioplayer: ^0.5.2
   youtube_extractor: ^1.0.4
-  audio_service: ^0.3.1
+  audio_service: ^0.4.2
 
 dev_dependencies:
   flutter_test:

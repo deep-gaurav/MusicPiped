@@ -179,6 +179,18 @@ class TrackDetail extends StatelessWidget {
                         });
                   },
                 ),
+                RaisedButton.icon(
+                  icon: Icon(Icons.queue_play_next),
+                  label: Text("Add to Queue"),
+                  color: Theme.of(context).primaryColor,
+                  onPressed: (){
+                    mainKey.currentState.playNext(trackInfo);
+                    Navigator.of(context).pop();
+                    Scaffold.of(context).showSnackBar(
+                      SnackBar(content: Text("Added to Queue"),)
+                    );
+                  },
+                )
 
               ],
             ),
