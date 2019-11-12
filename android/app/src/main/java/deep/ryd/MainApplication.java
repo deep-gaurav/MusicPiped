@@ -1,6 +1,6 @@
 package deep.ryd;
 
-import com.ryanheise.audioservice.AudioServicePlugin;
+// import com.ryanheise.audioservice.AudioServicePlugin;
 
 import io.flutter.app.FlutterApplication;
 import io.flutter.plugin.common.PluginRegistry;
@@ -10,7 +10,7 @@ public class MainApplication extends FlutterApplication implements PluginRegistr
     @Override
     public void onCreate() {
         super.onCreate();
-        AudioServicePlugin.setPluginRegistrantCallback(this);
+        // AudioServicePlugin.setPluginRegistrantCallback(this);
     }
 
     @Override

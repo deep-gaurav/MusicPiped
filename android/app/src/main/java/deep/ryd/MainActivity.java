@@ -2,6 +2,7 @@ package deep.ryd;
 
 import android.content.Intent;
 import android.media.AudioManager;
+import android.media.audiofx.AudioEffect;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -9,7 +10,7 @@ import android.util.Log;
 import android.view.KeyEvent;
 import android.widget.Toast;
 
-import com.ryanheise.audioservice.AudioService;
+// import com.ryanheise.audioservice.AudioService;
 
 import org.schabi.newpipe.extractor.NewPipe;
 import org.schabi.newpipe.extractor.exceptions.ExtractionException;
@@ -61,6 +62,9 @@ public class MainActivity extends FlutterActivity  {
                 }else if(call.method.equals("isCached")){
                   boolean r=URLProxyFactory.getProxy(MainActivity.this).isCached(call.argument("url"));
                   result.success(r);
+                }else if(call.method.equals("openEqualizer")){
+                  int sessionId = call.argument("sessionid");
+                  openAudioFx(sessionId);
                 }
               }
             });
@@ -71,10 +75,24 @@ public class MainActivity extends FlutterActivity  {
 
     channel.invokeMethod("close",null);
 
-    android.os.Process.killProcess(android.os.Process.myPid());
+    // android.os.Process.killProcess(android.os.Process.myPid());
 //    AudioManager audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
 //    audioManager.dispatchMediaKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN,KeyEvent.KEYCODE_MEDIA_STOP));
     super.onDestroy();
+  }
+
+  public void openAudioFx(int sessionId) {
+    try{
+
+      Intent i = new Intent(AudioEffect.ACTION_DISPLAY_AUDIO_EFFECT_CONTROL_PANEL);
+      i.putExtra(AudioEffect.EXTRA_PACKAGE_NAME, getPackageName());
+      i.putExtra(AudioEffect.EXTRA_AUDIO_SESSION, sessionId);
+
+      startActivityForResult(i,0);
+    }
+    catch (Exception e){
+      e.printStackTrace();
+    }
   }
 }
 
@@ -175,4 +193,5 @@ class URLVerifier extends AsyncTask<String,String,String> {
       result.success(s);
     }
   }
+
 }

@@ -2,11 +2,16 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui';
-import 'package:audio_service/audio_service.dart';
-import 'package:audioplayer/audioplayer.dart';
+// import 'package:audio_service/audio_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_exoplayer/audio_notification.dart';
+import 'package:flutter_exoplayer/audioplayer.dart';
+
+import 'package:flutter_exoplayer/audioplayer.dart' as ap;
+
 import 'package:musicpiped_pro/queue.dart';
+import 'package:package_info/package_info.dart';
 import 'package:pedantic/pedantic.dart';
 import 'dart:io';
 
@@ -18,6 +23,7 @@ import 'dart:convert';
 import 'package:idb_shim/idb.dart';
 import 'package:idb_shim/idb_io.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'backgroundControl.dart';
 
@@ -38,6 +44,7 @@ const platform = const MethodChannel('deep.musicpiped/urlfix');
 
 Database musicDB;
 Database settingDB;
+PackageInfo packageInfo;
 
 var brightness = ValueNotifier("dark");
 var invidiosAPI = ValueNotifier("https://invidio.us/");
@@ -49,24 +56,24 @@ var queue = ValueNotifier<List>([]);
 
 GlobalKey<MyHomePageState> mainKey = GlobalKey();
 
-const mediaControlButtons = {
-  "play": MediaControl(
-      androidIcon: "drawable/ic_play_arrow_black_24dp",
-      action: MediaAction.play,
-      label: "Play"),
-  "pause": MediaControl(
-      androidIcon: "drawable/ic_pause_black_24dp",
-      action: MediaAction.pause,
-      label: "Pause"),
-  "next": MediaControl(
-      androidIcon: "drawable/ic_skip_next_black_24dp",
-      action: MediaAction.skipToNext,
-      label: "Next"),
-  "previous": MediaControl(
-      androidIcon: "drawable/ic_skip_previous_black_24dp",
-      action: MediaAction.skipToPrevious,
-      label: "Previous")
-};
+// const mediaControlButtons = {
+//   "play": MediaControl(
+//       androidIcon: "drawable/ic_play_arrow_black_24dp",
+//       action: MediaAction.play,
+//       label: "Play"),
+//   "pause": MediaControl(
+//       androidIcon: "drawable/ic_pause_black_24dp",
+//       action: MediaAction.pause,
+//       label: "Pause"),
+//   "next": MediaControl(
+//       androidIcon: "drawable/ic_skip_next_black_24dp",
+//       action: MediaAction.skipToNext,
+//       label: "Next"),
+//   "previous": MediaControl(
+//       androidIcon: "drawable/ic_skip_previous_black_24dp",
+//       action: MediaAction.skipToPrevious,
+//       label: "Previous")
+// };
 
 void main() async {
   runApp(MyApp());
@@ -74,6 +81,7 @@ void main() async {
 
 Future init() async {
   var appDir = await getApplicationDocumentsDirectory();
+  packageInfo = await PackageInfo.fromPlatform();
 
   var dbDir = appDir.path + Platform.pathSeparator + "musicDB";
 
@@ -104,6 +112,13 @@ Future init() async {
         keyPath: 'title',
       );
       ob2.add({'title': 'Favorites'});
+    }
+  });
+
+  platform.setMethodCallHandler((method) async {
+    if (method.method == "close") {
+      print("Removed from Recent EXITING");
+      exit(0);
     }
   });
 }
@@ -189,20 +204,26 @@ class MyHomePageState extends State<MyHomePage>
   dynamic howlerId = 0;
 
   static String InvidiosAPI = invidiosAPI.value + "api/v1/";
+  static int PreloadWindow = 25;
 
   var playerState = ValueNotifier(PlayerState.Stopped);
 
   var currentIndex = ValueNotifier(0);
 
+  AudioPlayer audioPlayer;
+
   var totalLength = ValueNotifier(0);
 
   String state;
 
-  Timer syncTimer;
-
   Database db;
 
+  int mediaSessionId = 0;
+
   String debugString;
+
+  String preloadTrackId;
+  Map preloadObject;
 
   var repeat = ValueNotifier(0);
   var shuffle = ValueNotifier(false);
@@ -233,20 +254,25 @@ class MyHomePageState extends State<MyHomePage>
     db = musicDB;
     _tabController = TabController(length: 3, vsync: this);
 
+    audioPlayer = AudioPlayer();
+
     _tabController.addListener(() {
       setState(() {});
     });
 
-    AudioService.connect(); // When UI becomes visible
-    AudioService.start(
-      // When user clicks button to start playback
-      backgroundTaskEntrypoint: myBackgroundTask,
-      androidNotificationChannelName: 'Music Player',
-      androidNotificationIcon: "mipmap/ic_launcher",
-    );
-    Timer.periodic(Duration(seconds: 2), (t) {
-      AudioService.customAction("tick");
-    });
+    // AudioService.connect(); // When UI becomes visible
+    // AudioService.start(
+    //   // When user clicks button to start playback
+    //   backgroundTaskEntrypoint: myBackgroundTask,
+    //   androidNotificationChannelName: 'Music Player',
+    //   androidNotificationIcon: "mipmap/ic_launcher",
+    //   resumeOnClick: false,
+    //   androidStopForegroundOnPause: true,
+    //   androidNotificationOngoing: false
+    // );
+    // Timer.periodic(Duration(seconds: 2), (t) {
+    //   AudioService.customAction("tick");
+    // });
 
     // queue.addListener((){
     //   for(var x in AudioService.queue){
@@ -259,58 +285,103 @@ class MyHomePageState extends State<MyHomePage>
     //     )).forEach((f)=>AudioService.addQueueItem(f));
     // });
 
-    AudioService.playbackStateStream.listen((state) {
-      if (ignorePositionUpdate.value) {
-        return;
-      }
-      positionNotifier.value = state.position;
-      switch (state.basicState) {
-        case BasicPlaybackState.stopped:
-          playerState.value = PlayerState.Stopped;
-          break;
-        case BasicPlaybackState.playing:
-          playerState.value = PlayerState.Playing;
-          break;
-        case BasicPlaybackState.paused:
-          playerState.value = PlayerState.Paused;
-          break;
-          break;
-        case BasicPlaybackState.none:
-          // TODO: Handle this case.
-          break;
-        case BasicPlaybackState.fastForwarding:
-          // TODO: Handle this case.
-          break;
-        case BasicPlaybackState.rewinding:
-          // TODO: Handle this case.
-          break;
-        case BasicPlaybackState.buffering:
-          playerState.value = PlayerState.Loading;
-          break;
-        case BasicPlaybackState.error:
-          playerState.value = PlayerState.Error;
-          break;
-        case BasicPlaybackState.connecting:
-          playerState.value = PlayerState.Loading;
-          break;
-        case BasicPlaybackState.skippingToPrevious:
-          previous();
-          break;
-        case BasicPlaybackState.skippingToNext:
-          next();
-          break;
-        case BasicPlaybackState.skippingToQueueItem:
-          // TODO: Handle this case.
-          break;
-      }
-    });
+    // AudioService.playbackStateStream.listen((state) {
+    //   if (ignorePositionUpdate.value) {
+    //     return;
+    //   }
+    //   positionNotifier.value = state.position;
+    //   switch (state.basicState) {
+    //     case BasicPlaybackState.stopped:
+    //       playerState.value = PlayerState.Stopped;
+    //       break;
+    //     case BasicPlaybackState.playing:
+    //       playerState.value = PlayerState.Playing;
+    //       break;
+    //     case BasicPlaybackState.paused:
+    //       playerState.value = PlayerState.Paused;
+    //       break;
+    //       break;
+    //     case BasicPlaybackState.none:
+    //       // TODO: Handle this case.
+    //       break;
+    //     case BasicPlaybackState.fastForwarding:
+    //       // TODO: Handle this case.
+    //       break;
+    //     case BasicPlaybackState.rewinding:
+    //       // TODO: Handle this case.
+    //       break;
+    //     case BasicPlaybackState.buffering:
+    //       playerState.value = PlayerState.Loading;
+    //       break;
+    //     case BasicPlaybackState.error:
+    //       playerState.value = PlayerState.Error;
+    //       break;
+    //     case BasicPlaybackState.connecting:
+    //       playerState.value = PlayerState.Loading;
+    //       break;
+    //     case BasicPlaybackState.skippingToPrevious:
+    //       previous();
+    //       break;
+    //     case BasicPlaybackState.skippingToNext:
+    //       next();
+    //       break;
+    //     case BasicPlaybackState.skippingToQueueItem:
+    //       // TODO: Handle this case.
+    //       break;
+    //   }
+    // });
     /*
     player.addEventListener('ended', (e) {
       playerState.value = PlayerState.Stopped;
     });
     */
 
-    // TODO add next and previous
+    audioPlayer.onDurationChanged.listen((Duration d) {
+      print('Max duration: $d');
+      totalLength.value = d.inSeconds;
+    });
+    audioPlayer.onAudioPositionChanged.listen((Duration p) {
+      print('Current position: $p');
+      positionNotifier.value = p.inSeconds;
+
+      if (totalLength.value - positionNotifier.value < PreloadWindow &&
+          currentIndex.value < queue.value.length - 1 &&
+          preloadTrackId != queue.value[currentIndex.value + 1]["videoId"]) {
+        preload();
+      }
+    });
+
+    audioPlayer.onAudioSessionIdChange.listen((session) {
+      mediaSessionId = session;
+    });
+
+    audioPlayer.onPlayerStateChanged.listen((state) {
+      if (state == ap.PlayerState.PLAYING) {
+        playerState.value = PlayerState.Playing;
+      } else if (state == ap.PlayerState.PAUSED) {
+        playerState.value = PlayerState.Paused;
+      } else if (state == ap.PlayerState.BUFFERING) {
+        playerState.value = PlayerState.Loading;
+      } else if (state == ap.PlayerState.COMPLETED) {
+        next();
+      }
+    });
+    audioPlayer.onPlayerCompletion.listen((complete) {
+      next();
+    });
+    audioPlayer.onNotificationActionCallback.listen((event) {
+      if (event == NotificationActionName.NEXT) {
+        next();
+      } else if (event == NotificationActionName.PREVIOUS) {
+        previous();
+      } else if (event == NotificationActionName.PAUSE) {
+        audioPlayer.pause();
+        playerState.value = PlayerState.Paused;
+      } else if (event == NotificationActionName.PLAY) {
+        audioPlayer.resume();
+        playerState.value = PlayerState.Playing;
+      }
+    });
 
     playerState.addListener(() {
       if (playerState.value == PlayerState.Stopped) {
@@ -404,8 +475,7 @@ class MyHomePageState extends State<MyHomePage>
     // TODO metadataupdate
   }
 
-  Future<void> loadCurrent() async {
-    Map s = queue.value[currentIndex.value];
+  Future<Map> load(Map s) async {
     bool cached = false;
     if (await checkCache(s)) {
       cached = true;
@@ -417,7 +487,11 @@ class MyHomePageState extends State<MyHomePage>
     }
     var url = "https://dummyurl.com?a=2&videoId=" + s["videoId"];
     if (!cached) {
-      url = await fixURLAccess(s);
+      try {
+        url = await fixURLAccess(s);
+      } catch (e) {
+        print("Doesnt have url");
+      }
     }
 //
 //    player.pause();
@@ -432,15 +506,60 @@ class MyHomePageState extends State<MyHomePage>
     }
     totalLength.value = s["lengthSeconds"];
 
-    AudioService.customAction("setMetadata", s);
+    // AudioService.customAction("setMetadata", s);
 
     print("getNewPipe URL for vid ${s['videoId']}");
     url += "&videoId=${s['videoId']}";
     url = await platform.invokeMethod("getURL", {"url": url});
 
-    print("Received Newpipe URL $url");
+    print("url received");
+    print(url);
+    // print("Received Newpipe URL $url");
 
-    AudioService.playFromMediaId(url);
+    // AudioService.playFromMediaId(url);
+    // MediaFile mediaFile = MediaFile(
+    //     title: s["title"],
+    //     type: "audio",
+    //     source: url,
+    //     desc: s["author"],
+    //     image: TrackTile.urlfromImage(s["videoThumbnails"], "medium"));
+
+    return {"image": image, "url": url};
+  }
+
+  Future<void> loadCurrent() async {
+    Map s = queue.value[currentIndex.value];
+
+    audioPlayer.stop();
+
+    var loadval;
+    if (s["videoId"] == preloadTrackId && preloadObject != null) {
+      print("using preload $preloadObject");
+      loadval = preloadObject;
+    } else {
+      print("Not Preloaded Loading");
+      loadval = await load(s);
+    }
+
+    if (queue.value[currentIndex.value]["videoId"] != s["videoId"] ||
+        playerState.value != PlayerState.Loading) {
+      return;
+    }
+    audioPlayer.play(loadval["url"],
+        respectAudioFocus: true,
+        playerMode: PlayerMode.FOREGROUND,
+        audioNotification: AudioNotification(
+            smallIconFileName: "@mipmap/ic_launcher",
+            largeIconUrl: loadval["image"],
+            title: s["title"],
+            subTitle: s["author"],
+            notificationDefaultActions: NotificationDefaultActions.ALL,
+            notificationActionCallbackMode:
+                NotificationActionCallbackMode.CUSTOM));
+
+    // await mediaPlayer.initialize();
+    // await mediaPlayer.setSource(mediaFile);
+    // mediaPlayer.play();
 
     s = Map.from(s);
     if (s.containsKey('timesPlayed')) {
@@ -457,7 +576,30 @@ class MyHomePageState extends State<MyHomePage>
     queue.value[currentIndex.value] = s;
   }
 
+  Future preload() async {
+    preloadTrackId = queue.value[currentIndex.value + 1]["videoId"];
+    preloadObject = null;
+
+    var val = await load(queue.value[currentIndex.value + 1]);
+    preloadObject = val;
+
+    var title = queue.value[currentIndex.value + 1]["title"];
+
+    var httpclient = HttpClient();
+    var req = await httpclient.getUrl(Uri.parse(val["url"]));
+    try {
+      var res = await req.close();
+      res.last.then((last) {
+        print("stream for vid $title ended");
+      }).catchError((e) => print(e));
+    } catch (e) {
+      print("Stream down Error $e");
+    }
+  }
+
   void playCurrent() {
+    audioPlayer.stop();
+    playerState.value = PlayerState.Loading;
     updateMetadata();
     loadCurrent().catchError((e) {
       loadCurrent();
@@ -530,6 +672,13 @@ class MyHomePageState extends State<MyHomePage>
     }
   }
   */
+
+  void exit() async {
+    // await mediaPlayer.pause();
+    audioPlayer.stop();
+    audioPlayer.release();
+    SystemNavigator.pop();
+  }
 
   void onEnd() {
     if (repeat.value == 2) {
@@ -730,8 +879,93 @@ class MyHomePageState extends State<MyHomePage>
                         onTap: () {
                           print("Open Equalizer");
                           // player.openFX();
+                          platform.invokeMethod(
+                              "openEqualizer", {"sessionid": mediaSessionId});
                         },
                       ),
+                      ListTile(
+                        title: Text("About"),
+                        onTap: () {
+                          showAboutDialog(
+                              context: context,
+                              applicationName: "MusicPiped",
+                              applicationIcon: Image.asset("logo.png"),
+                              applicationLegalese: "Licensed under GPL v3",
+                              applicationVersion: packageInfo.version,
+                              children: [
+                                Text(
+                                    "MusicPiped is an Material Designed inspired music player, using NewPipeExtractor and Invidio.us APIs"),
+                                Text("Thank You"),
+                                InkWell(
+                                  child: Container(
+                                    padding: EdgeInsets.all(8),
+                                    child: Text(
+                                        "https://github.com/deep-gaurav/MusicPiped"),
+                                  ),
+                                  onTap: () async {
+                                    var url =
+                                        "https://github.com/deep-gaurv/MusicPiped";
+                                    if (await canLaunch(url)) {
+                                      await launch(url);
+                                    } else {
+                                      throw 'Could not launch $url';
+                                    }
+                                  },
+                                ),
+                                RaisedButton.icon(
+                                  icon: Icon(Icons.star),
+                                  label: Text("Star on Github"),
+                                  onPressed: ()async{
+                                    var url =
+                                        "https://github.com/deep-gaurav/MusicPiped/stargazers";
+                                    if (await canLaunch(url)) {
+                                      await launch(url);
+                                    } else {
+                                      throw 'Could not launch $url';
+                                    }
+                                  },
+                                ),
+                                RaisedButton.icon(
+                                  icon: Icon(Icons.rate_review),
+                                  label: Text("Rate/Review on Play Store"),
+                                  onPressed: ()async{
+                                    var url =
+                                        "https://play.google.com/store/apps/details?id=deep.ryd.rydplayer&hl=en_US";
+                                    if (await canLaunch(url)) {
+                                      await launch(url);
+                                    } else {
+                                      throw 'Could not launch $url';
+                                    }
+                                  },
+                                ),
+                                RaisedButton.icon(
+                                  icon: Icon(Icons.redeem),
+                                  label: Text("Buy me a coffee"),
+                                  onPressed: ()async{
+                                    var url =
+                                        "https://www.buymeacoffee.com/deepgaurav";
+                                    if (await canLaunch(url)) {
+                                      await launch(url);
+                                    } else {
+                                      throw 'Could not launch $url';
+                                    }
+                                  },
+                                ),
+                              ]);
+                        },
+                      ),
+                      ListTile(
+                        title: Text("Show License"),
+                        onTap: (){
+                          showLicensePage(context: context,applicationName: "MusicPiped",applicationIcon: Image.asset("logo.png"),applicationLegalese: "Licensed under GPL v3",applicationVersion: packageInfo.version);
+                        },
+                      ),
+                      ListTile(
+                        title: Text("Exit"),
+                        onTap: () {
+                          exit();
+                        },
+                      )
                     ],
                   ),
                 ),
@@ -888,11 +1122,11 @@ class MyHomePageState extends State<MyHomePage>
                 playerState: playerState,
                 play: () {
                   playerState.value = PlayerState.Playing;
-                  AudioService.play();
+                  audioPlayer.resume();
                 },
                 pause: () {
                   playerState.value = PlayerState.Paused;
-                  AudioService.pause();
+                  audioPlayer.pause();
                 },
                 next: next,
                 previous: previous,
@@ -949,10 +1183,10 @@ class MyHomePageState extends State<MyHomePage>
                                   onPressed: () {
                                     if (playerState.value ==
                                         PlayerState.Playing) {
-                                      AudioService.pause();
+                                      audioPlayer.pause();
                                       playerState.value = PlayerState.Paused;
                                     } else {
-                                      AudioService.play();
+                                      audioPlayer.resume();
                                     }
                                   },
                                 );
@@ -976,13 +1210,21 @@ class MyHomePageState extends State<MyHomePage>
                       ValueListenableBuilder(
                         valueListenable: positionNotifier,
                         builder: (context, int position, child) {
-                          return Text(formatDuration(Duration(
-                                  milliseconds: (positionNotifier.value * 1000)
-                                      .toInt())) +
-                              "/" +
-                              formatDuration(Duration(
-                                  milliseconds:
-                                      (totalLength.value * 1000).toInt())));
+                          return Text(
+                            formatDuration(
+                                  Duration(
+                                    milliseconds:
+                                        (positionNotifier.value * 1000).toInt(),
+                                  ),
+                                ) +
+                                "/" +
+                                formatDuration(
+                                  Duration(
+                                    milliseconds:
+                                        (totalLength.value * 1000).toInt(),
+                                  ),
+                                ),
+                          );
                         },
                       ),
                     ],
@@ -1286,6 +1528,6 @@ class _SuggestionList extends StatelessWidget {
   }
 }
 
-void myBackgroundTask() {
-  AudioServiceBackground.run(() => BackgroundService());
-}
+// void myBackgroundTask() {
+//   AudioServiceBackground.run(() => BackgroundService());
+// }

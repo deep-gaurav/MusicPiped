@@ -46,12 +46,22 @@ class _HomeState extends State<Home> {
       }, onDone: () {
         alltracks.sort(
           (t1,t2){
+            if(t1["timesPlayed"]==null){
+              return 1;
+            }else if(t2["timesPlayed"]==null){
+              return -1;
+            }
             return (t2["timesPlayed"] as int).compareTo(t1["timesPlayed"]);
           }
         );
         history=List.from(alltracks);
         history.sort(
           (t1,t2){
+            if(t1["lastPlayed"]==null){
+              return 1;
+            }else if(t2["lastPlayed"]==null){
+              return -1;
+            }
             print(t1["lastPlayed"].toString()+" "+t2["lastPlayed"].toString());
             return (t2["lastPlayed"]).compareTo(t1["lastPlayed"]);
           }
