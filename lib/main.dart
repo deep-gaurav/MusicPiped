@@ -910,7 +910,7 @@ class MyHomePageState extends State<MyHomePage>
                                   ),
                                   onTap: () async {
                                     var url =
-                                        "https://github.com/deep-gaurv/MusicPiped";
+                                        "https://github.com/deep-gaurav/MusicPiped";
                                     if (await canLaunch(url)) {
                                       await launch(url);
                                     } else {
@@ -961,7 +961,7 @@ class MyHomePageState extends State<MyHomePage>
                         },
                       ),
                       ListTile(
-                        title: Text("Show License"),
+                        title: Text("View Licenses"),
                         onTap: () {
                           showLicensePage(
                               context: context,
