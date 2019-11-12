@@ -745,39 +745,36 @@ class MyHomePageState extends State<MyHomePage>
         title: Text(widget.title),
         actions: <Widget>[
           StatefulBuilder(builder: (ctx, setstate) {
-            return Theme(
-                data: ThemeData.light(),
-                child: IconButton(
-                icon: Icon(Icons.search),
-                onPressed: () async {
-                  Map searchR = await showSearch<Map>(
-                      context: context, delegate: _searchDelegate);
-                  String searchQ = searchR["query"];
-                  String type = searchR["type"];
-                  if (searchQ.isNotEmpty) {
-                    var result =
-                        await Navigator.of(context).push(MaterialPageRoute(
-                            builder: (context) => (SearchScreen(
-                                  searchQ,
-                                  type,
-                                  (q) {
-                                    queue.value = q;
-                                    currentIndex.value = 0;
-                                    playCurrent();
-                                  },
-                                  playNext,
-                                ))));
-                    if (result == null) {
-                      return;
-                    }
-                    print(result);
-                    queue.value = result["queue"];
-                    currentIndex.value = 0;
-                    playerState.value = PlayerState.Loading;
-                    playCurrent();
+            return IconButton(
+              icon: Icon(Icons.search),
+              onPressed: () async {
+                Map searchR = await showSearch<Map>(
+                    context: context, delegate: _searchDelegate);
+                String searchQ = searchR["query"];
+                String type = searchR["type"];
+                if (searchQ.isNotEmpty) {
+                  var result =
+                      await Navigator.of(context).push(MaterialPageRoute(
+                          builder: (context) => (SearchScreen(
+                                searchQ,
+                                type,
+                                (q) {
+                                  queue.value = q;
+                                  currentIndex.value = 0;
+                                  playCurrent();
+                                },
+                                playNext,
+                              ))));
+                  if (result == null) {
+                    return;
                   }
-                },
-              ),
+                  print(result);
+                  queue.value = result["queue"];
+                  currentIndex.value = 0;
+                  playerState.value = PlayerState.Loading;
+                  playCurrent();
+                }
+              },
             );
           }),
           IconButton(
@@ -891,7 +888,11 @@ class MyHomePageState extends State<MyHomePage>
                           showAboutDialog(
                               context: context,
                               applicationName: "MusicPiped",
-                              applicationIcon: SizedBox(child:Image.asset("logo.png"),width: 50,height: 50,),
+                              applicationIcon: SizedBox(
+                                child: Image.asset("logo.png"),
+                                width: 50,
+                                height: 50,
+                              ),
                               applicationLegalese: "Licensed under GPL v3",
                               applicationVersion: packageInfo.version,
                               children: [
@@ -902,9 +903,10 @@ class MyHomePageState extends State<MyHomePage>
                                   child: Container(
                                     padding: EdgeInsets.all(8),
                                     child: Text(
-                                        "https://github.com/deep-gaurav/MusicPiped",
-                                        style: TextStyle(fontWeight: FontWeight.bold),
-                                        ),
+                                      "https://github.com/deep-gaurav/MusicPiped",
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.bold),
+                                    ),
                                   ),
                                   onTap: () async {
                                     var url =
@@ -919,7 +921,7 @@ class MyHomePageState extends State<MyHomePage>
                                 RaisedButton.icon(
                                   icon: Icon(Icons.star),
                                   label: Text("Star on Github"),
-                                  onPressed: ()async{
+                                  onPressed: () async {
                                     var url =
                                         "https://github.com/deep-gaurav/MusicPiped/stargazers";
                                     if (await canLaunch(url)) {
@@ -932,7 +934,7 @@ class MyHomePageState extends State<MyHomePage>
                                 RaisedButton.icon(
                                   icon: Icon(Icons.rate_review),
                                   label: Text("Rate/Review on Play Store"),
-                                  onPressed: ()async{
+                                  onPressed: () async {
                                     var url =
                                         "https://play.google.com/store/apps/details?id=deep.ryd.rydplayer&hl=en_US";
                                     if (await canLaunch(url)) {
@@ -945,7 +947,7 @@ class MyHomePageState extends State<MyHomePage>
                                 RaisedButton.icon(
                                   icon: Icon(Icons.redeem),
                                   label: Text("Buy me a coffee"),
-                                  onPressed: ()async{
+                                  onPressed: () async {
                                     var url =
                                         "https://www.buymeacoffee.com/deepgaurav";
                                     if (await canLaunch(url)) {
@@ -960,8 +962,13 @@ class MyHomePageState extends State<MyHomePage>
                       ),
                       ListTile(
                         title: Text("Show License"),
-                        onTap: (){
-                          showLicensePage(context: context,applicationName: "MusicPiped",applicationIcon: Image.asset("logo.png"),applicationLegalese: "Licensed under GPL v3",applicationVersion: packageInfo.version);
+                        onTap: () {
+                          showLicensePage(
+                              context: context,
+                              applicationName: "MusicPiped",
+                              applicationIcon: Image.asset("logo.png"),
+                              applicationLegalese: "Licensed under GPL v3",
+                              applicationVersion: packageInfo.version);
                         },
                       ),
                       ListTile(
@@ -1389,6 +1396,21 @@ class YoutubeSuggestion extends SearchDelegate<Map> {
 
   String searchType = "all";
   var types = ["all", "video", "playlist"];
+
+  @override
+  ThemeData appBarTheme(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return theme.copyWith(
+        inputDecorationTheme: InputDecorationTheme(
+            hintStyle: TextStyle(color: theme.primaryTextTheme.title.color)),
+        primaryColor: theme.primaryColor,
+        primaryIconTheme: theme.primaryIconTheme,
+        primaryColorBrightness: theme.primaryColorBrightness,
+        primaryTextTheme: theme.primaryTextTheme,
+        textTheme: theme.textTheme.copyWith(
+            title: theme.textTheme.title
+                .copyWith(color: theme.primaryTextTheme.title.color)));
+  }
 
   @override
   List<Widget> buildActions(BuildContext context) {
