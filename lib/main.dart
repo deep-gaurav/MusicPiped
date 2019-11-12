@@ -745,36 +745,39 @@ class MyHomePageState extends State<MyHomePage>
         title: Text(widget.title),
         actions: <Widget>[
           StatefulBuilder(builder: (ctx, setstate) {
-            return IconButton(
-              icon: Icon(Icons.search),
-              onPressed: () async {
-                Map searchR = await showSearch<Map>(
-                    context: context, delegate: _searchDelegate);
-                String searchQ = searchR["query"];
-                String type = searchR["type"];
-                if (searchQ.isNotEmpty) {
-                  var result =
-                      await Navigator.of(context).push(MaterialPageRoute(
-                          builder: (context) => (SearchScreen(
-                                searchQ,
-                                type,
-                                (q) {
-                                  queue.value = q;
-                                  currentIndex.value = 0;
-                                  playCurrent();
-                                },
-                                playNext,
-                              ))));
-                  if (result == null) {
-                    return;
+            return Theme(
+                data: ThemeData.light(),
+                child: IconButton(
+                icon: Icon(Icons.search),
+                onPressed: () async {
+                  Map searchR = await showSearch<Map>(
+                      context: context, delegate: _searchDelegate);
+                  String searchQ = searchR["query"];
+                  String type = searchR["type"];
+                  if (searchQ.isNotEmpty) {
+                    var result =
+                        await Navigator.of(context).push(MaterialPageRoute(
+                            builder: (context) => (SearchScreen(
+                                  searchQ,
+                                  type,
+                                  (q) {
+                                    queue.value = q;
+                                    currentIndex.value = 0;
+                                    playCurrent();
+                                  },
+                                  playNext,
+                                ))));
+                    if (result == null) {
+                      return;
+                    }
+                    print(result);
+                    queue.value = result["queue"];
+                    currentIndex.value = 0;
+                    playerState.value = PlayerState.Loading;
+                    playCurrent();
                   }
-                  print(result);
-                  queue.value = result["queue"];
-                  currentIndex.value = 0;
-                  playerState.value = PlayerState.Loading;
-                  playCurrent();
-                }
-              },
+                },
+              ),
             );
           }),
           IconButton(
@@ -784,8 +787,7 @@ class MyHomePageState extends State<MyHomePage>
                 context: context,
                 builder: (context) => Container(
                   color: Theme.of(context).backgroundColor,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
+                  child: ListView(
                     children: <Widget>[
                       Padding(
                         padding: EdgeInsets.all(8),
@@ -889,7 +891,7 @@ class MyHomePageState extends State<MyHomePage>
                           showAboutDialog(
                               context: context,
                               applicationName: "MusicPiped",
-                              applicationIcon: Image.asset("logo.png"),
+                              applicationIcon: SizedBox(child:Image.asset("logo.png"),width: 50,height: 50,),
                               applicationLegalese: "Licensed under GPL v3",
                               applicationVersion: packageInfo.version,
                               children: [
@@ -900,7 +902,9 @@ class MyHomePageState extends State<MyHomePage>
                                   child: Container(
                                     padding: EdgeInsets.all(8),
                                     child: Text(
-                                        "https://github.com/deep-gaurav/MusicPiped"),
+                                        "https://github.com/deep-gaurav/MusicPiped",
+                                        style: TextStyle(fontWeight: FontWeight.bold),
+                                        ),
                                   ),
                                   onTap: () async {
                                     var url =
