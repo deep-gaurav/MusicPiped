@@ -36,6 +36,8 @@ class PlaylistState extends State<Playlist> {
 
   List<Map> playlists = List();
 
+  bool playListLoaded = false;
+
   @override
   void initState() {
     super.initState();
@@ -74,7 +76,8 @@ class PlaylistState extends State<Playlist> {
         for (Map s in tmptracks) {
           if (widget.offline) {
             // TODO FIX THIS IS CACHED WAS HERE
-            if (!await platform.invokeMethod("isCached",{"url":"http://dummu.com/?videoId=${s['videoId']}"})) {
+            if (!await platform.invokeMethod("isCached",
+                {"url": "http://dummu.com/?videoId=${s['videoId']}"})) {
               alltracks.remove(s);
             }
           }
@@ -94,15 +97,15 @@ class PlaylistState extends State<Playlist> {
         db.transaction('playlists', 'readonly').objectStore('playlists');
     var plstream = playlistobstore.openCursor(autoAdvance: true);
 
-    await for(var pl in plstream){
-      if (!(pl.value as Map).containsKey('playlistId') && !(pl.value as Map).containsKey('mixId')) {
+    await for (var pl in plstream) {
+      if (!(pl.value as Map).containsKey('playlistId') &&
+          !(pl.value as Map).containsKey('mixId')) {
         playlists.add(pl.value);
         pll.add(pl.value);
       }
     }
 
     return pll;
-
   }
 
   @override
@@ -117,6 +120,7 @@ class PlaylistState extends State<Playlist> {
           if (ass.connectionState == ConnectionState.done) {
             List alltracks = ass.data;
             trackscomplete = alltracks;
+            playListLoaded = true;
             return ListView.builder(
               itemCount: alltracks.length,
               itemBuilder: (context, i) {
@@ -228,7 +232,6 @@ class PlaylistState extends State<Playlist> {
                             try {
                               Share.share("https://www.youtube.com/watch?v=");
                             } catch (e) {
-                              
                               Scaffold.of(context).showSnackBar(SnackBar(
                                 content: Text("Not supported by browser"),
                               ));
@@ -277,8 +280,10 @@ class PlaylistState extends State<Playlist> {
       floatingActionButton: FloatingActionButton(
         child: Icon(Icons.play_arrow),
         onPressed: () async {
-          widget.play(trackscomplete as List<Map>);
-          Navigator.pop(context);
+          if (playListLoaded) {
+            widget.play(trackscomplete as List<Map>);
+            Navigator.pop(context);
+          }
         },
       ),
     );
