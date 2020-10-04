@@ -47,7 +47,7 @@ Database settingDB;
 PackageInfo packageInfo;
 
 var brightness = ValueNotifier("dark");
-var invidiosAPI = ValueNotifier("https://invidio.us/");
+var invidiosAPI = ValueNotifier("https://invidious.snopyta.org/");
 var quality = ValueNotifier("best");
 
 var ignorePositionUpdate = ValueNotifier(false);
@@ -897,7 +897,7 @@ class MyHomePageState extends State<MyHomePage>
                               applicationVersion: packageInfo.version,
                               children: [
                                 Text(
-                                    "MusicPiped is an Material Designed inspired music player, using NewPipeExtractor and Invidio.us APIs"),
+                                    "MusicPiped is an Material Designed inspired music player, using NewPipeExtractor and Invidious APIs"),
                                 Text("Thank You"),
                                 InkWell(
                                   child: Container(
