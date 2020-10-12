@@ -47,7 +47,7 @@ Database settingDB;
 PackageInfo packageInfo;
 
 var brightness = ValueNotifier("dark");
-var invidiosAPI = ValueNotifier("https://invidious.snopyta.org/");
+var invidiosAPI = ValueNotifier("https://invidious.xyz/");
 var quality = ValueNotifier("best");
 
 var ignorePositionUpdate = ValueNotifier(false);
@@ -135,10 +135,10 @@ Future<Database> initSettings() async {
   } else {
     brightness.value = await ob.getObject('brightness');
   }
-  if ((await ob.getObject('invidiousApi')) == null) {
-    ob.put(invidiosAPI.value, 'invidiousApi');
+  if ((await ob.getObject('invidiosAPI')) == null) {
+    ob.put(invidiosAPI.value, 'invidiosAPI');
   } else {
-    invidiosAPI.value = await ob.getObject("invidiousApi");
+    invidiosAPI.value = await ob.getObject("invidiosAPI");
   }
   if ((await ob.getObject('quality')) == null) {
     ob.put(quality.value, 'quality');
@@ -897,7 +897,7 @@ class MyHomePageState extends State<MyHomePage>
                               applicationVersion: packageInfo.version,
                               children: [
                                 Text(
-                                    "MusicPiped is an Material Designed inspired music player, using NewPipeExtractor and Invidious APIs"),
+                                    "MusicPiped is an Material Designed inspired music player, using NewPipeExtractor and Invidio.us APIs"),
                                 Text("Thank You"),
                                 InkWell(
                                   child: Container(

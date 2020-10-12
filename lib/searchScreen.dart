@@ -417,9 +417,8 @@ class SearchScreenState extends State<SearchScreen> {
   }
 
   Future<dynamic> searchVid(searchquery) async {
-    String invidiosApi = "https://invidious.snopyta.org/";
     String apiurl =
-        invidiosApi + "api/v1/search?type=" + _type + "&q=" + searchquery;
+        main.MyHomePageState.InvidiosAPI + "search?type=" + _type + "&q=" + searchquery;
     print(apiurl);
 
     try {
@@ -453,8 +452,7 @@ class SearchScreenState extends State<SearchScreen> {
   }
 
   Future<Map> fetchVid(id) async {
-    String invidiosApi = "https://invidious.snopyta.org/";
-    String apiurl = invidiosApi + "api/v1/videos/";
+    String apiurl = main.MyHomePageState.InvidiosAPI + "videos/";
     String videoId = id;
     final response = await http.get(apiurl + videoId);
     print("received");
