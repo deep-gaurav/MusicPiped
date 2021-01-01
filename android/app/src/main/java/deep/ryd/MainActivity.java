@@ -17,7 +17,7 @@ import org.schabi.newpipe.extractor.exceptions.ExtractionException;
 import org.schabi.newpipe.extractor.services.youtube.YoutubeService;
 import org.schabi.newpipe.extractor.stream.AudioStream;
 import org.schabi.newpipe.extractor.stream.StreamExtractor;
-import org.schabi.newpipe.extractor.utils.Localization;
+import org.schabi.newpipe.extractor.localization.Localization;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -41,8 +41,7 @@ public class MainActivity extends FlutterActivity  {
     super.onCreate(savedInstanceState);
     GeneratedPluginRegistrant.registerWith(this);
 
-    NewpipeDownloader.init(null);
-    NewPipe.init(NewpipeDownloader.getInstance(),new Localization("GB","en"));
+    NewPipe.init(NewpipeDownloader.init(null), new Localization("GB","en"));
     channel=new MethodChannel(getFlutterView(), ID);
     channel.setMethodCallHandler(
             new MethodChannel.MethodCallHandler() {
