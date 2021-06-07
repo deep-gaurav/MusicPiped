@@ -218,11 +218,15 @@ public class NewpipeDownloader extends org.schabi.newpipe.extractor.downloader.D
         return new Response(200, body.string(), response.headers().toMultimap(), null, null);
     }
 
+    /*
     @Override
     public Response get(String siteUrl) throws IOException, ReCaptchaException {
-        return get(siteUrl, Request.newBuilder().build());
+        final Request.Builder requestBuilder = new Request.Builder();
+        requestBuilder.get(siteUrl);
+        final Request newReq = requestBuilder.build();
+        return get(siteUrl, newReq);
     }
-
+*/
     @Override
     public Response execute(@javax.annotation.Nonnull Request request) throws IOException, ReCaptchaException {
         return get(request.url(), request);

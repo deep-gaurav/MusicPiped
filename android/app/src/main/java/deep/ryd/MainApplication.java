@@ -5,7 +5,7 @@ package deep.ryd;
 import io.flutter.app.FlutterApplication;
 import io.flutter.plugin.common.PluginRegistry;
 import io.flutter.plugins.GeneratedPluginRegistrant;
-
+import org.schabi.newpipe.extractor.Info;
 public class MainApplication extends FlutterApplication implements PluginRegistry.PluginRegistrantCallback {
     @Override
     public void onCreate() {
