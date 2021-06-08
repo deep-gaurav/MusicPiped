@@ -47,7 +47,7 @@ Database settingDB;
 PackageInfo packageInfo;
 
 var brightness = ValueNotifier("dark");
-var invidiosAPI = ValueNotifier("https://invidious.xyz/");
+var invidiosAPI = ValueNotifier("https://invidious.13ad.de/");
 var quality = ValueNotifier("best");
 
 var ignorePositionUpdate = ValueNotifier(false);
@@ -100,6 +100,7 @@ Future init() async {
   });
 
   settingDB = await initSettings();
+
   musicDB = await idbFactory.open("musicDB", version: 6, onUpgradeNeeded: (e) {
     Database db = e.database;
     if (e.oldVersion < 1) {
@@ -204,6 +205,7 @@ class MyHomePageState extends State<MyHomePage>
   dynamic howlerId = 0;
 
   static String InvidiosAPI = invidiosAPI.value + "api/v1/";
+  //static String InvidiosAPI = "https://invidious.snopyta.org/api/v1/";
   static int PreloadWindow = 25;
 
   var playerState = ValueNotifier(PlayerState.Stopped);

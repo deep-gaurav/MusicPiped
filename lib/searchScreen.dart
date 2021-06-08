@@ -435,7 +435,8 @@ class SearchScreenState extends State<SearchScreen> {
       } else {
         print("Fetch ERROR");
         // If that response was not OK, throw an error.
-        throw Exception('Failed to load post');
+        String errMsg = "Request: " + apiurl + "\nResponse: " + response.statusCode.toString() + ". Failed to load post!";
+        throw Exception(errMsg);
       }
     } catch (e) {
       return Future.error(Exception(e.toString()));
