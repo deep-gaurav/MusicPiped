@@ -122,6 +122,9 @@ Future init() async {
       exit(0);
     }
   });
+
+  // SEE MyHttpOverrides for comment!
+  HttpOverrides.global = MyHttpOverrides();
 }
 
 Future<Database> initSettings() async {
@@ -159,6 +162,22 @@ dynamic putSetting(String key, value) async {
   return await ob.put(value, key);
 }
 
+/**
+ * On older devices running android 6 the IdentTrust DST Root CA X3 certificate expired.
+ * Flutter does check when connecting against system certificates installed on android.
+ * Most old phones (including my BlackBerry PRIV - STV100-4) does not get anymore updates
+ * Accepting bad certificates is the only way to make it work again!
+ *
+ * Solution from Stackoverflow as suggested by Ma'moon Al-Akash
+ * https://stackoverflow.com/a/61312927/1248900
+ */
+class MyHttpOverrides extends HttpOverrides{
+  @override
+  HttpClient createHttpClient(SecurityContext context){
+    return super.createHttpClient(context)
+      ..badCertificateCallback = (X509Certificate cert, String host, int port)=> true;
+  }
+}
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
