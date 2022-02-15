@@ -175,7 +175,12 @@ class MyHttpOverrides extends HttpOverrides{
   @override
   HttpClient createHttpClient(SecurityContext context){
     return super.createHttpClient(context)
-      ..badCertificateCallback = (X509Certificate cert, String host, int port)=> true;
+      ..badCertificateCallback = (X509Certificate cert, String host, int port) {
+        if (cert.endValidity.isBefore(DateTime.now())) {
+          print("Certificate expired and thus ignored.");
+          return true;
+        } return false;
+      };
   }
 }
 class MyApp extends StatelessWidget {
