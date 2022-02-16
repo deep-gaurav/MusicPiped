@@ -224,6 +224,7 @@ enum PlayerState { Loading, Playing, Paused, Stopped, Error }
 
 class MyHomePageState extends State<MyHomePage>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
+  DateTime backbuttonpressedTime;
   TextEditingController textEditingController = TextEditingController();
 
   dynamic howlerId = 0;
@@ -734,6 +735,29 @@ class MyHomePageState extends State<MyHomePage>
     }
   }
 
+  Future<bool> confirmExit(BuildContext context) async {
+    DateTime currentTime = DateTime.now();
+
+    //bifbackbuttonhasnotbeenpreedOrToasthasbeenclosed
+    //Statement 1 Or statement2
+    bool backButton = backbuttonpressedTime == null ||
+        currentTime.difference(backbuttonpressedTime) > Duration(seconds: 1);
+
+    if (backButton) {
+      backbuttonpressedTime = currentTime;
+      final scaffold = ScaffoldMessenger.of(context);
+      scaffold.showSnackBar(
+        SnackBar(
+            content: Text('Double tap to exit', textAlign: TextAlign.center),
+            duration: Duration(seconds: 1)
+        ),
+      );
+      return false;
+    }
+    exit();
+    return true;
+  }
+
   @override
   Widget build(BuildContext context) {
     var titleBar = ValueListenableBuilder(
@@ -1028,45 +1052,48 @@ class MyHomePageState extends State<MyHomePage>
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: <Widget>[
-          Home((trackdata) {
-            Navigator.of(context).push(MaterialPageRoute(
-                builder: (context) => (TrackDetail(trackdata, (q) {
-                      queue.value = q;
-                      currentIndex.value = 0;
-                      playerState.value = PlayerState.Loading;
-                      playCurrent();
-                    }))));
-          }),
-          Artists((q) {
-            queue.value = q;
-            currentIndex.value = 0;
-            playCurrent();
-          }, (track) {
-            if (queue.value != null && queue.value.isNotEmpty) {
-              queue.value.insert(currentIndex.value + 1, track);
-            } else {
-              queue.value = [track];
+      body: WillPopScope(
+        onWillPop: () => confirmExit(context),
+        child: TabBarView(
+          controller: _tabController,
+          children: <Widget>[
+            Home((trackdata) {
+              Navigator.of(context).push(MaterialPageRoute(
+                  builder: (context) => (TrackDetail(trackdata, (q) {
+                        queue.value = q;
+                        currentIndex.value = 0;
+                        playerState.value = PlayerState.Loading;
+                        playCurrent();
+                      }))));
+            }),
+            Artists((q) {
+              queue.value = q;
               currentIndex.value = 0;
               playCurrent();
-            }
-          }),
-          Library((q) {
-            queue.value = q;
-            currentIndex.value = 0;
-            playCurrent();
-          }, (track) {
-            if (queue.value != null && queue.value.isNotEmpty) {
-              queue.value.insert(currentIndex.value + 1, track);
-            } else {
-              queue.value = [track];
+            }, (track) {
+              if (queue.value != null && queue.value.isNotEmpty) {
+                queue.value.insert(currentIndex.value + 1, track);
+              } else {
+                queue.value = [track];
+                currentIndex.value = 0;
+                playCurrent();
+              }
+            }),
+            Library((q) {
+              queue.value = q;
               currentIndex.value = 0;
               playCurrent();
-            }
-          }, db),
-        ],
+            }, (track) {
+              if (queue.value != null && queue.value.isNotEmpty) {
+                queue.value.insert(currentIndex.value + 1, track);
+              } else {
+                queue.value = [track];
+                currentIndex.value = 0;
+                playCurrent();
+              }
+            }, db),
+          ],
+        ),
       ),
       floatingActionButton: _tabController.index == 2
           ? FloatingActionButton(
