@@ -122,6 +122,9 @@ Future init() async {
       exit(0);
     }
   });
+
+  // SEE MyHttpOverrides for comment!
+  HttpOverrides.global = MyHttpOverrides();
 }
 
 Future<Database> initSettings() async {
@@ -159,6 +162,27 @@ dynamic putSetting(String key, value) async {
   return await ob.put(value, key);
 }
 
+/**
+ * On older devices running android 6 the IdentTrust DST Root CA X3 certificate expired.
+ * Flutter does check when connecting against system certificates installed on android.
+ * Most old phones (including my BlackBerry PRIV - STV100-4) does not get anymore updates
+ * Accepting bad certificates is the only way to make it work again!
+ *
+ * Solution from Stackoverflow as suggested by Ma'moon Al-Akash
+ * https://stackoverflow.com/a/61312927/1248900
+ */
+class MyHttpOverrides extends HttpOverrides{
+  @override
+  HttpClient createHttpClient(SecurityContext context){
+    return super.createHttpClient(context)
+      ..badCertificateCallback = (X509Certificate cert, String host, int port) {
+        if (cert.endValidity.isBefore(DateTime.now())) {
+          print("Certificate expired and thus ignored.");
+          return true;
+        } return false;
+      };
+  }
+}
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -200,6 +224,7 @@ enum PlayerState { Loading, Playing, Paused, Stopped, Error }
 
 class MyHomePageState extends State<MyHomePage>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
+  DateTime backbuttonpressedTime;
   TextEditingController textEditingController = TextEditingController();
 
   dynamic howlerId = 0;
@@ -710,6 +735,29 @@ class MyHomePageState extends State<MyHomePage>
     }
   }
 
+  Future<bool> confirmExit(BuildContext context) async {
+    DateTime currentTime = DateTime.now();
+
+    //bifbackbuttonhasnotbeenpreedOrToasthasbeenclosed
+    //Statement 1 Or statement2
+    bool backButton = backbuttonpressedTime == null ||
+        currentTime.difference(backbuttonpressedTime) > Duration(seconds: 1);
+
+    if (backButton) {
+      backbuttonpressedTime = currentTime;
+      final scaffold = ScaffoldMessenger.of(context);
+      scaffold.showSnackBar(
+        SnackBar(
+            content: Text('Double tap to exit', textAlign: TextAlign.center),
+            duration: Duration(seconds: 1)
+        ),
+      );
+      return false;
+    }
+    exit();
+    return true;
+  }
+
   @override
   Widget build(BuildContext context) {
     var titleBar = ValueListenableBuilder(
@@ -1004,45 +1052,48 @@ class MyHomePageState extends State<MyHomePage>
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: <Widget>[
-          Home((trackdata) {
-            Navigator.of(context).push(MaterialPageRoute(
-                builder: (context) => (TrackDetail(trackdata, (q) {
-                      queue.value = q;
-                      currentIndex.value = 0;
-                      playerState.value = PlayerState.Loading;
-                      playCurrent();
-                    }))));
-          }),
-          Artists((q) {
-            queue.value = q;
-            currentIndex.value = 0;
-            playCurrent();
-          }, (track) {
-            if (queue.value != null && queue.value.isNotEmpty) {
-              queue.value.insert(currentIndex.value + 1, track);
-            } else {
-              queue.value = [track];
+      body: WillPopScope(
+        onWillPop: () => confirmExit(context),
+        child: TabBarView(
+          controller: _tabController,
+          children: <Widget>[
+            Home((trackdata) {
+              Navigator.of(context).push(MaterialPageRoute(
+                  builder: (context) => (TrackDetail(trackdata, (q) {
+                        queue.value = q;
+                        currentIndex.value = 0;
+                        playerState.value = PlayerState.Loading;
+                        playCurrent();
+                      }))));
+            }),
+            Artists((q) {
+              queue.value = q;
               currentIndex.value = 0;
               playCurrent();
-            }
-          }),
-          Library((q) {
-            queue.value = q;
-            currentIndex.value = 0;
-            playCurrent();
-          }, (track) {
-            if (queue.value != null && queue.value.isNotEmpty) {
-              queue.value.insert(currentIndex.value + 1, track);
-            } else {
-              queue.value = [track];
+            }, (track) {
+              if (queue.value != null && queue.value.isNotEmpty) {
+                queue.value.insert(currentIndex.value + 1, track);
+              } else {
+                queue.value = [track];
+                currentIndex.value = 0;
+                playCurrent();
+              }
+            }),
+            Library((q) {
+              queue.value = q;
               currentIndex.value = 0;
               playCurrent();
-            }
-          }, db),
-        ],
+            }, (track) {
+              if (queue.value != null && queue.value.isNotEmpty) {
+                queue.value.insert(currentIndex.value + 1, track);
+              } else {
+                queue.value = [track];
+                currentIndex.value = 0;
+                playCurrent();
+              }
+            }, db),
+          ],
+        ),
       ),
       floatingActionButton: _tabController.index == 2
           ? FloatingActionButton(
