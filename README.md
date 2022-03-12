@@ -21,7 +21,7 @@
 
 ## Description
 
-MusicPiped is a materialistic designed music player. It tries to be a music player that instead of playing music from local files streams them from YouTube. It is similar to YouTube Music in sense that it searches and plays music from YouTube. But different in way that it does not lists any track by itself and user needs to either add their track from YouTube by searching or importing playlist (similar to adding music in a music player). It also does not uses any Google APIs thus is independent of Google services and can work without them, allowing background playback with zero ads.
+MusicPiped is a materialistic designed music player. It tries to be a music player that instead of playing music from local files streams them from YouTube. It is similar to YouTube Music in sense that it searches and plays music from YouTube. But different in way that it does not lists any track by itself and user needs to either add their track from YouTube by searching or importing playlist (similar to adding music in a music player). It also does not uses any Google APIs thus is independent of Google services and can work without them, allowing background playback without ads.
 
 Each music played only downloads/streams the audio from YouTube thus saves the large data usage of video, also every music played is cached thus playing again does not require internet connection (except if you cleared app cache manually).
 
@@ -52,7 +52,7 @@ Donation of any kind is appreciated :)
 
 <table>
   <tr>
-    <td><a href="https://www.buymeacoffee.com/deepgaurav"><img src="https://www.buymeacoffee.com/uploads/slider_images/2018/01/9df5992da93f863513340d67b5dd1539.gif" alt="Buymeacoffee" width="80px" ></a></td>
+    <td><a href="https://www.buymeacoffee.com/deepgaurav"><img src="assets/bmc-logo.png" alt="Buymeacoffee" width="80px" ></a></td>
     <td><a href="https://www.buymeacoffee.com/deepgaurav"><img src="http://api.qrserver.com/v1/create-qr-code/?data=https://buymeacoffee.com/deepgaurav&size=256x256" alt="Buy me a cofee" width="100px"></a></td>
     <td><a href="https://www.buymeacoffee.com/deepgaurav">Donate with buymeacoffee</a></td>
   </tr>
