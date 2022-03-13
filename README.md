@@ -53,7 +53,7 @@ Donation of any kind is appreciated :)
 <table>
   <tr>
     <td><a href="https://www.buymeacoffee.com/deepgaurav"><img src="assets/bmc-logo.png" alt="Buymeacoffee" width="80px" ></a></td>
-    <td><a href="https://www.buymeacoffee.com/deepgaurav"><img src="http://api.qrserver.com/v1/create-qr-code/?data=https://buymeacoffee.com/deepgaurav&size=256x256" alt="Buy me a cofee" width="100px"></a></td>
+    <td><a href="https://www.buymeacoffee.com/deepgaurav"><img src="http://api.qrserver.com/v1/create-qr-code/?data=https://buymeacoffee.com/deepgaurav&size=256x256" alt="Buy me a coffee" width="100px"></a></td>
     <td><a href="https://www.buymeacoffee.com/deepgaurav">Donate with buymeacoffee</a></td>
   </tr>
   <tr>
@@ -68,7 +68,7 @@ Donation of any kind is appreciated :)
 MusicPiped is commited to keep user data secure so it does not collect any form of data from user and does not require any device permissions except for INTERNET. Please read the [Privacy Policy document](Privacy.md).
 
 ## License
-[![GNU GPLv3 Image](https://www.gnu.org/graphics/gplv3-127x51.png)](http://www.gnu.org/licenses/gpl-3.0.en.html)  
+[![GNU GPLv3 Image](https://www.gnu.org/graphics/gplv3-127x51.png)](http://www.gnu.org/licenses/gpl-3.0.html)  
 
 MusicPiped is Free Software: You can use, study share and improve it at your
 will. Specifically you can redistribute and/or modify it under the terms of the
