@@ -1,4 +1,4 @@
-<p align="center"><img src="android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png" width="150"></a></p> 
+<p align="center"><a href="https://github.com/deep-gaurav"><img src="android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png" width="150"></a></p> 
 <h2 align="center"><b>MusicPiped</b></h2>
 <h4 align="center">A libre lightweight streaming MusicPlayer for Android.</h4>
 <p align="center"><a href="https://f-droid.org/en/packages/deep.ryd.rydplayer/"><img height=70 src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png" alt="Get it on F-Droid">
