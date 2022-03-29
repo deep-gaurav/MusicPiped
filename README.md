@@ -1,11 +1,11 @@
-<p align="center"><a href="https://deep-gaurav,github.io"><img src="android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png" width="150"></a></p> 
+<p align="center"><a href="https://github.com/deep-gaurav"><img src="android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png" width="150"></a></p> 
 <h2 align="center"><b>MusicPiped</b></h2>
 <h4 align="center">A libre lightweight streaming MusicPlayer for Android.</h4>
 <p align="center"><a href="https://f-droid.org/en/packages/deep.ryd.rydplayer/"><img height=70 src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png" alt="Get it on F-Droid">
 
 <p align="center">
-<a href="https://github.com/deep-gaurav/MusicPiped" alt="GitHub release"><img src="https://img.shields.io/github/release/deep-gaurav/MusicPiped.svg"></a>
-<a href="https://www.gnu.org/licenses/gpl-3.0" alt="License: GPLv3"><img src="https://img.shields.io/badge/License-GPL%20v3-blue.svg"></a>
+<a href="https://github.com/deep-gaurav/MusicPiped/releases" alt="GitHub release"><img src="https://img.shields.io/github/release/deep-gaurav/MusicPiped.svg"></a>
+<a href="https://www.gnu.org/licenses/gpl-3.0.html" alt="License: GPLv3"><img src="https://img.shields.io/badge/License-GPL%20v3-blue.svg"></a>
 </p>
 <hr>
 
@@ -44,7 +44,7 @@ Each music played only downloads/streams the audio from YouTube thus saves the l
 
 * Import/Export Playlist to file
 * Region trending/popular music tab
-* suggest more...
+* Suggest more features [here](https://github.com/deep-gaurav/MusicPiped/issues/new)...
 
 
 ## Donate
@@ -52,7 +52,7 @@ Donation of any kind is appreciated :)
 
 <table>
   <tr>
-    <td><a href="https://www.buymeacoffee.com/deepgaurav"><img src="https://www.buymeacoffee.com/assets/img/guidelines/logo-mark-1.svg" alt="Buymeacoffee" width="80px"></a></td>
+    <td><a href="https://www.buymeacoffee.com/deepgaurav"><img src="assets/bmc-logo.png" alt="Buymeacoffee" width="80px"></a></td>
     <td><a href="https://www.buymeacoffee.com/deepgaurav"><img src="https://api.qrserver.com/v1/create-qr-code/?data=https://buymeacoffee.com/deepgaurav&size=256x256" alt="Buy me a coffee" width="100px"></a></td>
     <td><a href="https://www.buymeacoffee.com/deepgaurav">Donate with buymeacoffee</a></td>
   </tr>
@@ -65,13 +65,13 @@ Donation of any kind is appreciated :)
 
 ## Privacy Policy
 
-MusicPiped is commited to keep user data secure so it does not collect any form of data from user and does not require any device permissions except for INTERNET. Please read the [Privacy Policy document](Privacy.md).
+MusicPiped is commited to keep user data secure so it does not collect any form of data from user and does not require any device permissions except for INTERNET.
 
 ## License
 [![GNU GPLv3 Image](https://www.gnu.org/graphics/gplv3-127x51.png)](https://www.gnu.org/licenses/gpl-3.0.html)  
 
 MusicPiped is Free Software: You can use, study share and improve it at your
 will. Specifically you can redistribute and/or modify it under the terms of the
-[GNU General Public License](https://www.gnu.org/licenses/gpl.html) as
+[GNU General Public License](https://www.gnu.org/licenses/gpl-3.0.html) as
 published by the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
