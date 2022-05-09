@@ -83,7 +83,7 @@ dependencies {
     androidTestImplementation "com.android.support:support-annotations:25.3.1"
 
     implementation 'com.danikula:videocache:2.7.1'
-    implementation 'com.github.TeamNewPipe:NewPipeExtractor:v0.21.13'
+    implementation 'com.github.TeamNewPipe:NewPipeExtractor:v0.22.1'
     implementation 'com.squareup.okhttp3:okhttp:4.9.0'
     implementation 'androidx.media:media:1.1.0-rc01'
     implementation 'com.google.code.findbugs:jsr305:3.0.2'
