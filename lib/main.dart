@@ -47,7 +47,7 @@ Database settingDB;
 PackageInfo packageInfo;
 
 var brightness = ValueNotifier("dark");
-// Grab it from https://github.com/iv-org/documentation/blob/master/docs/instances.md
+// Grab it from https://docs.invidious.io/instances/
 var invidiousAPI = ValueNotifier("https://invidious.snopyta.org");
 var quality = ValueNotifier("best");
 
@@ -1419,8 +1419,7 @@ class MyHomePageState extends State<MyHomePage>
 
 class YoutubeSuggestion extends SearchDelegate<Map> {
   static String corsanywhere = 'https://cors-anywhere.herokuapp.com/';
-  String suggestionURL =
-      'https://suggestqueries.google.com/complete/search?q=';
+  String suggestionURL = 'https://suggestqueries.google.com/complete/search?q=';
 
   String searchType = "all";
   var types = ["all", "video", "playlist"];
