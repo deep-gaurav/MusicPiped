@@ -47,7 +47,8 @@ Database settingDB;
 PackageInfo packageInfo;
 
 var brightness = ValueNotifier("dark");
-var invidiosAPI = ValueNotifier("https://invidious.13ad.de/");
+// Grab it from https://github.com/iv-org/documentation/blob/master/docs/instances.md
+var invidiousAPI = ValueNotifier("https://invidious.snopyta.org");
 var quality = ValueNotifier("best");
 
 var ignorePositionUpdate = ValueNotifier(false);
@@ -56,24 +57,24 @@ var queue = ValueNotifier<List>([]);
 
 GlobalKey<MyHomePageState> mainKey = GlobalKey();
 
-// const mediaControlButtons = {
-//   "play": MediaControl(
-//       androidIcon: "drawable/ic_play_arrow_black_24dp",
-//       action: MediaAction.play,
-//       label: "Play"),
-//   "pause": MediaControl(
-//       androidIcon: "drawable/ic_pause_black_24dp",
-//       action: MediaAction.pause,
-//       label: "Pause"),
-//   "next": MediaControl(
-//       androidIcon: "drawable/ic_skip_next_black_24dp",
-//       action: MediaAction.skipToNext,
-//       label: "Next"),
-//   "previous": MediaControl(
-//       androidIcon: "drawable/ic_skip_previous_black_24dp",
-//       action: MediaAction.skipToPrevious,
-//       label: "Previous")
-// };
+/* const mediaControlButtons = {
+     "play": MediaControl(
+         androidIcon: "drawable/ic_play_arrow_black_24dp",
+         action: MediaAction.play,
+         label: "Play"),
+     "pause": MediaControl(
+         androidIcon: "drawable/ic_pause_black_24dp",
+         action: MediaAction.pause,
+         label: "Pause"),
+     "next": MediaControl(
+         androidIcon: "drawable/ic_skip_next_black_24dp",
+         action: MediaAction.skipToNext,
+         label: "Next"),
+     "previous": MediaControl(
+         androidIcon: "drawable/ic_skip_previous_black_24dp",
+         action: MediaAction.skipToPrevious,
+         label: "Previous")
+   }; */
 
 void main() async {
   runApp(MyApp());
@@ -91,8 +92,8 @@ Future init() async {
     putSetting('brightness', brightness.value);
   });
 
-  invidiosAPI.addListener(() {
-    putSetting('invidiosAPI', invidiosAPI.value);
+  invidiousAPI.addListener(() {
+    putSetting('invidiousAPI', invidiousAPI.value);
   });
 
   quality.addListener(() {
@@ -139,10 +140,10 @@ Future<Database> initSettings() async {
   } else {
     brightness.value = await ob.getObject('brightness');
   }
-  if ((await ob.getObject('invidiosAPI')) == null) {
-    ob.put(invidiosAPI.value, 'invidiosAPI');
+  if ((await ob.getObject('invidiousAPI')) == null) {
+    ob.put(invidiousAPI.value, 'invidiousAPI');
   } else {
-    invidiosAPI.value = await ob.getObject("invidiosAPI");
+    invidiousAPI.value = await ob.getObject("invidiousAPI");
   }
   if ((await ob.getObject('quality')) == null) {
     ob.put(quality.value, 'quality');
@@ -191,7 +192,7 @@ class MyApp extends StatelessWidget {
       builder: (context, ass) {
         if (ass.connectionState == ConnectionState.done) {
           return MaterialApp(
-            title: 'MusicPiped Pro',
+            title: 'MusicPiped',
             theme: ThemeData(
               primarySwatch: Colors.blue,
               brightness: brightness.value == "dark"
@@ -229,8 +230,8 @@ class MyHomePageState extends State<MyHomePage>
 
   dynamic howlerId = 0;
 
-  static String InvidiosAPI = invidiosAPI.value + "api/v1/";
-  //static String InvidiosAPI = "https://invidious.snopyta.org/api/v1/";
+  static String InvidiousAPI = invidiousAPI.value + "/api/v1/";
+  // static String InvidiousAPI = "https://invidious.snopyta.org/api/v1/";
   static int PreloadWindow = 25;
 
   var playerState = ValueNotifier(PlayerState.Stopped);
@@ -287,81 +288,80 @@ class MyHomePageState extends State<MyHomePage>
       setState(() {});
     });
 
-    // AudioService.connect(); // When UI becomes visible
-    // AudioService.start(
-    //   // When user clicks button to start playback
-    //   backgroundTaskEntrypoint: myBackgroundTask,
-    //   androidNotificationChannelName: 'Music Player',
-    //   androidNotificationIcon: "mipmap/ic_launcher",
-    //   resumeOnClick: false,
-    //   androidStopForegroundOnPause: true,
-    //   androidNotificationOngoing: false
-    // );
-    // Timer.periodic(Duration(seconds: 2), (t) {
-    //   AudioService.customAction("tick");
-    // });
+    /* AudioService.connect(); // When UI becomes visible
+       AudioService.start(
+         // When user clicks button to start playback
+         backgroundTaskEntrypoint: myBackgroundTask,
+         androidNotificationChannelName: 'Music Player',
+         androidNotificationIcon: "mipmap/ic_launcher",
+         resumeOnClick: false,
+         androidStopForegroundOnPause: true,
+         androidNotificationOngoing: false
+       );
+       Timer.periodic(Duration(seconds: 2), (t) {
+         AudioService.customAction("tick");
+       });
 
-    // queue.addListener((){
-    //   for(var x in AudioService.queue){
-    //     AudioService.removeQueueItem(x);
-    //   }
-    //           queue.value.map<MediaItem>((qVal)=>MediaItem(id: qVal["videoId"], album: qVal["genre"], title: qVal["title"],
-    //       artist: qVal["author"],
-    //       genre: qVal["genre"],
-    //       artUri: (qVal["videoThumbnails"] as List).last["url"]
-    //     )).forEach((f)=>AudioService.addQueueItem(f));
-    // });
+       queue.addListener((){
+         for(var x in AudioService.queue){
+           AudioService.removeQueueItem(x);
+         }
+                queue.value.map<MediaItem>((qVal)=>MediaItem(id: qVal["videoId"], album: qVal["genre"], title: qVal["title"],
+             artist: qVal["author"],
+             genre: qVal["genre"],
+             artUri: (qVal["videoThumbnails"] as List).last["url"]
+           )).forEach((f)=>AudioService.addQueueItem(f));
+       });
 
-    // AudioService.playbackStateStream.listen((state) {
-    //   if (ignorePositionUpdate.value) {
-    //     return;
-    //   }
-    //   positionNotifier.value = state.position;
-    //   switch (state.basicState) {
-    //     case BasicPlaybackState.stopped:
-    //       playerState.value = PlayerState.Stopped;
-    //       break;
-    //     case BasicPlaybackState.playing:
-    //       playerState.value = PlayerState.Playing;
-    //       break;
-    //     case BasicPlaybackState.paused:
-    //       playerState.value = PlayerState.Paused;
-    //       break;
-    //       break;
-    //     case BasicPlaybackState.none:
-    //       // TODO: Handle this case.
-    //       break;
-    //     case BasicPlaybackState.fastForwarding:
-    //       // TODO: Handle this case.
-    //       break;
-    //     case BasicPlaybackState.rewinding:
-    //       // TODO: Handle this case.
-    //       break;
-    //     case BasicPlaybackState.buffering:
-    //       playerState.value = PlayerState.Loading;
-    //       break;
-    //     case BasicPlaybackState.error:
-    //       playerState.value = PlayerState.Error;
-    //       break;
-    //     case BasicPlaybackState.connecting:
-    //       playerState.value = PlayerState.Loading;
-    //       break;
-    //     case BasicPlaybackState.skippingToPrevious:
-    //       previous();
-    //       break;
-    //     case BasicPlaybackState.skippingToNext:
-    //       next();
-    //       break;
-    //     case BasicPlaybackState.skippingToQueueItem:
-    //       // TODO: Handle this case.
-    //       break;
-    //   }
-    // });
-    /*
+       AudioService.playbackStateStream.listen((state) {
+         if (ignorePositionUpdate.value) {
+          return;
+         }
+         positionNotifier.value = state.position;
+         switch (state.basicState) {
+           case BasicPlaybackState.stopped:
+             playerState.value = PlayerState.Stopped;
+             break;
+           case BasicPlaybackState.playing:
+             playerState.value = PlayerState.Playing;
+             break;
+           case BasicPlaybackState.paused:
+             playerState.value = PlayerState.Paused;
+             break;
+             break;
+           case BasicPlaybackState.none:
+             // TODO: Handle this case.
+             break;
+           case BasicPlaybackState.fastForwarding:
+             // TODO: Handle this case.
+             break;
+           case BasicPlaybackState.rewinding:
+             // TODO: Handle this case.
+             break;
+           case BasicPlaybackState.buffering:
+             playerState.value = PlayerState.Loading;
+             break;
+           case BasicPlaybackState.error:
+             playerState.value = PlayerState.Error;
+             break;
+           case BasicPlaybackState.connecting:
+             playerState.value = PlayerState.Loading;
+             break;
+           case BasicPlaybackState.skippingToPrevious:
+             previous();
+             break;
+           case BasicPlaybackState.skippingToNext:
+             next();
+             break;
+           case BasicPlaybackState.skippingToQueueItem:
+             // TODO: Handle this case.
+             break;
+         }
+       });
+    
     player.addEventListener('ended', (e) {
       playerState.value = PlayerState.Stopped;
-    });
-    */
+    }); */
 
     audioPlayer.onDurationChanged.listen((Duration d) {
       print('Max duration: $d');
@@ -429,7 +429,7 @@ class MyHomePageState extends State<MyHomePage>
 
   Future<Map> refreshLink(String vidId, Map s) async {
     if (!s.containsKey("authorThumbnails")) {
-      var response = await http.get(InvidiosAPI + "videos/" + s["videoId"]);
+      var response = await http.get(InvidiousAPI + "/videos/" + s["videoId"]);
       s = json.decode(utf8.decode(response.bodyBytes));
     }
     return s;
@@ -441,15 +441,15 @@ class MyHomePageState extends State<MyHomePage>
     return s;
   }
 
-  // Future<ByteData> imagefromURL(String url) {
-  //   var provider = CachedNetworkImageProvider(url);
-  //   var stream = provider.resolve(ImageConfiguration());
-  //   var completer = Completer<ByteData>();
-  //   stream.addListener(ImageStreamListener((info, callflag) {
-  //     completer.complete(info.image.toByteData(format: ImageByteFormat.png));
-  //   }));
-  //   return completer.future;
-  // }
+  /* Future<ByteData> imagefromURL(String url) {
+       var provider = CachedNetworkImageProvider(url);
+       var stream = provider.resolve(ImageConfiguration());
+       var completer = Completer<ByteData>();
+       stream.addListener(ImageStreamListener((info, callflag) {
+         completer.complete(info.image.toByteData(format: ImageByteFormat.png));
+       }));
+       return completer.future;
+     } */
 
   Future<String> fixURLAccess(Map s) async {
     List formats = List.from(s["adaptiveFormats"]);
@@ -481,25 +481,25 @@ class MyHomePageState extends State<MyHomePage>
   }
 
   void updateMetadata() async {
-//    player.pause();
-//    playerState.value = PlayerState.Loading;
-//    Map s = queue.value[currentIndex.value];
-//    var image;
-//    try {
-//      image = await imagefromURL(
-//          TrackTile.urlfromImage(s["videoThumbnails"], "medium"));
-//    } catch (e) {
-//      image = null;
-//    }
-//    var barrray = image.buffer.asUint8List();
-//    player.metadata = {
-//      "title": s["title"],
-//      "artist": s["author"],
-//      "thumb": barrray,
-//      "vidId": s["videoId"]
-//    };
-    // player.updateMetadata();
-    // TODO metadataupdate
+/*    player.pause();
+      playerState.value = PlayerState.Loading;
+      Map s = queue.value[currentIndex.value];
+      var image;
+      try {
+        image = await imagefromURL(
+            TrackTile.urlfromImage(s["videoThumbnails"], "medium"));
+      } catch (e) {
+        image = null;
+      }
+      var barrray = image.buffer.asUint8List();
+      player.metadata = {
+        "title": s["title"],
+        "artist": s["author"],
+        "thumb": barrray,
+        "vidId": s["videoId"]
+      };
+       player.updateMetadata();
+    // TODO metadataupdate */
   }
 
   Future<Map> load(Map s) async {
@@ -512,19 +512,18 @@ class MyHomePageState extends State<MyHomePage>
       print("not cached, refreshing");
       s = await fetchVid(s);
     }
-    var url = "https://dummyurl.com?a=2&videoId=" + s["videoId"];
+    var url = "https://dummyurl.com?videoId=" + s["videoId"];
     if (!cached) {
       try {
         url = await fixURLAccess(s);
       } catch (e) {
-        print("Doesnt have url");
+        print("Don't have url");
       }
     }
-//
-//    player.pause();
-//    player.currentTime = 0;
+/*    player.pause();
+      player.currentTime = 0; */
 
-    //howlerId = howler.callMethod("play");
+    // howlerId = howler.callMethod("play");
     var image;
     try {
       image = TrackTile.urlfromImage(s["videoThumbnails"], "medium");
@@ -541,15 +540,15 @@ class MyHomePageState extends State<MyHomePage>
 
     print("url received");
     print(url);
-    // print("Received Newpipe URL $url");
+    /* print("Received NewPipe URL $url");
 
-    // AudioService.playFromMediaId(url);
-    // MediaFile mediaFile = MediaFile(
-    //     title: s["title"],
-    //     type: "audio",
-    //     source: url,
-    //     desc: s["author"],
-    //     image: TrackTile.urlfromImage(s["videoThumbnails"], "medium"));
+       AudioService.playFromMediaId(url);
+       MediaFile mediaFile = MediaFile(
+           title: s["title"],
+           type: "audio",
+           source: url,
+           desc: s["author"],
+           image: TrackTile.urlfromImage(s["videoThumbnails"], "medium")); */
 
     return {"image": image, "url": url};
   }
@@ -584,9 +583,9 @@ class MyHomePageState extends State<MyHomePage>
             notificationActionCallbackMode:
                 NotificationActionCallbackMode.CUSTOM));
 
-    // await mediaPlayer.initialize();
-    // await mediaPlayer.setSource(mediaFile);
-    // mediaPlayer.play();
+    /* await mediaPlayer.initialize();
+       await mediaPlayer.setSource(mediaFile);
+       mediaPlayer.play(); */
 
     s = Map.from(s);
     if (s.containsKey('timesPlayed')) {
@@ -709,7 +708,7 @@ class MyHomePageState extends State<MyHomePage>
 
   void onEnd() {
     if (repeat.value == 2) {
-      //IF repeatSingle
+      // IF repeatSingle
       playCurrent();
     } else {
       if (currentIndex.value == queue.value.length - 1) {
@@ -738,8 +737,8 @@ class MyHomePageState extends State<MyHomePage>
   Future<bool> confirmExit(BuildContext context) async {
     DateTime currentTime = DateTime.now();
 
-    //bifbackbuttonhasnotbeenpreedOrToasthasbeenclosed
-    //Statement 1 Or statement2
+    // bifbackbuttonhasnotbeenpreedOrToasthasbeenclosed
+    // Statement 1 Or statement2
     bool backButton = backbuttonpressedTime == null ||
         currentTime.difference(backbuttonpressedTime) > Duration(seconds: 1);
 
@@ -887,7 +886,7 @@ class MyHomePageState extends State<MyHomePage>
                         title: Text("Invidious API"),
                         onTap: () async {
                           var controller = TextEditingController.fromValue(
-                              TextEditingValue(text: invidiosAPI.value));
+                              TextEditingValue(text: invidiousAPI.value));
                           await showDialog(
                               context: context,
                               builder: (context) => SimpleDialog(
@@ -907,7 +906,7 @@ class MyHomePageState extends State<MyHomePage>
                                           RaisedButton(
                                             child: Text("Apply"),
                                             onPressed: () {
-                                              invidiosAPI.value =
+                                              invidiousAPI.value =
                                                   controller.text;
                                               Navigator.pop(context);
                                             },
@@ -943,28 +942,25 @@ class MyHomePageState extends State<MyHomePage>
                                 width: 50,
                                 height: 50,
                               ),
-                              applicationLegalese: "Licensed under GPL v3",
+                              applicationLegalese: "Licensed under GPLv3",
                               applicationVersion: packageInfo.version,
                               children: [
-                                Text(
-                                    "MusicPiped is an Material Designed inspired music player, using NewPipeExtractor and Invidio.us APIs"),
+                                Text("MusicPiped is a material designed music player, using NewPipeExtractor and Invidio.us APIs"),
                                 Text("Thank You"),
                                 InkWell(
                                   child: Container(
                                     padding: EdgeInsets.all(8),
-                                    child: Text(
-                                      "https://github.com/deep-gaurav/MusicPiped",
+                                    child: Text("https://github.com/deep-gaurav/MusicPiped",
                                       style: TextStyle(
                                           fontWeight: FontWeight.bold),
                                     ),
                                   ),
                                   onTap: () async {
-                                    var url =
-                                        "https://github.com/deep-gaurav/MusicPiped";
+                                    var url = "https://github.com/deep-gaurav/MusicPiped";
                                     if (await canLaunch(url)) {
                                       await launch(url);
                                     } else {
-                                      throw 'Could not launch $url';
+                                      throw 'Can't launch $url';
                                     }
                                   },
                                 ),
@@ -972,25 +968,11 @@ class MyHomePageState extends State<MyHomePage>
                                   icon: Icon(Icons.star),
                                   label: Text("Star on Github"),
                                   onPressed: () async {
-                                    var url =
-                                        "https://github.com/deep-gaurav/MusicPiped/stargazers";
+                                    var url = "https://github.com/deep-gaurav/MusicPiped/stargazers";
                                     if (await canLaunch(url)) {
                                       await launch(url);
                                     } else {
-                                      throw 'Could not launch $url';
-                                    }
-                                  },
-                                ),
-                                RaisedButton.icon(
-                                  icon: Icon(Icons.rate_review),
-                                  label: Text("Rate/Review on Play Store"),
-                                  onPressed: () async {
-                                    var url =
-                                        "https://play.google.com/store/apps/details?id=deep.ryd.rydplayer&hl=en_US";
-                                    if (await canLaunch(url)) {
-                                      await launch(url);
-                                    } else {
-                                      throw 'Could not launch $url';
+                                      throw 'Can't launch $url';
                                     }
                                   },
                                 ),
@@ -998,12 +980,11 @@ class MyHomePageState extends State<MyHomePage>
                                   icon: Icon(Icons.redeem),
                                   label: Text("Buy me a coffee"),
                                   onPressed: () async {
-                                    var url =
-                                        "https://www.buymeacoffee.com/deepgaurav";
+                                    var url = "https://www.buymeacoffee.com/deepgaurav";
                                     if (await canLaunch(url)) {
                                       await launch(url);
                                     } else {
-                                      throw 'Could not launch $url';
+                                      throw 'Can't launch $url';
                                     }
                                   },
                                 ),
@@ -1017,7 +998,7 @@ class MyHomePageState extends State<MyHomePage>
                               context: context,
                               applicationName: "MusicPiped",
                               applicationIcon: Image.asset("logo.png"),
-                              applicationLegalese: "Licensed under GPL v3",
+                              applicationLegalese: "Licensed under GPLv3",
                               applicationVersion: packageInfo.version);
                         },
                       ),
@@ -1147,12 +1128,9 @@ class MyHomePageState extends State<MyHomePage>
                                 RaisedButton(
                                   child: Text("Import"),
                                   onPressed: () async {
-                                    var url = InvidiosAPI +
-                                        "playlists/" +
-                                        _controller.text.split('list=').last;
+                                    var url = InvidiousAPI + "/playlists/" + _controller.text.split('list=').last;
                                     var response = await http.get(url);
-                                    Map jsresponse = await json.decode(
-                                        utf8.decode(response.bodyBytes));
+                                    Map jsresponse = await json.decode(utf8.decode(response.bodyBytes));
                                     if (jsresponse.containsKey('title')) {
                                       var ob = db
                                           .transaction('playlists', 'readwrite')
@@ -1233,8 +1211,7 @@ class MyHomePageState extends State<MyHomePage>
                       ValueListenableBuilder(
                         valueListenable: playerState,
                         builder: (context, state, child) {
-                          if (state == PlayerState.Playing ||
-                              state == PlayerState.Paused) {
+                          if (state == PlayerState.Playing || state == PlayerState.Paused) {
                             return ValueListenableBuilder(
                               valueListenable: playerState,
                               builder: (context, playing, child) {
@@ -1245,8 +1222,7 @@ class MyHomePageState extends State<MyHomePage>
                                           : Icons.play_arrow),
                                   iconSize: 36,
                                   onPressed: () {
-                                    if (playerState.value ==
-                                        PlayerState.Playing) {
+                                    if (playerState.value == PlayerState.Playing) {
                                       audioPlayer.pause();
                                       playerState.value = PlayerState.Paused;
                                     } else {
@@ -1280,8 +1256,7 @@ class MyHomePageState extends State<MyHomePage>
                                     milliseconds:
                                         (positionNotifier.value * 1000).toInt(),
                                   ),
-                                ) +
-                                "/" +
+                                ) + "/" +
                                 formatDuration(
                                   Duration(
                                     milliseconds:
@@ -1445,7 +1420,7 @@ class MyHomePageState extends State<MyHomePage>
 class YoutubeSuggestion extends SearchDelegate<Map> {
   static String corsanywhere = 'https://cors-anywhere.herokuapp.com/';
   String suggestionURL =
-      'http://suggestqueries.google.com/complete/search?client=firefox&ds=yt&q=';
+      'https://suggestqueries.google.com/complete/search?q=';
 
   String searchType = "all";
   var types = ["all", "video", "playlist"];
@@ -1607,6 +1582,6 @@ class _SuggestionList extends StatelessWidget {
   }
 }
 
-// void myBackgroundTask() {
-//   AudioServiceBackground.run(() => BackgroundService());
-// }
+/* void myBackgroundTask() {
+     AudioServiceBackground.run(() => BackgroundService());
+   } */
